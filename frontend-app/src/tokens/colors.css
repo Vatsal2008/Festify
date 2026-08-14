@@ -1,0 +1,51 @@
+/* =========================================================
+   Festify Design System — Color Tokens
+   Source: Frontend/theme.md (Elicit design system)
+   ========================================================= */
+
+:root {
+  /* ── Structural ── */
+  --color-ink:            #083d44;   /* primary text + dark band bg + hairline border */
+  --color-ink-deep:       #09272b;   /* darkest teal depth stop */
+  --color-canvas:         #fcfcf8;   /* parchment off-white — main surface */
+  --color-surface-sage:   #f3f6e4;   /* warm sage — differentiated card surfaces */
+  --color-surface-cool:   #e8eced;   /* cool gray — alternate card fills */
+  --color-primary:        #026370;   /* mid-range teal — gradients, secondary surfaces */
+  --color-accent:         #e5ff97;   /* chartreuse — ONE primary CTA per section only */
+  --color-link-blue:      #0000ee;   /* browser-default hyperlink — never overridden */
+  --color-hairline:       #000000;   /* 1px card borders on canvas sections */
+  --color-hairline-light: #083d44;   /* 1px card borders on teal dark sections */
+
+  /* ── Status / Semantic ── */
+  --color-success:        #22c55e;
+  --color-warning:        #f59e0b;
+  --color-error:          #ef4444;
+  --color-info:           #3b82f6;
+  --color-success-bg:     rgba(34, 197, 94, 0.08);
+  --color-warning-bg:     rgba(245, 158, 11, 0.08);
+  --color-error-bg:       rgba(239, 68, 68, 0.08);
+  --color-info-bg:        rgba(59, 130, 246, 0.08);
+
+  /* ── Event State ── */
+  --state-draft:          #6b7280;
+  --state-pending:        #f59e0b;
+  --state-live:           #22c55e;
+  --state-early-access:   #e5ff97;
+  --state-on-sale:        #083d44;
+  --state-sold-out:       #ef4444;
+  --state-ongoing:        #8b5cf6;
+  --state-completed:      #026370;
+  --state-postponed:      #f59e0b;
+  --state-cancelled:      #ef4444;
+
+  /* ── Customer Level ── */
+  --level-bronze:         #cd7f32;
+  --level-silver:         #a8a9ad;
+  --level-gold:           #ffd700;
+  --level-platinum:       #b4c0cc;
+  --level-prime:          #e5ff97;   /* chartreuse — highest earned tier */
+
+  /* ── Overlay ── */
+  --color-overlay:        rgba(8, 61, 68, 0.6);
+  --color-overlay-light:  rgba(8, 61, 68, 0.15);
+}

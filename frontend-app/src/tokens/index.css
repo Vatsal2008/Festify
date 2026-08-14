@@ -1,0 +1,143 @@
+/* =========================================================
+   Festify — Global Index CSS
+   Imports all tokens + base resets + global utilities
+   ========================================================= */
+
+@import './colors.css';
+@import './typography.css';
+@import './spacing.css';
+
+/* ── Base Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--lh-body-md);
+  color: var(--color-ink);
+  background-color: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Focus Ring — Chartreuse, never hidden ── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Skip to content ── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-lg);
+  background: var(--color-accent);
+  color: var(--color-ink);
+  padding: var(--space-md) var(--space-xl);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  z-index: var(--z-top);
+  text-decoration: none;
+  border-radius: var(--radius-none);
+  transition: top var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus {
+  top: var(--space-lg);
+}
+
+/* ── Inline hyperlinks — never override to brand ── */
+a {
+  color: var(--color-link-blue);
+  text-decoration: underline;
+}
+a:hover {
+  opacity: 0.8;
+}
+
+/* ── Image defaults ── */
+img, video {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── No tap highlight on mobile ── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface-cool);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Global layout utilities ── */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Specific Dark Greenish Outline STRICTLY for font color #e5ff97 / var(--color-accent) ── */
+.text-accent-stroke,
+.org-card__rank {
+  color: var(--color-accent);
+  text-shadow: 
+    -0.5px -0.5px 0 var(--color-ink),
+     0.5px -0.5px 0 var(--color-ink),
+    -0.5px  0.5px 0 var(--color-ink),
+     0.5px  0.5px 0 var(--color-ink);
+  -webkit-text-stroke: 0.4px var(--color-ink);
+}
