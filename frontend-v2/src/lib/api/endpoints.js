@@ -96,6 +96,16 @@ export const platformApi = {
   auditLog: () => api.get('/audit-log').then(r => r.data),
   scoringConfig: () => api.get('/scoring-config').then(r => r.data),
   setScoringConfig: (key, value) => api.put('/scoring-config', { key, value }).then(r => r.data),
+
+  // admin management
+  myRoles: () => api.get('/auth/my-roles').then(r => r.data),
+  searchUsers: (q) => api.get('/users/search', { params: { q } }).then(r => r.data),
+  superAdmins: () => api.get('/super-admins').then(r => r.data),
+  addSuperAdmin: (userId) => api.post('/super-admins', { user_id: userId }).then(r => r.data),
+  removeSuperAdmin: (userId) => api.delete(`/super-admins/${userId}`).then(r => r.data),
+  collegeAdmins: () => api.get('/college-admins/all').then(r => r.data),
+  addCollegeAdmin: (userId, collegeId) =>
+    api.post('/college-admins', { user_id: userId, college_id: collegeId }).then(r => r.data),
 };
 
 // ── support ───────────────────────────────────────────────────────

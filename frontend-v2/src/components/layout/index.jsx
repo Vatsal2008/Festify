@@ -178,7 +178,7 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
 
   const superAdminLinks = [
     { path: '/superadmin/dashboard',          label: 'Dashboard',   icon: <ZapIcon size={18} /> },
-    { path: '/superadmin/college-admins',     label: 'College Admins', icon: <UsersIcon size={18} /> },
+    { path: '/superadmin/college-admins',     label: 'Admin Access', icon: <UsersIcon size={18} /> },
     { path: '/superadmin/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
     { path: '/superadmin/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
     { path: '/superadmin/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },

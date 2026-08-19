@@ -59,36 +59,63 @@ export function AuthProvider({ children }) {
     return profile;
   }, []);
 
-  const login = useCallback(async () => {
-    setAuthError(null);
+  /**
+   * Render Google's own sign-in button into `container`.
+   *
+   * This replaces an earlier attempt that called
+   * google.accounts.id.prompt() (One Tap). Browsers suppress One Tap
+   * routinely — third-party cookie blocking, a previous dismissal, or a
+   * popup blocker all silence it — and the SDK reports that as
+   * "dismissed", so sign-in appeared broken through no fault of the
+   * user. The rendered button is a real user-gesture click and is not
+   * subject to any of that.
+   */
+  const renderGoogleButton = useCallback((container, { onSuccess, onError } = {}) => {
+    if (!container) return;
     if (!GOOGLE_CLIENT_ID) {
-      const msg = 'Google sign-in is not configured. Set VITE_GOOGLE_CLIENT_ID.';
-      setAuthError(msg);
-      throw new Error(msg);
+      setAuthError('Google sign-in is not configured. Set VITE_GOOGLE_CLIENT_ID.');
+      return;
     }
-    setIsLoading(true);
-    try {
-      const google = await loadGsi();
-      const idToken = await new Promise((resolve, reject) => {
+    setAuthError(null);
+
+    loadGsi()
+      .then((google) => {
         google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
-          callback: (res) => res?.credential
-            ? resolve(res.credential)
-            : reject(new Error('Google sign-in was cancelled.')),
+          callback: async (res) => {
+            if (!res?.credential) {
+              const msg = 'Google did not return a sign-in token. Please try again.';
+              setAuthError(msg);
+              onError?.(new Error(msg));
+              return;
+            }
+            setIsLoading(true);
+            try {
+              const profile = await completeLogin(res.credential);
+              onSuccess?.(profile);
+            } catch (err) {
+              const msg = err?.response?.data?.detail || err.message || 'Sign-in failed.';
+              setAuthError(msg);
+              onError?.(new Error(msg));
+            } finally {
+              setIsLoading(false);
+            }
+          },
         });
-        google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-            reject(new Error('Google sign-in was dismissed. Allow popups and try again.'));
-          }
+        container.innerHTML = '';
+        google.accounts.id.renderButton(container, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: 320,
         });
+      })
+      .catch((err) => {
+        setAuthError(err.message);
+        onError?.(err);
       });
-      return await completeLogin(idToken);
-    } catch (err) {
-      setAuthError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
   }, [completeLogin]);
 
   const logout = useCallback(() => {
@@ -118,7 +145,7 @@ export function AuthProvider({ children }) {
     isMemberOf: (orgId) => orgMemberships.some(m => m.org_id === orgId),
     isOwnerOf: (orgId) => orgMemberships.some(m => m.org_id === orgId && m.role === 'owner'),
     getOrgRole: (orgId) => orgMemberships.find(m => m.org_id === orgId)?.role ?? null,
-    login,
+    renderGoogleButton,
     completeLogin,
     logout,
     refreshUser,

@@ -6,7 +6,7 @@
 // so they're gone rather than left as dead UI. Google also creates the
 // account on first sign-in, which makes "sign up" and "sign in" the same
 // action — hence one panel instead of a sign-in/sign-up toggle.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { authApi } from '@/lib/api/endpoints';
@@ -16,9 +16,10 @@ import { GraduationCapIcon, SparklesIcon, ZapIcon } from '@/components/icons/Ico
 import '@/pages/pages.css';
 
 export default function LoginPage() {
-  const { login, isLoading, isAuthenticated, isGoogleConfigured } = useAuth();
+  const { renderGoogleButton, isLoading, isAuthenticated, isGoogleConfigured } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const buttonRef = useRef(null);
 
   // Already signed in (e.g. hit /login directly with a live session).
   useEffect(() => {
@@ -29,19 +30,19 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleGoogleLogin = async () => {
-    setError(null);
-    try {
-      const profile = await login();
-      const returnUrl = sessionStorage.getItem('festify_return_url')
-        // First-time users go through onboarding; returning users don't.
-        || (profile?.college_verified_at ? '/' : '/onboarding');
-      sessionStorage.removeItem('festify_return_url');
-      navigate(returnUrl, { replace: true });
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  useEffect(() => {
+    if (isAuthenticated) return;
+    renderGoogleButton(buttonRef.current, {
+      onSuccess: (profile) => {
+        const returnUrl = sessionStorage.getItem('festify_return_url')
+          // First-time users go through onboarding; returning users don't.
+          || (profile?.college_verified_at ? '/' : '/onboarding');
+        sessionStorage.removeItem('festify_return_url');
+        navigate(returnUrl, { replace: true });
+      },
+      onError: (err) => setError(err.message),
+    });
+  }, [renderGoogleButton, navigate, isAuthenticated]);
 
   return (
     <div className="auth-split-wrapper">
@@ -63,21 +64,15 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button
-            className="login-google-btn"
-            onClick={handleGoogleLogin}
-            disabled={isLoading || !isGoogleConfigured}
-            aria-label="Continue with Google"
-          >
-            {isLoading ? (
-              <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid rgba(22, 16, 31,0.3)', borderTopColor: 'var(--color-ink)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-            ) : (
-              <>
-                <span className="login-google-btn__icon" aria-hidden="true">G</span>
-                Continue with Google
-              </>
+          {/* Google renders its own button here. It must be a real
+              click on Google's element -- One Tap gets suppressed by
+              browsers and reports back as "dismissed". */}
+          <div style={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
+            <div ref={buttonRef} />
+            {isLoading && (
+              <span style={{ marginLeft: 12, display: 'inline-block', width: 18, height: 18, border: '2px solid rgba(22, 16, 31,0.3)', borderTopColor: 'var(--color-ink)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
             )}
-          </button>
+          </div>
 
           {error && (
             <p role="alert" className="type-body-sm" style={{ color: 'var(--color-error)' }}>{error}</p>
@@ -87,13 +82,9 @@ export default function LoginPage() {
             By continuing you agree to Festify&apos;s Terms &amp; Privacy Policy.
           </p>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: 'var(--border-hairline)' }}>
-            <button onClick={() => navigate('/college-admin/applications')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
-              College Admin →
-            </button>
-            <button onClick={() => navigate('/superadmin/dashboard')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
-              Super Admin →
-            </button>
+          {/* No separate admin sign-in: admin access is a role on your
+              normal Google account, granted from the admin panel. */}
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, borderTop: 'var(--border-hairline)' }}>
             <button onClick={() => navigate('/')} className="login-guest-link" style={{ fontSize: 12 }}>
               Browse as guest
             </button>

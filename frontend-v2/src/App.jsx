@@ -29,6 +29,7 @@ import {
   SuperAdminSupportPage, SuperAdminConfigPage, SuperAdminAuditLogPage,
   SuperAdminTrendingPage, SuperAdminCollegeAdminsPage
 } from '@/pages/admin/AdminPages';
+import AdminManagementPage from '@/pages/admin/AdminManagementPage';
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
 function ScrollToTop() {
@@ -111,7 +112,8 @@ export default function App() {
         {/* ── Super Admin ── */}
         <Route path="/superadmin"                    element={<SuperAdminLoginPage />} />
         <Route path="/superadmin/dashboard"          element={<SuperAdminDashboardPage />} />
-        <Route path="/superadmin/college-admins"     element={<SuperAdminCollegeAdminsPage />} />
+        <Route path="/superadmin/college-admins"     element={<RequireAuth><AdminManagementPage /></RequireAuth>} />
+        <Route path="/superadmin/admin-access"       element={<RequireAuth><AdminManagementPage /></RequireAuth>} />
         <Route path="/superadmin/organizers"         element={<SuperAdminOrganizersPage />} />
         <Route path="/superadmin/support-tickets"    element={<SuperAdminSupportPage />} />
         <Route path="/superadmin/config"             element={<SuperAdminConfigPage />} />
