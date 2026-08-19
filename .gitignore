@@ -1,0 +1,23 @@
+.env
+.env.local
+*.env
+!.env.example
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+node_modules/
+.next/
+dist/
+build/
+
+*.log
+.DS_Store
+
+# Raw AI video/image generation output dumped at the repo root.
+# Only the processed, compressed, watermark-cropped assets under
+# frontend-app/public/media/ belong in the repo.
+/*.mp4
+/*.mov

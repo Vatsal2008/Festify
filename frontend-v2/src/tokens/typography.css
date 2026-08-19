@@ -1,0 +1,161 @@
+/* =========================================================
+   Festify Design System — Typography Tokens
+
+   FONT STRATEGY:
+   • Display → Bricolage Grotesque (Google Fonts, variable) —
+     an expressive grotesque with real poster-headline energy;
+     used bold and large, never at body sizes.
+   • Body → Instrument Sans (Google Fonts) — clean, warm,
+     high-legibility for dense ticket/price/date information.
+   • Mono/label → Space Mono (Google Fonts) — the ticket-stub
+     face: verify codes, timestamps, "LIVE" tags, prices.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* ── Font Families ── */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body:    'Instrument Sans', system-ui, sans-serif;
+  --font-mono:    'Space Mono', 'Courier New', monospace;
+  --font-ui:      'Instrument Sans', system-ui, sans-serif;
+
+  /* ── Type Scale ── */
+  --text-display-xl:  88px;
+  --text-display-lg:  56px;
+  --text-display-md:  36px;
+  --text-heading-lg:  28px;
+  --text-heading-md:  22px;
+  --text-body-lg:     19px;
+  --text-body-md:     17px;
+  --text-body-sm:     15px;
+  --text-body-xs:     13px;
+  --text-label-mono:  13px;
+
+  /* ── Line Heights ── */
+  --lh-display-xl:   86px;
+  --lh-display-lg:   58px;
+  --lh-display-md:   40px;
+  --lh-heading-lg:   34px;
+  --lh-heading-md:   28px;
+  --lh-body-lg:      28px;
+  --lh-body-md:      25px;
+  --lh-body-sm:      22px;
+  --lh-body-xs:      18px;
+  --lh-label-mono:   18px;
+
+  /* ── Letter Spacing ── */
+  --ls-display-xl:  -3px;
+  --ls-display-lg:  -1.5px;
+  --ls-display-md:  -0.5px;
+  --ls-body-lg:     0px;
+  --ls-body-md:     0px;
+  --ls-body-sm:     0.1px;
+  --ls-body-xs:     0.15px;
+  --ls-label-mono:  1.2px;
+  --ls-heading:     -0.3px;
+}
+
+/* ── Semantic type utility classes ── */
+
+.type-display-xl {
+  font-family: var(--font-display);
+  font-size: var(--text-display-xl);
+  line-height: var(--lh-display-xl);
+  letter-spacing: var(--ls-display-xl);
+  font-weight: 700;
+}
+
+.type-display-lg {
+  font-family: var(--font-display);
+  font-size: var(--text-display-lg);
+  line-height: var(--lh-display-lg);
+  letter-spacing: var(--ls-display-lg);
+  font-weight: 700;
+}
+
+.type-display-md {
+  font-family: var(--font-display);
+  font-size: var(--text-display-md);
+  line-height: var(--lh-display-md);
+  letter-spacing: var(--ls-display-md);
+  font-weight: 600;
+}
+
+.type-heading-lg {
+  font-family: var(--font-body);
+  font-size: var(--text-heading-lg);
+  line-height: var(--lh-heading-lg);
+  letter-spacing: var(--ls-heading);
+  font-weight: 600;
+}
+
+.type-heading-md {
+  font-family: var(--font-body);
+  font-size: var(--text-heading-md);
+  line-height: var(--lh-heading-md);
+  letter-spacing: var(--ls-heading);
+  font-weight: 600;
+}
+
+.type-body-lg {
+  font-family: var(--font-body);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  letter-spacing: var(--ls-body-lg);
+  font-weight: 400;
+}
+
+.type-body-md {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--lh-body-md);
+  letter-spacing: var(--ls-body-md);
+  font-weight: 400;
+}
+
+.type-body-sm {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: var(--lh-body-sm);
+  letter-spacing: var(--ls-body-sm);
+  font-weight: 400;
+}
+
+.type-body-xs {
+  font-family: var(--font-body);
+  font-size: var(--text-body-xs);
+  line-height: var(--lh-body-xs);
+  letter-spacing: var(--ls-body-xs);
+  font-weight: 400;
+}
+
+.type-label-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-mono);
+  line-height: var(--lh-label-mono);
+  letter-spacing: var(--ls-label-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.type-ui-button {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.1px;
+}
+
+/* ── Responsive type scale (mobile) ── */
+@media (max-width: 768px) {
+  :root {
+    --text-display-xl:  48px;
+    --text-display-lg:  34px;
+    --text-display-md:  26px;
+    --lh-display-xl:    50px;
+    --lh-display-lg:    38px;
+    --lh-display-md:    30px;
+    --ls-display-xl:    -1.5px;
+  }
+}
