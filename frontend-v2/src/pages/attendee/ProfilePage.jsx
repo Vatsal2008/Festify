@@ -6,7 +6,6 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { mockTickets } from '@/data/mockData';
 import {
   TicketIcon, HeartIcon, UsersIcon, StarIcon, SparklesIcon, BellIcon,
   GraduationCapIcon, CheckIcon, ZapIcon
@@ -90,7 +89,7 @@ export default function ProfilePage() {
         <CanvasBand variant="compact">
           <div className="profile-stats">
             {[
-              { value: mockTickets.length, label: 'Events Attended' },
+              { value: user.lifetime_events_attended ?? 0, label: 'Events Attended' },
               { value: user.is_prime ? <ZapIcon size={20} filled /> : '—', label: 'Prime Status' },
               { value: user.has_prime_pass ? <SparklesIcon size={20} /> : '—', label: 'Prime Pass' },
             ].map(stat => (

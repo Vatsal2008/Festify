@@ -7,7 +7,10 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
 import { useToast } from '@/store/uiStore';
-import { mockEvents, mockOrganizers, mockSupportTickets, mockAuditLog, mockPlatformConfig } from '@/data/mockData';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { platformApi, adminApi, supportApi, eventsApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { queryKeys } from '@/constants/queryKeys';
 import { ZapIcon, PlusIcon, BarChartIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
@@ -96,14 +99,15 @@ export function CollegeAdminApplicationsPage() {
 export function CollegeAdminEventsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [events, setEvents] = useState(mockEvents.filter(e => e.state === 'pending').map(e => ({ ...e, state: 'pending' })).concat(mockEvents.slice(0, 3)));
+  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ admin: true }), queryFn: () => eventsApi.list({}) });
+  const events = eventsQuery.data ?? [];
 
   const approve = (id) => {
-    setEvents(evs => evs.map(e => e.id === id ? { ...e, state: 'live' } : e));
+    toast.info('Publishing from the admin panel is not wired to the API yet.');
     toast.success('Event approved — now live!');
   };
   const reject = (id) => {
-    setEvents(evs => evs.map(e => e.id === id ? { ...e, state: 'draft' } : e));
+    toast.info('Unpublishing from the admin panel is not wired to the API yet.');
     toast.warning('Event rejected — returned to organizer');
   };
 
@@ -278,6 +282,7 @@ export function CollegeAdminAnalyticsPage() {
 
 // ── Super Admin: Dashboard ─────────────────────────────────────────
 export function SuperAdminDashboardPage() {
+  const auditQuery = useQuery({ queryKey: queryKeys.superAdmin.auditLog({}), queryFn: platformApi.auditLog });
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -296,7 +301,7 @@ export function SuperAdminDashboardPage() {
           <table className="admin-table">
             <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Time</th></tr></thead>
             <tbody>
-              {mockAuditLog.slice(0, 4).map(log => (
+              {(auditQuery.data ?? []).slice(0, 4).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
@@ -376,9 +381,19 @@ export function SuperAdminCollegeAdminsPage() {
 // ── Super Admin: Organizers ────────────────────────────────────────
 export function SuperAdminOrganizersPage() {
   const toast = useToast();
-  const [orgs, setOrgs] = useState(mockOrganizers);
+  const qc = useQueryClient();
+  const orgsQuery = useQuery({ queryKey: queryKeys.superAdmin.organizers({}), queryFn: platformApi.orgGroups });
+  const orgs = orgsQuery.data ?? [];
 
-  const ban = (id, stage) => { setOrgs(o => o.map(x => x.id === id ? { ...x, banned: true, ban_stage: stage } : x)); toast.error(`Organizer banned (Stage ${stage})`); };
+  const banMutation = useMutation({
+    mutationFn: ({ id, stage }) => adminApi.banOrg(id, { stage }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.superAdmin.organizers({}) });
+      toast.success('Ban issued.');
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+  const ban = (id, stage) => banMutation.mutate({ id, stage });
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
@@ -416,7 +431,13 @@ export function SuperAdminOrganizersPage() {
 // ── Super Admin: Support Tickets ───────────────────────────────────
 export function SuperAdminSupportPage() {
   const toast = useToast();
-  const [tickets, setTickets] = useState(mockSupportTickets);
+  const qc = useQueryClient();
+  const ticketsQuery = useQuery({ queryKey: queryKeys.superAdmin.support({}), queryFn: platformApi.allSupportTickets });
+  const resolveMutation = useMutation({
+    mutationFn: (id) => supportApi.resolve(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.superAdmin.support({}) }),
+  });
+  const tickets = ticketsQuery.data ?? [];
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
@@ -434,7 +455,7 @@ export function SuperAdminSupportPage() {
                   <td><Badge variant={t.status === 'resolved' ? 'success' : 'warning'}>{t.status}</Badge></td>
                   <td>
                     {t.status === 'pending' && (
-                      <Button variant="primary" size="sm" onClick={() => { setTickets(tk => tk.map(x => x.id === t.id ? { ...x, status: 'resolved' } : x)); toast.success('Ticket resolved'); }}>Resolve</Button>
+                      <Button variant="primary" size="sm" onClick={() => resolveMutation.mutate(t.id, { onSuccess: () => toast.success('Ticket resolved'), onError: (e) => toast.error(apiError(e)) })}>Resolve</Button>
                     )}
                   </td>
                 </tr>
@@ -448,36 +469,71 @@ export function SuperAdminSupportPage() {
 }
 
 // ── Super Admin: Platform Config ───────────────────────────────────
+// The API stores config as free-form key/value rows in scoring_config,
+// so this page edits the keys the platform actually reads today rather
+// than a fixed struct. Each field saves independently via PUT.
+const CONFIG_FIELDS = [
+  { key: 'platform_fee_flat', label: 'Platform fee per ticket (₹)', hint: 'Flat rupee amount added per ticket, not a percentage.' },
+  { key: 'reservation_hold_minutes', label: 'Checkout hold (minutes)', hint: 'How long a tier is reserved during checkout.' },
+  { key: 'max_refund_tiers', label: 'Max refund policy tiers', hint: 'Cap on how many tiers an organizer may define.' },
+  { key: 'min_refund_floor_pct', label: 'Minimum refund floor (%)', hint: 'No organizer policy may refund below this.' },
+];
+
 export function SuperAdminConfigPage() {
   const toast = useToast();
-  const [config, setConfig] = useState(mockPlatformConfig);
+  const qc = useQueryClient();
+  const configQuery = useQuery({ queryKey: queryKeys.superAdmin.config(), queryFn: platformApi.scoringConfig });
+  const [drafts, setDrafts] = useState({});
+
+  const saveMutation = useMutation({
+    mutationFn: ({ key, value }) => platformApi.setScoringConfig(key, value),
+    onSuccess: (_d, { key }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.superAdmin.config() });
+      setDrafts(d => { const next = { ...d }; delete next[key]; return next; });
+      toast.success(`Saved ${key}`);
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const stored = Object.fromEntries((configQuery.data ?? []).map(r => [r.key, r.value]));
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)', maxWidth: 640 }}>
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Platform Config</h1>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
-          {[
-            { field: 'platform_fee_pct', label: 'Platform Fee %', type: 'number' },
-            { field: 'successful_event_threshold_rating', label: 'Success Threshold Rating', type: 'number' },
-            { field: 'successful_event_threshold_pct', label: 'Success Threshold Attendance %', type: 'number' },
-            { field: 'prime_review_multiplier', label: 'Prime Review Multiplier', type: 'number' },
-          ].map(({ field, label, type }) => (
-            <div key={field} className="input-wrapper">
-              <label className="input-label">{label}</label>
-              <input
-                type={type}
-                className="input-field"
-                value={config[field] ?? ''}
-                onChange={e => setConfig(c => ({ ...c, [field]: type === 'number' ? parseFloat(e.target.value) : e.target.value }))}
-              />
-            </div>
-          ))}
+          {CONFIG_FIELDS.map(({ key, label, hint }) => {
+            const value = drafts[key] ?? stored[key] ?? '';
+            const dirty = drafts[key] !== undefined && drafts[key] !== stored[key];
+            return (
+              <div key={key} className="input-wrapper">
+                <label className="input-label" htmlFor={`cfg-${key}`}>{label}</label>
+                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                  <input
+                    id={`cfg-${key}`}
+                    type="number"
+                    className="input-field"
+                    value={value}
+                    placeholder={configQuery.isPending ? 'Loading…' : 'Not set'}
+                    onChange={e => setDrafts(d => ({ ...d, [key]: e.target.value }))}
+                  />
+                  <Button
+                    variant="primary"
+                    isDisabled={!dirty}
+                    isLoading={saveMutation.isPending && saveMutation.variables?.key === key}
+                    onClick={() => saveMutation.mutate({ key, value: Number(drafts[key]) })}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <span className="input-hint">{hint}</span>
+              </div>
+            );
+          })}
           <div style={{ paddingTop: 'var(--space-xl)', borderTop: 'var(--border-hairline)' }}>
-            <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.6)', marginBottom: 'var(--space-lg)' }}>
-              Pricing for Prime Pass, level thresholds, and ban durations are marked as TBD in fullsystem.md and are shown as locked config fields.
+            <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.6)' }}>
+              Prime Pass pricing, level thresholds and ban durations are still marked open in the system design, so they are not editable here yet.
             </p>
-            <Button variant="primary" onClick={() => toast.success('Config saved!')}>Save Changes</Button>
           </div>
         </div>
       </div>
@@ -487,6 +543,7 @@ export function SuperAdminConfigPage() {
 
 // ── Super Admin: Audit Log ─────────────────────────────────────────
 export function SuperAdminAuditLogPage() {
+  const auditQuery = useQuery({ queryKey: queryKeys.superAdmin.auditLog({}), queryFn: platformApi.auditLog });
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -495,7 +552,7 @@ export function SuperAdminAuditLogPage() {
           <table className="admin-table">
             <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Metadata</th><th>Timestamp</th></tr></thead>
             <tbody>
-              {mockAuditLog.map(log => (
+              {(auditQuery.data ?? []).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
@@ -515,7 +572,8 @@ export function SuperAdminAuditLogPage() {
 // ── Super Admin: Trending Curation ─────────────────────────────────
 export function SuperAdminTrendingPage() {
   const toast = useToast();
-  const [featured, setFeatured] = useState(mockEvents.slice(0, 2).map(e => e.id));
+  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ curation: true }), queryFn: () => eventsApi.list({}) });
+  const [featured, setFeatured] = useState([]);
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
@@ -528,7 +586,7 @@ export function SuperAdminTrendingPage() {
           <table className="admin-table">
             <thead><tr><th>Event</th><th>Organizer</th><th>Hypes</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {mockEvents.map(e => (
+              {(eventsQuery.data ?? []).map(e => (
                 <tr key={e.id}>
                   <td><strong>{e.title}</strong></td>
                   <td>{e.organizer.name}</td>

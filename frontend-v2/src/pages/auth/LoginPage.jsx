@@ -1,61 +1,75 @@
-// pages/auth/LoginPage.jsx — Interactive Dual Sliding Panel Sign In & Sign Up
-import { useState } from 'react';
+// pages/auth/LoginPage.jsx — Google sign-in.
+//
+// The API authenticates with Google only (POST /auth/google exchanges a
+// Google ID token for the app JWT); there is no password endpoint. The
+// email/password forms this page used to show could never have worked,
+// so they're gone rather than left as dead UI. Google also creates the
+// account on first sign-in, which makes "sign up" and "sign in" the same
+// action — hence one panel instead of a sign-in/sign-up toggle.
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { HERO_BACKGROUND_IMAGE } from '@/data/mockData';
-import { GraduationCapIcon, SparklesIcon, ArrowRightIcon, ZapIcon } from '@/components/icons/Icons';
+import { authApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { useToast } from '@/store/uiStore';
+import { GraduationCapIcon, SparklesIcon, ZapIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated, isGoogleConfigured } = useAuth();
   const navigate = useNavigate();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Form states
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
+  // Already signed in (e.g. hit /login directly with a live session).
+  useEffect(() => {
+    if (isAuthenticated) {
+      const returnUrl = sessionStorage.getItem('festify_return_url') || '/';
+      sessionStorage.removeItem('festify_return_url');
+      navigate(returnUrl, { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
-  const [signUpName, setSignUpName] = useState('');
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpCollege, setSignUpCollege] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-
-  const handleGoogleLogin = () => {
-    setLoading(true);
-    login();
-    const returnUrl = sessionStorage.getItem('festify_return_url') || '/';
-    sessionStorage.removeItem('festify_return_url');
-    setTimeout(() => { navigate(returnUrl); }, 900);
-  };
-
-  const handleSignInSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    login();
-    setTimeout(() => { navigate('/'); }, 900);
-  };
-
-  const handleSignUpSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    login();
-    setTimeout(() => { navigate('/onboarding'); }, 900);
+  const handleGoogleLogin = async () => {
+    setError(null);
+    try {
+      const profile = await login();
+      const returnUrl = sessionStorage.getItem('festify_return_url')
+        // First-time users go through onboarding; returning users don't.
+        || (profile?.college_verified_at ? '/' : '/onboarding');
+      sessionStorage.removeItem('festify_return_url');
+      navigate(returnUrl, { replace: true });
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <div className="auth-split-wrapper">
-      <div className={`auth-split-card ${isSignUp ? 'auth-split-card--signup' : ''}`}>
-
-        {/* ── Left Side: Sign In Form ── */}
-        <div className="auth-form-side" style={{ opacity: isSignUp ? 0.3 : 1, pointerEvents: isSignUp ? 'none' : 'all' }}>
+      <div className="auth-split-card">
+        <div className="auth-form-side">
           <div>
             <p className="type-label-mono" style={{ color: 'var(--color-accent)', marginBottom: 4 }}>Festify Portal</p>
-            <h1 className="type-display-md" style={{ color: 'var(--color-ink)' }}>Sign In</h1>
+            <h1 className="type-display-md" style={{ color: 'var(--color-ink)' }}>Sign in</h1>
+            <p className="type-body-sm" style={{ color: 'rgba(22,16,31,0.65)', marginTop: 'var(--space-sm)' }}>
+              New here? Signing in with Google creates your account.
+            </p>
           </div>
 
-          <button className="login-google-btn" onClick={handleGoogleLogin} disabled={loading || isLoading} aria-label="Sign in with Google">
-            {loading || isLoading ? (
+          {!isGoogleConfigured && (
+            <div role="alert" style={{ padding: 'var(--space-lg)', border: '2px solid var(--color-error)', background: 'var(--color-error-bg)', borderRadius: 'var(--radius-md)' }}>
+              <p className="type-body-sm">
+                Google sign-in isn&apos;t configured. Set <code>VITE_GOOGLE_CLIENT_ID</code> and rebuild.
+              </p>
+            </div>
+          )}
+
+          <button
+            className="login-google-btn"
+            onClick={handleGoogleLogin}
+            disabled={isLoading || !isGoogleConfigured}
+            aria-label="Continue with Google"
+          >
+            {isLoading ? (
               <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid rgba(22, 16, 31,0.3)', borderTopColor: 'var(--color-ink)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
             ) : (
               <>
@@ -65,175 +79,94 @@ export default function LoginPage() {
             )}
           </button>
 
-          <div className="login-divider">or sign in with email</div>
+          {error && (
+            <p role="alert" className="type-body-sm" style={{ color: 'var(--color-error)' }}>{error}</p>
+          )}
 
-          <form onSubmit={handleSignInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-            <div className="input-wrapper">
-              <label className="input-label">Email address</label>
-              <input
-                type="email"
-                className="input-field"
-                placeholder="vatsal@example.com"
-                value={signInEmail}
-                onChange={e => setSignInEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-wrapper">
-              <label className="input-label">Password</label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={signInPassword}
-                onChange={e => setSignInPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn--primary btn--full" style={{ marginTop: 8 }}>
-              Sign In
-            </button>
-          </form>
+          <p className="type-body-xs" style={{ color: 'rgba(22,16,31,0.55)' }}>
+            By continuing you agree to Festify&apos;s Terms &amp; Privacy Policy.
+          </p>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: 'var(--border-hairline)' }}>
-            <button onClick={() => navigate('/college-admin/login')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
+            <button onClick={() => navigate('/college-admin/applications')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
               College Admin →
             </button>
-            <button onClick={() => navigate('/superadmin')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
+            <button onClick={() => navigate('/superadmin/dashboard')} className="login-guest-link" style={{ textDecoration: 'none', fontSize: 12 }}>
               Super Admin →
             </button>
             <button onClick={() => navigate('/')} className="login-guest-link" style={{ fontSize: 12 }}>
-              Browse Guest
+              Browse as guest
             </button>
           </div>
         </div>
 
-        {/* ── Right Side: Sign Up Form ── */}
-        <div className="auth-form-side" style={{ opacity: isSignUp ? 1 : 0.3, pointerEvents: isSignUp ? 'all' : 'none' }}>
-          <div>
-            <p className="type-label-mono" style={{ color: 'var(--color-accent)', marginBottom: 4 }}>Join Festify</p>
-            <h1 className="type-display-md" style={{ color: 'var(--color-ink)' }}>Create Account</h1>
-          </div>
-
-          <form onSubmit={handleSignUpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-            <div className="input-wrapper">
-              <label className="input-label">Full Name</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="Vatsal Shah"
-                value={signUpName}
-                onChange={e => setSignUpName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-wrapper">
-              <label className="input-label">College Email</label>
-              <input
-                type="email"
-                className="input-field"
-                placeholder="vatsal@bits.ac.in"
-                value={signUpEmail}
-                onChange={e => setSignUpEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-wrapper">
-              <label className="input-label">College / University</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="BITS Pilani"
-                value={signUpCollege}
-                onChange={e => setSignUpCollege(e.target.value)}
-              />
-            </div>
-            <div className="input-wrapper">
-              <label className="input-label">Password</label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={signUpPassword}
-                onChange={e => setSignUpPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn--primary btn--full" style={{ marginTop: 8 }}>
-              Create Account
-            </button>
-          </form>
-
-          <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.5)', textAlign: 'center' }}>
-            By registering, you agree to Festify's Terms &amp; Privacy Policy.
-          </p>
-        </div>
-
-        {/* ── Sliding Overlay Panel ── */}
+        {/* ── Brand panel ── */}
         <div
           className="auth-overlay-panel"
           style={{
-            backgroundImage: `linear-gradient(135deg, rgba(22, 16, 31, 0.88) 0%, rgba(22, 16, 31, 0.96) 100%), url(${HERO_BACKGROUND_IMAGE})`,
+            backgroundImage: 'linear-gradient(135deg, rgba(22,16,31,0.86) 0%, rgba(11,7,20,0.96) 100%), url(/media/hero-poster.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
-          {!isSignUp ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-xl)' }}>
-              <SparklesIcon size={48} style={{ color: 'var(--color-accent)' }} />
-              <div>
-                <h2 className="type-display-lg" style={{ color: 'var(--color-canvas)', marginBottom: 'var(--space-sm)' }}>
-                  New to Festify?
-                </h2>
-                <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.85)', maxWidth: 320, lineHeight: 1.5 }}>
-                  Discover fests, register for hackathons, and earn Prime access across top colleges in India.
-                </p>
-              </div>
-              <button
-                className="btn btn--ghost-canvas"
-                onClick={() => setIsSignUp(true)}
-                style={{ padding: '12px 32px', fontSize: 15, borderRadius: '9999px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
-              >
-                Sign Up <ArrowRightIcon size={16} />
-              </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-xl)' }}>
+            <SparklesIcon size={48} style={{ color: 'var(--color-accent)' }} />
+            <div>
+              <h2 className="type-display-lg" style={{ color: 'var(--color-canvas)', marginBottom: 'var(--space-sm)' }}>
+                Every fest, one place.
+              </h2>
+              <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.85)', maxWidth: 340, lineHeight: 1.5 }}>
+                Book tickets, hype the events you want, and keep every QR code in one wallet — across colleges all over India.
+              </p>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-xl)' }}>
-              <ZapIcon size={48} filled style={{ color: 'var(--color-accent)' }} />
-              <div>
-                <h2 className="type-display-lg" style={{ color: 'var(--color-canvas)', marginBottom: 'var(--space-sm)' }}>
-                  Welcome Back!
-                </h2>
-                <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.85)', maxWidth: 320, lineHeight: 1.5 }}>
-                  Already have a Festify account? Sign in to access your ticket wallet and check-in codes.
-                </p>
-              </div>
-              <button
-                className="btn btn--ghost-canvas"
-                onClick={() => setIsSignUp(false)}
-                style={{ padding: '12px 32px', fontSize: 15, borderRadius: '9999px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
-              >
-                Sign In <ArrowRightIcon size={16} />
-              </button>
-            </div>
-          )}
+          </div>
         </div>
-
       </div>
     </div>
   );
 }
 
-// pages/auth/OnboardingPage.jsx
+// ── Onboarding ────────────────────────────────────────────────────
 export function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
+  const { user, refreshUser } = useAuth();
 
   const handleScroll = (e) => {
     const el = e.target;
     if (el.scrollHeight - el.scrollTop <= el.clientHeight + 10) setHasScrolled(true);
+  };
+
+  const sendOtp = async () => {
+    setBusy(true);
+    try {
+      await authApi.requestCollegeOtp(email);
+      toast.success(`Code sent to ${email}. It expires in 10 minutes.`);
+      setStep(3);
+    } catch (err) {
+      toast.error(apiError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmOtp = async () => {
+    setBusy(true);
+    try {
+      await authApi.confirmCollegeOtp(otp);
+      await refreshUser();
+      toast.success('College email verified.');
+      setStep(4);
+    } catch (err) {
+      toast.error(apiError(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (step === 1) return (
@@ -246,7 +179,7 @@ export function OnboardingPage() {
           <p><strong>2. One Account:</strong> You may hold multiple roles — attendee, organizer, Prime member, and Pass holder.</p><br/>
           <p><strong>3. Ticketing:</strong> All purchases are final per the refund policy. Razorpay transaction fees are non-refundable.</p><br/>
           <p><strong>4. Resale:</strong> In-app resale only. Prices can only go down from original purchase price.</p><br/>
-          <p><strong>5. Reviews:</strong> Only ticket buyers can review. Reviews are moderated. Bad-word detection is active.</p><br/>
+          <p><strong>5. Reviews:</strong> Only ticket buyers can review. Reviews are moderated.</p><br/>
           <p><strong>6. Trust &amp; Safety:</strong> Festify may ban organizers for violations. College admins handle college-domain issues.</p><br/>
           <p><strong>7. Prime Status:</strong> Prime is earned through attendance and spend — it cannot be purchased. Prime Pass is a separate paid subscription.</p><br/>
           <p><strong>8. Content:</strong> You are responsible for any content you upload. Festify moderates all media.</p><br/>
@@ -282,12 +215,43 @@ export function OnboardingPage() {
             onChange={e => setEmail(e.target.value)}
             style={{ marginBottom: 'var(--space-lg)' }}
           />
-          <button onClick={() => setStep(3)} className="btn btn--primary btn--full" style={{ marginBottom: 'var(--space-md)' }}>
-            Verify College Email
+          <button
+            onClick={sendOtp}
+            className="btn btn--primary btn--full"
+            style={{ marginBottom: 'var(--space-md)' }}
+            disabled={busy || !email.includes('@')}
+          >
+            {busy ? 'Sending…' : 'Send verification code'}
           </button>
-          <button onClick={() => setStep(3)} className="btn btn--ghost btn--full">
+          <button onClick={() => setStep(4)} className="btn btn--ghost btn--full">
             Skip for now
           </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (step === 3) return (
+    <div style={{ minHeight: '100vh', background: 'var(--color-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-xl)' }}>
+      <div className="onboarding-step">
+        <h1 className="type-display-md">Enter your code</h1>
+        <p className="type-body-md" style={{ color: 'rgba(22, 16, 31,0.7)' }}>
+          We sent a 6-digit code to <strong>{email}</strong>.
+        </p>
+        <div style={{ width: '100%' }}>
+          <input
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="input-field"
+            placeholder="000000"
+            value={otp}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            style={{ marginBottom: 'var(--space-lg)', fontFamily: 'var(--font-mono)', letterSpacing: '0.4em', textAlign: 'center' }}
+          />
+          <button onClick={confirmOtp} className="btn btn--primary btn--full" style={{ marginBottom: 'var(--space-md)' }} disabled={busy || otp.length !== 6}>
+            {busy ? 'Verifying…' : 'Verify'}
+          </button>
+          <button onClick={() => setStep(2)} className="btn btn--ghost btn--full">Use a different email</button>
         </div>
       </div>
     </div>
@@ -299,10 +263,14 @@ export function OnboardingPage() {
         <SparklesIcon size={72} style={{ color: 'var(--color-accent)' }} />
         <h1 className="type-display-lg" style={{ color: 'var(--color-canvas)' }}>Welcome to Festify!</h1>
         <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.8)' }}>
-          You're a <strong style={{ color: 'var(--color-accent)' }}>Bronze</strong> member. Attend events, earn points, and climb to Prime.
+          You&apos;re a{' '}
+          <strong style={{ color: 'var(--color-accent)', textTransform: 'capitalize' }}>
+            {user?.customer_level || 'Bronze'}
+          </strong>{' '}
+          member. Attend events, earn points, and climb to Prime.
         </p>
-        <button onClick={() => navigate('/')} className="btn btn--primary" style={{ fontSize: 16 }}>
-          Explore Events →
+        <button onClick={() => navigate('/')} className="btn btn--primary" style={{ fontSize: 16, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <ZapIcon size={16} filled /> Explore Events
         </button>
       </div>
     </div>

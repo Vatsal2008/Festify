@@ -1,19 +1,57 @@
 // pages/discovery/HomePage.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
 import { EventCard } from '@/components/domain';
-import { Tag, RevealGrid } from '@/components/primitives';
-import { trendingEvents, featuredEvents, hypedEvents, upcomingEvents, collegeEvents, eventCategories } from '@/data/mockData';
+import { Tag, RevealGrid, QueryBoundary } from '@/components/primitives';
+import { eventsApi } from '@/lib/api/endpoints';
+import { queryKeys } from '@/constants/queryKeys';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { ZapIcon, GraduationCapIcon, ArrowRightIcon, SearchIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
+
+const CATEGORIES = [
+  'All', 'Hackathon', 'Cultural', 'Music', 'Sports',
+  'Talk', 'Workshop', 'Party', 'Comedy', 'Theatre',
+];
+
+/** A home section backed by a slice of the shared events query. */
+function EventSection({ query, pick, emptySub, variant }) {
+  return (
+    <QueryBoundary
+      query={query}
+      isEmpty={(data) => !pick(data ?? []).length}
+      emptyTitle="No events yet"
+      emptySub={emptySub}
+      loadingLabel="Loading events"
+    >
+      {(data) => (
+        <RevealGrid className="events-grid">
+          {pick(data).map(evt => <EventCard key={evt.id} event={evt} variant={variant} />)}
+        </RevealGrid>
+      )}
+    </QueryBoundary>
+  );
+}
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const navigate = useNavigate();
-  const { isAuthenticated, isCollegeVerified } = useAuth();
+  const { isAuthenticated, isCollegeVerified, user } = useAuth();
+
+  // One request feeds every section on this page; each section is a
+  // different slice of the same result rather than its own round trip.
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.events.list({ sort: 'trending' }),
+    queryFn: () => eventsApi.list({ sort: 'trending' }),
+  });
+
+  const events = eventsQuery.data ?? [];
+  const liveCount = events.filter(
+    e => ['on_sale', 'live', 'ongoing', 'early_access'].includes(e.state)
+  ).length;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -49,7 +87,7 @@ export default function HomePage() {
         <div className="home-hero">
           <span className="home-hero__live">
             <span className="home-hero__live-dot" aria-hidden="true" />
-            214 fests live right now
+            {liveCount > 0 ? `${liveCount} fests on sale right now` : 'Fresh fests every week'}
           </span>
 
           <h1 className="home-hero__title">
@@ -75,7 +113,7 @@ export default function HomePage() {
           </form>
 
           <div className="home-hero__cats" role="list" aria-label="Event categories">
-            {eventCategories.slice(0, 8).map(cat => (
+            {CATEGORIES.slice(0, 8).map(cat => (
               <Tag
                 key={cat}
                 isActive={activeCategory === cat}
@@ -99,21 +137,12 @@ export default function HomePage() {
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <RevealGrid className="events-grid">
-          {trendingEvents.map(evt => <EventCard key={evt.id} event={evt} />)}
-        </RevealGrid>
+        <EventSection
+          query={eventsQuery}
+          pick={(d) => d.slice(0, 6)}
+          emptySub="Nothing is live yet — the first fests are on their way."
+        />
       </CanvasBand>
-
-      {/* ── Featured ── */}
-      <TealBand>
-        <div className="home-section-header">
-          <h2 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>Featured Events</h2>
-          <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.5)' }}>Curated by Festify</span>
-        </div>
-        <RevealGrid className="events-grid">
-          {featuredEvents.map(evt => <EventCard key={evt.id} event={evt} variant="featured" />)}
-        </RevealGrid>
-      </TealBand>
 
       {/* ── Hyped ── */}
       <CanvasBand>
@@ -121,31 +150,35 @@ export default function HomePage() {
           <h2 className="type-display-md" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ZapIcon size={24} filled style={{ color: 'var(--color-ink)' }} /> Hyped This Week
           </h2>
-          <a href="/search?sort=hyped" className="home-section-header__link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <a href="/search?sort=trending" className="home-section-header__link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <RevealGrid className="events-grid">
-          {hypedEvents.map(evt => <EventCard key={evt.id} event={evt} />)}
-        </RevealGrid>
+        <EventSection
+          query={eventsQuery}
+          pick={(d) => [...d].sort((a, b) => b.hype_count - a.hype_count).slice(0, 3)}
+          emptySub="No one has hyped an event yet. Be first."
+        />
       </CanvasBand>
 
-      {/* ── College-only (if verified) ── */}
+      {/* ── At your college (only once the user has verified one) ── */}
       {isAuthenticated && isCollegeVerified && (
         <TealBand>
           <div className="home-section-header">
             <h2 className="type-display-md" style={{ color: 'var(--color-canvas)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <GraduationCapIcon size={24} /> At Your College
             </h2>
-            <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.5)' }}>BITS Pilani</span>
           </div>
-          <RevealGrid className="events-grid">
-            {collegeEvents.map(evt => <EventCard key={evt.id} event={evt} variant="featured" />)}
-          </RevealGrid>
+          <EventSection
+            query={eventsQuery}
+            variant="featured"
+            pick={(d) => d.filter(e => e.college_id && e.college_id === user?.college_id).slice(0, 3)}
+            emptySub="No events at your college right now."
+          />
         </TealBand>
       )}
 
-      {/* ── Upcoming ── */}
+      {/* ── Upcoming (soonest first) ── */}
       <CanvasBand>
         <div className="home-section-header">
           <h2 className="type-display-md">Upcoming Events</h2>
@@ -153,9 +186,11 @@ export default function HomePage() {
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <RevealGrid className="events-grid">
-          {upcomingEvents.map(evt => <EventCard key={evt.id} event={evt} />)}
-        </RevealGrid>
+        <EventSection
+          query={eventsQuery}
+          pick={(d) => [...d].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)).slice(0, 6)}
+          emptySub="No upcoming events scheduled yet."
+        />
       </CanvasBand>
     </PageShell>
   );

@@ -228,3 +228,7 @@
 .resell-warning { display: flex; align-items: flex-start; gap: var(--space-md); padding: var(--space-lg); background: var(--color-warning-bg); border: 1px solid var(--color-warning); border-radius: var(--radius-md); }
 .resell-warning__icon { font-size: 20px; flex-shrink: 0; }
 .resell-warning__text { font-family: var(--font-body); font-size: var(--text-body-sm); color: var(--color-ink); }
+
+/* Ticket detail: QR sits beside the details on desktop, stacks on mobile */
+.ticket-detail-layout { display: grid; grid-template-columns: 1fr 320px; gap: var(--space-3xl); align-items: start; }
+@media (max-width: 860px) { .ticket-detail-layout { grid-template-columns: 1fr; } }

@@ -8,7 +8,11 @@ import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
-import { mockEvents, mockBulkRequests, mockOrgMembers, mockChatMessages } from '@/data/mockData';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { orgsApi, bulkApi, eventsApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { queryKeys } from '@/constants/queryKeys';
+import QueryBoundary from '@/components/primitives/QueryBoundary';
 import {
   CameraIcon, CheckIcon, XIcon, AlertTriangleIcon, PlusIcon,
   ArrowRightIcon, ArrowLeftIcon, BarChartIcon
@@ -20,7 +24,18 @@ import '@/pages/pages.css';
 export function OrgDashboardPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
-  const orgEvents = mockEvents.filter(e => e.organizer.id === orgId || orgId === 'org-1');
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.org.events(orgId, {}),
+    queryFn: () => orgsApi.events(orgId),
+    enabled: !!orgId,
+  });
+  const scoreQuery = useQuery({
+    queryKey: queryKeys.org.score(orgId),
+    queryFn: () => orgsApi.score(orgId),
+    enabled: !!orgId,
+  });
+
+  const orgEvents = eventsQuery.data ?? [];
   const totalTickets = orgEvents.reduce((a, e) => a + e.tiers.reduce((b, t) => b + t.sold_count, 0), 0);
   const totalRevenue = orgEvents.reduce((a, e) => a + e.tiers.reduce((b, t) => b + (t.sold_count * t.price), 0), 0);
 
@@ -36,7 +51,7 @@ export function OrgDashboardPage() {
               { value: orgEvents.length, label: 'Total Events' },
               { value: totalTickets.toLocaleString(), label: 'Tickets Sold' },
               { value: `₹${(totalRevenue / 1000).toFixed(0)}K`, label: 'Revenue' },
-              { value: '8,420', label: 'Score Points' },
+              { value: (scoreQuery.data?.score ?? 0).toLocaleString(), label: 'Score Points' },
             ].map(m => (
               <div key={m.label} className="dash-metric">
                 <p className="dash-metric__value">{m.value}</p>
@@ -325,12 +340,25 @@ export function QRScannerPage() {
 
 // ── Bulk Requests ─────────────────────────────────────────────────
 export function BulkRequestsPage() {
-  const { orgId } = useParams();
+  const { orgId, eventId } = useParams();
   const toast = useToast();
-  const [requests, setRequests] = useState(mockBulkRequests);
+  const qc = useQueryClient();
+  const bulkQuery = useQuery({
+    queryKey: queryKeys.org.bulkReqs(orgId, eventId),
+    queryFn: () => bulkApi.forEvent(eventId),
+    enabled: !!eventId,
+  });
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, approve }) => bulkApi.review(id, approve),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.org.bulkReqs(orgId, eventId) }),
+    onError: (e) => toast.error(apiError(e)),
+  });
+  const requests = bulkQuery.data ?? [];
 
-  const approve = (id) => { setRequests(r => r.map(req => req.id === id ? { ...req, status: 'approved' } : req)); toast.success('Bulk request approved'); };
-  const reject  = (id) => { setRequests(r => r.map(req => req.id === id ? { ...req, status: 'rejected' } : req)); toast.info('Bulk request rejected'); };
+  const approve = (id) => reviewMutation.mutate({ id, approve: true },
+    { onSuccess: () => toast.success('Bulk request approved') });
+  const reject = (id) => reviewMutation.mutate({ id, approve: false },
+    { onSuccess: () => toast.info('Bulk request rejected') });
 
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
@@ -338,14 +366,18 @@ export function BulkRequestsPage() {
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Bulk Ticket Requests</h1>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Requester</th><th>Quantity</th><th>Tier</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Request</th><th>Quantity</th><th>Requested</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
+              {requests.length === 0 && (
+                <tr><td colSpan={5} style={{ padding: 'var(--space-2xl)', textAlign: 'center', color: 'rgba(22,16,31,0.6)' }}>
+                  {bulkQuery.isPending ? 'Loading requests…' : 'No pending bulk requests for this event.'}
+                </td></tr>
+              )}
               {requests.map(req => (
                 <tr key={req.id}>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={req.requester.name} size="sm" />{req.requester.name}</div></td>
-                  <td>{req.quantity}</td>
-                  <td>{req.tier.name}</td>
-                  <td style={{ maxWidth: 200 }}>{req.reason}</td>
+                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{req.id.slice(0, 8)}</code></td>
+                  <td>{req.requested_qty}</td>
+                  <td style={{ color: 'rgba(22,16,31,0.65)' }}>{new Date(req.created_at).toLocaleDateString()}</td>
                   <td><Badge variant={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'error' : 'warning'}>{req.status}</Badge></td>
                   <td>
                     {req.status === 'pending' && (
@@ -372,6 +404,12 @@ export function OrgMembersPage() {
   const toast = useToast();
   const isOwner = user?.org_memberships?.some(m => m.org_id === orgId && m.role === 'owner');
 
+  const membersQuery = useQuery({
+    queryKey: queryKeys.org.members(orgId),
+    queryFn: () => orgsApi.members(orgId),
+    enabled: !!orgId,
+  });
+
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -381,15 +419,19 @@ export function OrgMembersPage() {
         </div>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Joined</th>{isOwner && <th>Actions</th>}</tr></thead>
+            <thead><tr><th>Member</th><th>Email</th><th>Role</th>{isOwner && <th>Actions</th>}</tr></thead>
             <tbody>
-              {mockOrgMembers.map(m => (
+              {(membersQuery.data ?? []).length === 0 && (
+                <tr><td colSpan={isOwner ? 4 : 3} style={{ padding: 'var(--space-2xl)', textAlign: 'center', color: 'rgba(22,16,31,0.6)' }}>
+                  {membersQuery.isPending ? 'Loading members…' : 'No members yet.'}
+                </td></tr>
+              )}
+              {(membersQuery.data ?? []).map(m => (
                 <tr key={m.id}>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={m.name} src={m.avatar_url} size="sm" />{m.name}</div></td>
-                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{m.email}</td>
-                  <td><Badge variant={m.role === 'owner' ? 'teal' : 'default'}>{m.role}</Badge></td>
-                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{m.joined_at}</td>
-                  {isOwner && <td>{m.role !== 'owner' && <Button variant="danger" size="sm" onClick={() => toast.info(`Removed ${m.name}`)}>Remove</Button>}</td>}
+                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={m.user?.full_name || m.user?.email || '—'} src={m.user?.avatar_url} size="sm" />{m.user?.full_name || '—'}</div></td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{m.user?.email}</td>
+                  <td><Badge variant={m.role === 'leader' ? 'teal' : 'default'}>{m.role}</Badge></td>
+                  {isOwner && <td>{m.role !== 'leader' && <Button variant="danger" size="sm" onClick={() => toast.info('Member removal is not available yet.')}>Remove</Button>}</td>}
                 </tr>
               ))}
             </tbody>
@@ -404,7 +446,7 @@ export function OrgMembersPage() {
 export function OrgChatPage() {
   const { orgId } = useParams();
   const { user } = useAuth();
-  const [messages, setMessages] = useState(mockChatMessages);
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
 
   const send = () => {
@@ -453,7 +495,12 @@ export function OrgChatPage() {
 export function OrgEventsPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
-  const orgEvents = mockEvents.filter(e => e.organizer.id === orgId || orgId === 'org-1');
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.org.events(orgId, {}),
+    queryFn: () => orgsApi.events(orgId),
+    enabled: !!orgId,
+  });
+  const orgEvents = eventsQuery.data ?? [];
 
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">

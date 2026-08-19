@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useUIStore } from '@/store/uiStore';
-import { mockNotifications } from '@/data/mockData';
 import {
   BellIcon, HomeIcon, SearchIcon, TicketIcon, UserIcon,
   BarChartIcon, CalendarIcon, UsersIcon, MessageSquareIcon,
@@ -39,7 +38,6 @@ export function TopNav() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const unread = mockNotifications.filter(n => !n.read_at).length;
   const orgId = user?.org_memberships?.[0]?.org_id;
 
   const [hidden, setHidden] = useState(false);
@@ -115,11 +113,10 @@ export function TopNav() {
             <button
               className="top-nav__notif-btn"
               onClick={() => navigate('/me/notifications')}
-              aria-label={`Notifications, ${unread} unread`}
+              aria-label="Notifications"
               title="Notifications"
             >
               <BellIcon size={18} />
-              {unread > 0 && <span className="top-nav__notif-badge" aria-hidden="true">{unread}</span>}
             </button>
           )}
         </div>
