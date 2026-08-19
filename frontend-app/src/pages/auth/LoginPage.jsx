@@ -50,7 +50,7 @@ export default function LoginPage() {
         {/* ── Left Side: Sign In Form ── */}
         <div className="auth-form-side" style={{ opacity: isSignUp ? 0.3 : 1, pointerEvents: isSignUp ? 'none' : 'all' }}>
           <div>
-            <p className="type-label-mono" style={{ color: 'var(--color-accent)', marginBottom: 4 }}>Festify Portal</p>
+            <p className="type-label-mono" style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: 4 }}>Festify Portal</p>
             <h1 className="type-display-md" style={{ color: 'var(--color-ink)' }}>Sign In</h1>
           </div>
 
@@ -112,7 +112,7 @@ export default function LoginPage() {
         {/* ── Right Side: Sign Up Form ── */}
         <div className="auth-form-side" style={{ opacity: isSignUp ? 1 : 0.3, pointerEvents: isSignUp ? 'all' : 'none' }}>
           <div>
-            <p className="type-label-mono" style={{ color: 'var(--color-accent)', marginBottom: 4 }}>Join Festify</p>
+            <p className="type-label-mono" style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: 4 }}>Join Festify</p>
             <h1 className="type-display-md" style={{ color: 'var(--color-ink)' }}>Create Account</h1>
           </div>
 

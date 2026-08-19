@@ -1,20 +1,78 @@
 /* components/domain/domain.css — All domain component styles */
 
 /* ── EventCard ── */
-.event-card { overflow: hidden; display: flex; flex-direction: column; height: 100%; }
+.event-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+/* Emerging greenish border animation from 2 opposite sides on hover */
+.event-card::before,
+.event-card::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: var(--radius-lg);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  box-sizing: border-box;
+  opacity: 0;
+}
+
+/* Top-Left emerging border side */
+.event-card::before {
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 0%;
+  border-top: 2.5px solid var(--color-primary);
+  border-left: 2.5px solid var(--color-primary);
+}
+
+/* Bottom-Right emerging border side (opposite side) */
+.event-card::after {
+  bottom: 0;
+  right: 0;
+  width: 0%;
+  height: 0%;
+  border-bottom: 2.5px solid var(--color-primary);
+  border-right: 2.5px solid var(--color-primary);
+}
+
+.event-card:hover::before,
+.event-card:hover::after {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+}
+
+.card--teal.event-card::before,
+.card--teal.event-card::after {
+  border-color: var(--color-accent);
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(2, 99, 112, 0.22);
+}
 .event-card--list { flex-direction: row; height: auto; }
 .event-card__image-wrap { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--color-ink) 0%, var(--color-primary) 100%); overflow: hidden; flex-shrink: 0; }
 .event-card--list .event-card__image-wrap { width: 180px; aspect-ratio: auto; height: 120px; }
 .event-card__image { width: 100%; height: 100%; object-fit: cover; }
 .event-card__image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; opacity: 0.3; }
-.event-card__chips { position: absolute; top: var(--space-md); left: var(--space-md); display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.event-card__chips { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: 2px; }
 .event-card__body { padding: var(--space-lg); flex: 1; display: flex; flex-direction: column; gap: var(--space-sm); }
 .event-card__title { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 400; line-height: 1.3; color: var(--color-ink); }
 .card--teal .event-card__title { color: var(--color-canvas); }
 .event-card__meta { display: flex; flex-wrap: wrap; gap: var(--space-md) var(--space-xl); }
 .event-card__meta-item { font-family: var(--font-body); font-size: var(--text-body-xs); color: rgba(8,61,68,0.65); display: flex; align-items: center; gap: 4px; }
 .card--teal .event-card__meta-item { color: rgba(252,252,248,0.65); }
-.event-card__price { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: 0.5px; color: var(--color-ink); margin-top: auto; }
+.event-card__price { font-family: var(--font-mono); font-size: 18px; font-weight: 700; letter-spacing: -0.2px; color: var(--color-ink); margin-top: auto; }
 .card--teal .event-card__price { color: var(--color-accent); }
 .event-card__footer { display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-md); border-top: var(--border-hairline); margin-top: var(--space-md); }
 .card--teal .event-card__footer { border-top-color: rgba(252,252,248,0.15); }

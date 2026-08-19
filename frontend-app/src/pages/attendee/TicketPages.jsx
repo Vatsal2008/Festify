@@ -29,10 +29,16 @@ export default function TicketWalletPage() {
 
   return (
     <PageShell>
-      <TealBand variant="compact">
-        <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>My Tickets</h1>
-      </TealBand>
       <CanvasBand>
+        {/* ── My Tickets Header ── */}
+        <div style={{ marginBottom: 'var(--space-2xl)', paddingBottom: 'var(--space-2xl)', borderBottom: 'var(--border-hairline)' }}>
+          <h1 className="type-display-lg" style={{ color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 6 }}>
+            <TicketIcon size={44} style={{ color: 'var(--color-ink)' }} /> My Tickets
+          </h1>
+          <p className="type-body-lg" style={{ color: 'rgba(8,61,68,0.7)' }}>
+            Your ticket wallet, active QR codes, and entry details
+          </p>
+        </div>
         <div className="tickets-tabs" role="tablist">
           {TABS.map(tab => (
             <button
@@ -76,14 +82,17 @@ export function TicketDetailPage() {
 
   return (
     <PageShell>
-      <TealBand variant="compact">
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'rgba(252,252,248,0.7)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-label-mono)', fontWeight: 500, letterSpacing: 'var(--ls-label-mono)', textTransform: 'uppercase', marginBottom: 'var(--space-lg)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <ArrowLeftIcon size={14} /> Back
-        </button>
-        <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>{ticket.event.title}</h1>
-        <p className="type-body-md" style={{ color: 'rgba(252,252,248,0.7)', marginTop: 'var(--space-sm)' }}>{ticket.tier.name}</p>
-      </TealBand>
       <CanvasBand>
+        {/* ── Ticket Detail Header ── */}
+        <div style={{ marginBottom: 'var(--space-2xl)', paddingBottom: 'var(--space-2xl)', borderBottom: 'var(--border-hairline)' }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'rgba(8,61,68,0.65)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-label-mono)', fontWeight: 500, letterSpacing: 'var(--ls-label-mono)', textTransform: 'uppercase', marginBottom: 'var(--space-md)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <ArrowLeftIcon size={14} /> Back
+          </button>
+          <h1 className="type-display-lg" style={{ color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 6 }}>
+            <TicketIcon size={44} style={{ color: 'var(--color-ink)' }} /> {ticket.event.title}
+          </h1>
+          <p className="type-body-lg" style={{ color: 'rgba(8,61,68,0.75)', marginTop: 6 }}>{ticket.tier.name}</p>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-3xl)', alignItems: 'start' }}>
           {/* Ticket info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
@@ -133,7 +142,7 @@ export function TicketDetailPage() {
             <AlertTriangleIcon size={20} style={{ flexShrink: 0, marginTop: 2 }} />
             <p className="resell-warning__text">You can only list at or below your original purchase price of ₹{ticket.original_price}. Resale is only available on Festify — no external transfers.</p>
           </div>
-          <div><label className="input-label">Your asking price (max ₹{ticket.original_price})</label><input type="number" className="input-field" max={ticket.original_price} min={0} defaultValue={ticket.original_price} /></div>
+          <div><label className="input-label">Your asking price (max ₹{ticket.original_price})</label><input type="number" className="input-field" max={ticket.original_price} min={0} onInput={e => { if (Number(e.target.value) < 0) e.target.value = 0; }} defaultValue={ticket.original_price} /></div>
         </div>
       </Modal>
 

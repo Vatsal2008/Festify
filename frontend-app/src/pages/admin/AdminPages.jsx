@@ -41,7 +41,7 @@ export function CollegeAdminLoginPage() {
         </form>
         <div style={{ borderTop: '1px solid rgba(252,252,248,0.15)', paddingTop: 'var(--space-lg)' }}>
           <Button variant="ghost-canvas" size="sm" fullWidth onClick={() => handleLogin()}>
-            ⚡ Quick Demo Sign In as College Admin
+            <ZapIcon size={14} filled style={{ display: 'inline', marginRight: 4 }} /> Quick Demo Sign In as College Admin
           </Button>
         </div>
       </div>
@@ -578,7 +578,7 @@ export function SuperAdminLoginPage() {
         <div style={{ borderTop: '1px solid rgba(252,252,248,0.15)', paddingTop: 'var(--space-lg)' }}>
           <p className="type-body-xs" style={{ color: 'var(--color-accent)', marginBottom: 8, fontWeight: 600 }}>Access Code: ADMIN</p>
           <Button variant="ghost-canvas" size="sm" fullWidth onClick={() => handleLogin()}>
-            ⚡ 1-Click Auto Login to Super Admin
+            <ZapIcon size={14} filled style={{ display: 'inline', marginRight: 4 }} /> 1-Click Auto Login to Super Admin
           </Button>
         </div>
       </div>

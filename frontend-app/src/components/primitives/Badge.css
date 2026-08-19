@@ -30,13 +30,20 @@
 .badge--prime    { background: var(--color-accent); color: var(--color-ink); border-radius: var(--radius-none); }
 
 /* Event State badges */
-.badge--state-draft        { background: rgba(107,114,128,0.15); color: var(--state-draft); }
-.badge--state-pending      { background: var(--color-warning-bg); color: var(--state-pending); }
-.badge--state-live         { background: rgba(34,197,94,0.12); color: var(--state-live); }
-.badge--state-early-access { background: rgba(229,255,151,0.2); color: var(--color-ink); }
-.badge--state-on-sale      { background: rgba(2,99,112,0.1); color: var(--state-on-sale); }
-.badge--state-sold-out     { background: var(--color-error-bg); color: var(--state-sold-out); }
-.badge--state-ongoing      { background: rgba(139,92,246,0.12); color: var(--state-ongoing); }
-.badge--state-completed    { background: rgba(2,99,112,0.1); color: var(--state-completed); }
-.badge--state-postponed    { background: var(--color-warning-bg); color: var(--state-postponed); }
-.badge--state-cancelled    { background: var(--color-error-bg); color: var(--state-cancelled); }
+.badge--state-draft        { background: rgba(107,114,128,0.14); color: #374151; border: 1px solid rgba(107,114,128,0.3); font-weight: 700; }
+.badge--state-pending      { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; }
+.badge--state-live         { background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 700; }
+.badge--state-early-access { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; font-weight: 700; }
+.badge--state-on-sale      { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-weight: 700; }
+.badge--state-sold-out     { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; }
+.badge--state-ongoing      { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; font-weight: 700; }
+.badge--state-completed    { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; }
+.badge--state-postponed    { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; font-weight: 600; }
+.badge--state-cancelled    { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-weight: 600; }
+
+/* Dark teal card overrides */
+.card--teal .badge--state-live         { background: rgba(34,197,94,0.22); color: #4ade80; border: 1px solid rgba(74,222,128,0.5); }
+.card--teal .badge--state-early-access { background: rgba(229,255,151,0.25); color: #e5ff97; border: 1px solid rgba(229,255,151,0.6); }
+.card--teal .badge--state-on-sale      { background: rgba(56,189,248,0.22); color: #38bdf8; border: 1px solid rgba(56,189,248,0.5); }
+.card--teal .badge--state-sold-out     { background: rgba(248,113,113,0.22); color: #f87171; border: 1px solid rgba(248,113,113,0.5); }
+.card--teal .badge--state-ongoing      { background: rgba(167,139,250,0.22); color: #c4b5fd; border: 1px solid rgba(196,181,253,0.5); }

@@ -108,14 +108,14 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
             e.currentTarget.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85';
           }}
         />
-        <div className="event-card__chips">
-          <EventStateChip state={event.state} />
-          <Badge variant="teal">{event.category}</Badge>
-        </div>
       </div>
 
       {/* Body */}
       <div className="event-card__body">
+        <div className="event-card__chips">
+          <EventStateChip state={event.state} />
+          <Badge variant="teal">{event.category}</Badge>
+        </div>
         <h3 className="event-card__title">{event.title}</h3>
         <div className="event-card__meta">
           <span className="event-card__meta-item"><CalendarIcon size={14} /> {formatDateShort(event.start_date)}</span>

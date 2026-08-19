@@ -66,11 +66,11 @@ export function TopNav() {
   ];
 
   return (
-    <nav className={`top-nav ${hidden ? 'top-nav--hidden' : ''}`} aria-label="Main navigation">
-      <div className="top-nav__inner">
-        <Link to="/" className="top-nav__logo">Fest<span>ify</span></Link>
+    <header className={`top-nav-wrapper ${hidden ? 'top-nav-wrapper--hidden' : ''}`}>
+      <nav className="top-nav" aria-label="Main navigation">
+        <div className="top-nav__inner">
+          <Link to="/" className="top-nav__logo">Fest<span>ify</span></Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginLeft: 'auto' }}>
           <ul className="top-nav__links" role="list">
             {links.map(l => (
               <li key={l.to}>
@@ -89,18 +89,17 @@ export function TopNav() {
             )}
 
             {isAuthenticated ? (
-              <>
-                <li>
-                  <Link to="/me" className={`top-nav__link ${location.pathname === '/me' ? 'top-nav__link--active' : ''}`}>
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <button onClick={logout} className="top-nav__link" style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.8 }}>
-                    Sign Out
-                  </button>
-                </li>
-              </>
+              <li>
+                <Link
+                  to="/me"
+                  className={`top-nav__link ${location.pathname === '/me' ? 'top-nav__link--active' : ''}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}
+                  aria-label="Profile"
+                  title="Profile"
+                >
+                  <UserIcon size={24} />
+                </Link>
+              </li>
             ) : (
               <li>
                 <Link to="/login" className="top-nav__link top-nav__link--active" style={{ borderRadius: '9999px', padding: '6px 18px' }}>
@@ -109,22 +108,22 @@ export function TopNav() {
               </li>
             )}
           </ul>
-
-          {/* Floating Bell Icon on the Right */}
-          {isAuthenticated && (
-            <button
-              className="top-nav__notif-btn"
-              onClick={() => navigate('/me/notifications')}
-              aria-label={`Notifications, ${unread} unread`}
-              title="Notifications"
-            >
-              <BellIcon size={18} />
-              {unread > 0 && <span className="top-nav__notif-badge" aria-hidden="true">{unread}</span>}
-            </button>
-          )}
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Standalone Notification Bell Icon outside the capsule navbar */}
+      {isAuthenticated && (
+        <button
+          className="top-nav__notif-btn-outside"
+          onClick={() => navigate('/me/notifications')}
+          aria-label={`Notifications, ${unread} unread`}
+          title="Notifications"
+        >
+          <BellIcon size={18} />
+          {unread > 0 && <span className="top-nav__notif-badge" aria-hidden="true">{unread}</span>}
+        </button>
+      )}
+    </header>
   );
 }
 
@@ -165,28 +164,28 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
   const location = useLocation();
 
   const orgLinks = [
-    { path: `/org/${orgId}/dashboard`,  label: 'Overview',     icon: <BarChartIcon size={18} /> },
-    { path: `/org/${orgId}/events`,     label: 'Events',       icon: <CalendarIcon size={18} /> },
-    { path: `/org/${orgId}/members`,    label: 'Members',      icon: <UsersIcon size={18} /> },
-    { path: `/org/${orgId}/chat`,       label: 'Group Chat',   icon: <MessageSquareIcon size={18} /> },
-    { path: `/org/${orgId}/analytics`,  label: 'Analytics',    icon: <BarChartIcon size={18} /> },
+    { path: `/org/${orgId}/dashboard`,  label: 'Overview',     icon: <BarChartIcon size={24} /> },
+    { path: `/org/${orgId}/events`,     label: 'Events',       icon: <CalendarIcon size={24} /> },
+    { path: `/org/${orgId}/members`,    label: 'Members',      icon: <UsersIcon size={24} /> },
+    { path: `/org/${orgId}/chat`,       label: 'Group Chat',   icon: <MessageSquareIcon size={24} /> },
+    { path: `/org/${orgId}/analytics`,  label: 'Analytics',    icon: <BarChartIcon size={24} /> },
   ];
 
   const collegeAdminLinks = [
-    { path: '/college-admin/applications', label: 'Applications', icon: <UsersIcon size={18} /> },
-    { path: '/college-admin/events',       label: 'Events',       icon: <CalendarIcon size={18} /> },
-    { path: '/college-admin/create-event', label: 'Create Event', icon: <PlusIcon size={18} /> },
-    { path: '/college-admin/analytics',    label: 'Analytics',    icon: <BarChartIcon size={18} /> },
+    { path: '/college-admin/applications', label: 'Applications', icon: <UsersIcon size={24} /> },
+    { path: '/college-admin/events',       label: 'Events',       icon: <CalendarIcon size={24} /> },
+    { path: '/college-admin/create-event', label: 'Create Event', icon: <PlusIcon size={24} /> },
+    { path: '/college-admin/analytics',    label: 'Analytics',    icon: <BarChartIcon size={24} /> },
   ];
 
   const superAdminLinks = [
-    { path: '/superadmin/dashboard',          label: 'Dashboard',   icon: <ZapIcon size={18} /> },
-    { path: '/superadmin/college-admins',     label: 'College Admins', icon: <UsersIcon size={18} /> },
-    { path: '/superadmin/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
-    { path: '/superadmin/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
-    { path: '/superadmin/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },
-    { path: '/superadmin/config',             label: 'Config',      icon: <SettingsIcon size={18} /> },
-    { path: '/superadmin/audit-log',          label: 'Audit Log',   icon: <BarChartIcon size={18} /> },
+    { path: '/superadmin/dashboard',          label: 'Dashboard',   icon: <ZapIcon size={24} /> },
+    { path: '/superadmin/college-admins',     label: 'College Admins', icon: <UsersIcon size={24} /> },
+    { path: '/superadmin/organizers',         label: 'Organizers',  icon: <UsersIcon size={24} /> },
+    { path: '/superadmin/support-tickets',    label: 'Support',     icon: <SupportIcon size={24} /> },
+    { path: '/superadmin/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={24} /> },
+    { path: '/superadmin/config',             label: 'Config',      icon: <SettingsIcon size={24} /> },
+    { path: '/superadmin/audit-log',          label: 'Audit Log',   icon: <BarChartIcon size={24} /> },
   ];
 
   const links = type === 'organizer' ? orgLinks : type === 'college-admin' ? collegeAdminLinks : superAdminLinks;

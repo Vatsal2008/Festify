@@ -158,7 +158,7 @@ export function EventBuilderPage() {
             <div className="builder-form__row">
               <div className="input-wrapper">
                 <label className="input-label">Total Capacity *</label>
-                <input type="number" className="input-field" value={form.capacity} onChange={e => update('capacity', e.target.value)} placeholder="e.g., 500" />
+                <input type="number" min="0" className="input-field" value={form.capacity} onChange={e => update('capacity', Math.max(0, Number(e.target.value) || ''))} placeholder="e.g., 500" />
               </div>
             </div>
           </div>
@@ -206,11 +206,11 @@ export function EventBuilderPage() {
                 <div className="builder-form__row">
                   <div className="input-wrapper">
                     <label className="input-label">Price (₹)</label>
-                    <input type="number" className="input-field" value={tier.price} onChange={e => { const t = [...form.tiers]; t[i].price = Number(e.target.value); update('tiers', t); }} />
+                    <input type="number" min="0" className="input-field" value={tier.price} onChange={e => { const t = [...form.tiers]; t[i].price = Math.max(0, Number(e.target.value) || 0); update('tiers', t); }} />
                   </div>
                   <div className="input-wrapper">
                     <label className="input-label">Quantity</label>
-                    <input type="number" className="input-field" value={tier.quantity} onChange={e => { const t = [...form.tiers]; t[i].quantity = Number(e.target.value); update('tiers', t); }} />
+                    <input type="number" min="0" className="input-field" value={tier.quantity} onChange={e => { const t = [...form.tiers]; t[i].quantity = Math.max(0, Number(e.target.value) || 0); update('tiers', t); }} />
                   </div>
                 </div>
               </div>

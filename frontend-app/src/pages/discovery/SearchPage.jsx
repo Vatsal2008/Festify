@@ -1,10 +1,11 @@
 // pages/discovery/SearchPage.jsx — Search page with inline search bar and category filters
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PageShell, CanvasBand } from '@/components/layout';
+import { PageShell, CanvasBand, TealBand } from '@/components/layout';
 import { EventCard } from '@/components/domain';
 import { Tag, Input } from '@/components/primitives';
 import { mockEvents, eventCategories } from '@/data/mockData';
+import { SearchIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
 const SORT_OPTIONS = [
@@ -34,9 +35,10 @@ export default function SearchPage() {
   return (
     <PageShell>
       <CanvasBand>
-        {/* ── Search Input Box ── */}
-        <div style={{ marginBottom: 'var(--space-2xl)' }}>
-          <h1 className="type-display-md" style={{ color: 'var(--color-ink)', marginBottom: 'var(--space-lg)' }}>
+        {/* ── Search Header with Big Theme Icon ── */}
+        <div style={{ marginBottom: 'var(--space-3xl)' }}>
+          <h1 className="type-display-lg" style={{ color: 'var(--color-ink)', marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <SearchIcon size={44} style={{ color: 'var(--color-ink)' }} />
             Search Events
           </h1>
           <form onSubmit={e => { e.preventDefault(); setSearchParams({ q: query }); }} role="search" style={{ maxWidth: 640 }}>
@@ -92,7 +94,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="empty-state">
-            <span className="empty-state__icon">🔍</span>
+            <SearchIcon size={48} style={{ color: 'var(--color-ink)' }} />
             <h2 className="empty-state__title">No events found</h2>
             <p className="empty-state__sub">Try a different search term or clear the filters</p>
           </div>
