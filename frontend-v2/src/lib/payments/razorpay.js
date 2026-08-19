@@ -7,6 +7,10 @@
 
 const CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
+// Opt-in UPI-only checkout. Off by default because enforcing it against
+// an account without UPI enabled breaks payment entirely (see below).
+const UPI_ONLY = import.meta.env.VITE_PAYMENT_UPI_ONLY === 'true';
+
 let scriptPromise = null;
 function loadCheckout() {
   if (scriptPromise) return scriptPromise;
@@ -38,17 +42,24 @@ export async function openCheckout({ order, user, eventTitle }) {
       currency: order.currency,
       name: 'Festify',
       description: eventTitle,
-      // UPI only, per the payment-method decision for this product.
-      // Cards/netbanking/wallets are deliberately hidden rather than
-      // merely de-prioritised.
-      method: {
-        upi: true,
-        card: false,
-        netbanking: false,
-        wallet: false,
-        emi: false,
-        paylater: false,
-      },
+      // UPI-only is the intended end state for this product, but it can
+      // only be enforced once UPI is actually enabled on the Razorpay
+      // account. Restricting to a method the account does not offer
+      // leaves Checkout with nothing to show and it fails outright with
+      // "no appropriate payment method found" -- so this stays opt-in.
+      // Check availability with:
+      //   GET https://api.razorpay.com/v1/methods?key_id=<key>
+      // and set VITE_PAYMENT_UPI_ONLY=true once "upi" reports true.
+      ...(UPI_ONLY ? {
+        method: {
+          upi: true,
+          card: false,
+          netbanking: false,
+          wallet: false,
+          emi: false,
+          paylater: false,
+        },
+      } : {}),
       prefill: {
         name: user?.full_name || '',
         email: user?.email || '',
