@@ -82,58 +82,49 @@ export default function SuperAdminGate({ children }) {
       <ZapIcon size={40} filled style={{ color: 'var(--color-accent)' }} />
       <h1 className="type-display-md">Admin verification</h1>
 
-      {!sentTo ? (
-        <>
-          <p className="type-body-md" style={{ color: 'rgba(251,247,240,0.75)', maxWidth: 380 }}>
-            To open the admin panel, we&apos;ll email a 6-digit code to{' '}
-            <strong style={{ color: 'var(--color-canvas)' }}>{user.email}</strong>.
-          </p>
-          <Button
-            variant="primary"
-            isLoading={requestCode.isPending}
-            onClick={() => requestCode.mutate()}
-          >
-            Email me a code
-          </Button>
-        </>
-      ) : (
-        <>
-          <p className="type-body-md" style={{ color: 'rgba(251,247,240,0.75)', maxWidth: 380 }}>
-            Code sent to <strong style={{ color: 'var(--color-canvas)' }}>{sentTo}</strong>. It expires in 10 minutes.
-          </p>
-          <input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            className="input-field"
-            placeholder="000000"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) verifyCode.mutate(); }}
-            style={{
-              maxWidth: 240, fontFamily: 'var(--font-mono)',
-              letterSpacing: '0.4em', textAlign: 'center', fontSize: 20,
-            }}
-          />
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <Button
-              variant="primary"
-              isDisabled={code.length !== 6}
-              isLoading={verifyCode.isPending}
-              onClick={() => verifyCode.mutate()}
-            >
-              Verify
-            </Button>
-            <Button
-              variant="ghost-canvas"
-              isLoading={requestCode.isPending}
-              onClick={() => { setCode(''); requestCode.mutate(); }}
-            >
-              Resend
-            </Button>
-          </div>
-        </>
-      )}
+      <p className="type-body-md" style={{ color: 'rgba(251,247,240,0.75)', maxWidth: 400 }}>
+        {sentTo
+          ? <>Code sent to <strong style={{ color: 'var(--color-canvas)' }}>{sentTo}</strong>. It expires in 10 minutes.</>
+          : <>Send a 6-digit code to <strong style={{ color: 'var(--color-canvas)' }}>{user.email}</strong>, then enter it below.</>}
+      </p>
+
+      {/* The input is always rendered, never gated on having just
+          requested a code. Hiding it until a request succeeds strands
+          anyone who already has a code in their inbox -- after a page
+          refresh, or if the send response is slow -- with nowhere to
+          type it. */}
+      <input
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        aria-label="6-digit admin code"
+        className="input-field"
+        placeholder="000000"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) verifyCode.mutate(); }}
+        style={{
+          maxWidth: 260, fontFamily: 'var(--font-mono)',
+          letterSpacing: '0.4em', textAlign: 'center', fontSize: 22,
+        }}
+      />
+
+      <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Button
+          variant="primary"
+          isDisabled={code.length !== 6}
+          isLoading={verifyCode.isPending}
+          onClick={() => verifyCode.mutate()}
+        >
+          Verify
+        </Button>
+        <Button
+          variant="ghost-canvas"
+          isLoading={requestCode.isPending}
+          onClick={() => { setCode(''); requestCode.mutate(); }}
+        >
+          {sentTo ? 'Resend code' : 'Email me a code'}
+        </Button>
+      </div>
 
       {error && (
         <p role="alert" className="type-body-sm" style={{ color: 'var(--color-error)' }}>{error}</p>
