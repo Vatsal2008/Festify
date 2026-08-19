@@ -1,23 +1,15 @@
 // components/primitives/Toast.jsx + ToastContainer.jsx
 import './Modal.css';
 import { useUIStore } from '@/store/uiStore';
-import { CheckIcon, XIcon, AlertTriangleIcon, BellIcon } from '@/components/icons/Icons';
+
+const ICONS = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
 
 export function Toast({ id, type = 'info', message, onDismiss }) {
-  const renderIcon = () => {
-    switch (type) {
-      case 'success': return <CheckIcon size={18} />;
-      case 'error':   return <XIcon size={18} />;
-      case 'warning': return <AlertTriangleIcon size={18} />;
-      default:        return <BellIcon size={18} />;
-    }
-  };
-
   return (
     <div className={`toast toast--${type}`} role="alert" aria-live="polite">
-      <span className="toast__icon" aria-hidden="true">{renderIcon()}</span>
+      <span className="toast__icon" aria-hidden="true">{ICONS[type]}</span>
       <p className="toast__message">{message}</p>
-      <button className="toast__close" onClick={() => onDismiss(id)} aria-label="Dismiss notification" type="button"><XIcon size={14} /></button>
+      <button className="toast__close" onClick={() => onDismiss(id)} aria-label="Dismiss notification" type="button">✕</button>
     </div>
   );
 }

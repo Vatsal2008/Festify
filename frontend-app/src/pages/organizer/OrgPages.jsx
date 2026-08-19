@@ -8,7 +8,11 @@ import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
-import { mockEvents, mockBulkRequests, mockOrgMembers, mockChatMessages } from '@/data/mockData';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { orgsApi, bulkApi, eventsApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { queryKeys } from '@/constants/queryKeys';
+import QueryBoundary from '@/components/primitives/QueryBoundary';
 import {
   CameraIcon, CheckIcon, XIcon, AlertTriangleIcon, PlusIcon,
   ArrowRightIcon, ArrowLeftIcon, BarChartIcon
@@ -20,7 +24,18 @@ import '@/pages/pages.css';
 export function OrgDashboardPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
-  const orgEvents = mockEvents.filter(e => e.organizer.id === orgId || orgId === 'org-1');
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.org.events(orgId, {}),
+    queryFn: () => orgsApi.events(orgId),
+    enabled: !!orgId,
+  });
+  const scoreQuery = useQuery({
+    queryKey: queryKeys.org.score(orgId),
+    queryFn: () => orgsApi.score(orgId),
+    enabled: !!orgId,
+  });
+
+  const orgEvents = eventsQuery.data ?? [];
   const totalTickets = orgEvents.reduce((a, e) => a + e.tiers.reduce((b, t) => b + t.sold_count, 0), 0);
   const totalRevenue = orgEvents.reduce((a, e) => a + e.tiers.reduce((b, t) => b + (t.sold_count * t.price), 0), 0);
 
@@ -36,7 +51,7 @@ export function OrgDashboardPage() {
               { value: orgEvents.length, label: 'Total Events' },
               { value: totalTickets.toLocaleString(), label: 'Tickets Sold' },
               { value: `₹${(totalRevenue / 1000).toFixed(0)}K`, label: 'Revenue' },
-              { value: '8,420', label: 'Score Points' },
+              { value: (scoreQuery.data?.score ?? 0).toLocaleString(), label: 'Score Points' },
             ].map(m => (
               <div key={m.label} className="dash-metric">
                 <p className="dash-metric__value">{m.value}</p>
@@ -158,7 +173,7 @@ export function EventBuilderPage() {
             <div className="builder-form__row">
               <div className="input-wrapper">
                 <label className="input-label">Total Capacity *</label>
-                <input type="number" min="0" className="input-field" value={form.capacity} onChange={e => update('capacity', Math.max(0, Number(e.target.value) || ''))} placeholder="e.g., 500" />
+                <input type="number" className="input-field" value={form.capacity} onChange={e => update('capacity', e.target.value)} placeholder="e.g., 500" />
               </div>
             </div>
           </div>
@@ -206,11 +221,11 @@ export function EventBuilderPage() {
                 <div className="builder-form__row">
                   <div className="input-wrapper">
                     <label className="input-label">Price (₹)</label>
-                    <input type="number" min="0" className="input-field" value={tier.price} onChange={e => { const t = [...form.tiers]; t[i].price = Math.max(0, Number(e.target.value) || 0); update('tiers', t); }} />
+                    <input type="number" className="input-field" value={tier.price} onChange={e => { const t = [...form.tiers]; t[i].price = Number(e.target.value); update('tiers', t); }} />
                   </div>
                   <div className="input-wrapper">
                     <label className="input-label">Quantity</label>
-                    <input type="number" min="0" className="input-field" value={tier.quantity} onChange={e => { const t = [...form.tiers]; t[i].quantity = Math.max(0, Number(e.target.value) || 0); update('tiers', t); }} />
+                    <input type="number" className="input-field" value={tier.quantity} onChange={e => { const t = [...form.tiers]; t[i].quantity = Number(e.target.value); update('tiers', t); }} />
                   </div>
                 </div>
               </div>
@@ -283,7 +298,7 @@ export function QRScannerPage() {
     <DashboardShell orgId={orgId} sidebarType="organizer">
       <div className="scanner-page">
         <h1 className="type-display-md">QR Scanner</h1>
-        <p className="type-body-md" style={{ color: 'rgba(8,61,68,0.65)' }}>Scan attendee QR codes at the gate</p>
+        <p className="type-body-md" style={{ color: 'rgba(22, 16, 31,0.65)' }}>Scan attendee QR codes at the gate</p>
 
         <div className="scanner-viewport" onClick={mockScan} style={{ cursor: 'pointer' }} role="button" aria-label="Tap to simulate scan">
           <div className="scanner-viewport__inner">
@@ -291,7 +306,7 @@ export function QRScannerPage() {
           </div>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', animation: 'scanner-sweep 2s ease-in-out infinite' }} aria-hidden="true" />
         </div>
-        <p className="type-label-mono" style={{ color: 'rgba(8,61,68,0.6)' }}>Tap the viewport to simulate a scan</p>
+        <p className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.6)' }}>Tap the viewport to simulate a scan</p>
 
         {lastResult && (
           <div className={`scanner-result ${lastResult.valid ? 'scanner-result--success' : 'scanner-result--error'}`} style={{ minWidth: 300 }}>
@@ -325,12 +340,25 @@ export function QRScannerPage() {
 
 // ── Bulk Requests ─────────────────────────────────────────────────
 export function BulkRequestsPage() {
-  const { orgId } = useParams();
+  const { orgId, eventId } = useParams();
   const toast = useToast();
-  const [requests, setRequests] = useState(mockBulkRequests);
+  const qc = useQueryClient();
+  const bulkQuery = useQuery({
+    queryKey: queryKeys.org.bulkReqs(orgId, eventId),
+    queryFn: () => bulkApi.forEvent(eventId),
+    enabled: !!eventId,
+  });
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, approve }) => bulkApi.review(id, approve),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.org.bulkReqs(orgId, eventId) }),
+    onError: (e) => toast.error(apiError(e)),
+  });
+  const requests = bulkQuery.data ?? [];
 
-  const approve = (id) => { setRequests(r => r.map(req => req.id === id ? { ...req, status: 'approved' } : req)); toast.success('Bulk request approved'); };
-  const reject  = (id) => { setRequests(r => r.map(req => req.id === id ? { ...req, status: 'rejected' } : req)); toast.info('Bulk request rejected'); };
+  const approve = (id) => reviewMutation.mutate({ id, approve: true },
+    { onSuccess: () => toast.success('Bulk request approved') });
+  const reject = (id) => reviewMutation.mutate({ id, approve: false },
+    { onSuccess: () => toast.info('Bulk request rejected') });
 
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
@@ -338,14 +366,18 @@ export function BulkRequestsPage() {
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Bulk Ticket Requests</h1>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Requester</th><th>Quantity</th><th>Tier</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Request</th><th>Quantity</th><th>Requested</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
+              {requests.length === 0 && (
+                <tr><td colSpan={5} style={{ padding: 'var(--space-2xl)', textAlign: 'center', color: 'rgba(22,16,31,0.6)' }}>
+                  {bulkQuery.isPending ? 'Loading requests…' : 'No pending bulk requests for this event.'}
+                </td></tr>
+              )}
               {requests.map(req => (
                 <tr key={req.id}>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={req.requester.name} size="sm" />{req.requester.name}</div></td>
-                  <td>{req.quantity}</td>
-                  <td>{req.tier.name}</td>
-                  <td style={{ maxWidth: 200 }}>{req.reason}</td>
+                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{req.id.slice(0, 8)}</code></td>
+                  <td>{req.requested_qty}</td>
+                  <td style={{ color: 'rgba(22,16,31,0.65)' }}>{new Date(req.created_at).toLocaleDateString()}</td>
                   <td><Badge variant={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'error' : 'warning'}>{req.status}</Badge></td>
                   <td>
                     {req.status === 'pending' && (
@@ -372,6 +404,12 @@ export function OrgMembersPage() {
   const toast = useToast();
   const isOwner = user?.org_memberships?.some(m => m.org_id === orgId && m.role === 'owner');
 
+  const membersQuery = useQuery({
+    queryKey: queryKeys.org.members(orgId),
+    queryFn: () => orgsApi.members(orgId),
+    enabled: !!orgId,
+  });
+
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -381,15 +419,19 @@ export function OrgMembersPage() {
         </div>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Joined</th>{isOwner && <th>Actions</th>}</tr></thead>
+            <thead><tr><th>Member</th><th>Email</th><th>Role</th>{isOwner && <th>Actions</th>}</tr></thead>
             <tbody>
-              {mockOrgMembers.map(m => (
+              {(membersQuery.data ?? []).length === 0 && (
+                <tr><td colSpan={isOwner ? 4 : 3} style={{ padding: 'var(--space-2xl)', textAlign: 'center', color: 'rgba(22,16,31,0.6)' }}>
+                  {membersQuery.isPending ? 'Loading members…' : 'No members yet.'}
+                </td></tr>
+              )}
+              {(membersQuery.data ?? []).map(m => (
                 <tr key={m.id}>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={m.name} src={m.avatar_url} size="sm" />{m.name}</div></td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{m.email}</td>
-                  <td><Badge variant={m.role === 'owner' ? 'teal' : 'default'}>{m.role}</Badge></td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{m.joined_at}</td>
-                  {isOwner && <td>{m.role !== 'owner' && <Button variant="danger" size="sm" onClick={() => toast.info(`Removed ${m.name}`)}>Remove</Button>}</td>}
+                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={m.user?.full_name || m.user?.email || '—'} src={m.user?.avatar_url} size="sm" />{m.user?.full_name || '—'}</div></td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{m.user?.email}</td>
+                  <td><Badge variant={m.role === 'leader' ? 'teal' : 'default'}>{m.role}</Badge></td>
+                  {isOwner && <td>{m.role !== 'leader' && <Button variant="danger" size="sm" onClick={() => toast.info('Member removal is not available yet.')}>Remove</Button>}</td>}
                 </tr>
               ))}
             </tbody>
@@ -404,7 +446,7 @@ export function OrgMembersPage() {
 export function OrgChatPage() {
   const { orgId } = useParams();
   const { user } = useAuth();
-  const [messages, setMessages] = useState(mockChatMessages);
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
 
   const send = () => {
@@ -420,14 +462,14 @@ export function OrgChatPage() {
       <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)' }}>
         <div style={{ padding: 'var(--space-xl)', borderBottom: 'var(--border-hairline)' }}>
           <h1 className="type-display-md">Group Chat</h1>
-          <p className="type-body-xs" style={{ color: 'rgba(8,61,68,0.6)', marginTop: 4 }}>Private org-only channel</p>
+          <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.6)', marginTop: 4 }}>Private org-only channel</p>
         </div>
         <div className="chat-messages" style={{ flex: 1 }}>
           {messages.map(msg => (
             <div key={msg.id} className={`chat-msg ${msg.sender.id === (user?.id || 'user-1') ? 'chat-msg--mine' : ''}`}>
               <Avatar name={msg.sender.name} src={msg.sender.avatar_url} size="sm" />
               <div className="chat-msg__bubble">
-                <p className="type-label-mono" style={{ fontSize: 11, marginBottom: 4, color: msg.sender.id === (user?.id || 'user-1') ? 'rgba(252,252,248,0.6)' : 'rgba(8,61,68,0.5)' }}>{msg.sender.name}</p>
+                <p className="type-label-mono" style={{ fontSize: 11, marginBottom: 4, color: msg.sender.id === (user?.id || 'user-1') ? 'rgba(251, 247, 240,0.6)' : 'rgba(22, 16, 31,0.5)' }}>{msg.sender.name}</p>
                 <p className="chat-msg__text">{msg.text}</p>
                 <p className="chat-msg__time">{fmt(msg.sent_at)}</p>
               </div>
@@ -453,7 +495,12 @@ export function OrgChatPage() {
 export function OrgEventsPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
-  const orgEvents = mockEvents.filter(e => e.organizer.id === orgId || orgId === 'org-1');
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.org.events(orgId, {}),
+    queryFn: () => orgsApi.events(orgId),
+    enabled: !!orgId,
+  });
+  const orgEvents = eventsQuery.data ?? [];
 
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
@@ -467,7 +514,7 @@ export function OrgEventsPage() {
             <div key={e.id} style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-xl)', display: 'flex', alignItems: 'center', gap: 'var(--space-xl)', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <h3 className="type-heading-md" style={{ marginBottom: 4 }}>{e.title}</h3>
-                <p className="type-body-xs" style={{ color: 'rgba(8,61,68,0.65)' }}>{e.venue}</p>
+                <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.65)' }}>{e.venue}</p>
               </div>
               <EventStateChip state={e.state} />
               <span className="type-body-sm">{e.tiers.reduce((a, t) => a + t.sold_count, 0)} sold</span>
@@ -513,7 +560,7 @@ export function OrgAnalyticsPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)', flexWrap: 'wrap', gap: 'var(--space-lg)' }}>
           <div>
             <h1 className="type-display-md">Analytics &amp; Insights</h1>
-            <p className="type-body-sm" style={{ color: 'rgba(8,61,68,0.65)', marginTop: 4 }}>
+            <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.65)', marginTop: 4 }}>
               Track sales, ticket velocity, and attendee demographics
             </p>
           </div>
@@ -570,7 +617,7 @@ export function OrgAnalyticsPage() {
                 const heightPct = (item.revenue / maxRev) * 100;
                 return (
                   <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(8,61,68,0.7)' }}>₹{item.revenue}k</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.7)' }}>₹{item.revenue}k</span>
                     <div
                       style={{
                         width: '100%',
@@ -593,17 +640,17 @@ export function OrgAnalyticsPage() {
             <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Sales by Category</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
               {[
-                { name: 'Hackathons', pct: 45, color: '#083d44' },
-                { name: 'Cultural Fests', pct: 30, color: '#005f6b' },
-                { name: 'Music & Open Mic', pct: 15, color: '#008b8b' },
-                { name: 'Sports', pct: 10, color: '#e5ff97' },
+                { name: 'Hackathons', pct: 45, color: '#6C4DFF' },
+                { name: 'Cultural Fests', pct: 30, color: '#FF7A29' },
+                { name: 'Music & Open Mic', pct: 15, color: '#16101F' },
+                { name: 'Sports', pct: 10, color: '#FF3D8A' },
               ].map(cat => (
                 <div key={cat.name}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span className="type-body-sm" style={{ fontWeight: 600 }}>{cat.name}</span>
                     <span className="type-label-mono">{cat.pct}%</span>
                   </div>
-                  <div style={{ width: '100%', height: 8, background: 'rgba(8,61,68,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: 8, background: 'rgba(22, 16, 31,0.1)', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color }} />
                   </div>
                 </div>

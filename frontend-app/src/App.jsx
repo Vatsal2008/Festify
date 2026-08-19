@@ -23,12 +23,15 @@ import { OrgDashboardPage, EventBuilderPage, QRScannerPage, BulkRequestsPage, Or
 
 // ── Admin ──────────────────────────────────────────────────────────
 import {
-  CollegeAdminLoginPage, CollegeAdminApplicationsPage,
+  CollegeAdminApplicationsPage,
   CollegeAdminEventsPage, CollegeAdminAnalyticsPage,
-  SuperAdminLoginPage, SuperAdminDashboardPage, SuperAdminOrganizersPage,
+  SuperAdminDashboardPage, SuperAdminOrganizersPage,
   SuperAdminSupportPage, SuperAdminConfigPage, SuperAdminAuditLogPage,
-  SuperAdminTrendingPage, SuperAdminCollegeAdminsPage
+  SuperAdminTrendingPage
 } from '@/pages/admin/AdminPages';
+import AdminManagementPage from '@/pages/admin/AdminManagementPage';
+import SuperAdminGate from '@/pages/admin/SuperAdminGate';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
 function ScrollToTop() {
@@ -58,10 +61,16 @@ function LoadingScreen() {
 function NotFoundPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-ink)', color: 'var(--color-canvas)', gap: 'var(--space-xl)', textAlign: 'center', padding: 'var(--space-xl)' }}>
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 120, lineHeight: 1, color: 'var(--color-accent)' }}>404</p>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-display-md)', fontWeight: 400 }}>Page not found</h1>
-      <p style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-md)', color: 'rgba(252,252,248,0.7)' }}>The page you're looking for doesn't exist or has moved.</p>
-      <a href="/" style={{ background: 'var(--color-accent)', color: 'var(--color-ink)', padding: '12px 32px', fontFamily: 'var(--font-ui)', fontWeight: 600, textDecoration: 'none', fontSize: 16 }}>Back to Home</a>
+      <p style={{ fontFamily: 'var(--font-display)', fontSize: 120, lineHeight: 1, fontWeight: 800, color: 'var(--color-accent)' }}>404</p>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-display-md)', fontWeight: 700 }}>Page not found</h1>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-md)', color: 'rgba(251, 247, 240,0.7)' }}>The page you're looking for doesn't exist or has moved.</p>
+      <a
+        href="/"
+        className="impact-flash-on-active"
+        style={{ background: 'var(--color-accent)', color: 'var(--color-canvas)', border: '2px solid var(--color-canvas)', padding: '12px 32px', fontFamily: 'var(--font-ui)', fontWeight: 700, textDecoration: 'none', fontSize: 16 }}
+      >
+        Back to Home
+      </a>
     </div>
   );
 }
@@ -70,6 +79,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <ErrorBoundary>
       <Routes>
         {/* ── Public ── */}
         <Route path="/"          element={<HomePage />} />
@@ -97,24 +107,30 @@ export default function App() {
         <Route path="/org/:orgId/analytics"                    element={<RequireAuth><OrgAnalyticsPage /></RequireAuth>} />
 
         {/* ── College Admin ── */}
-        <Route path="/college-admin/login"        element={<CollegeAdminLoginPage />} />
-        <Route path="/college-admin/applications" element={<CollegeAdminApplicationsPage />} />
-        <Route path="/college-admin/events"       element={<CollegeAdminEventsPage />} />
-        <Route path="/college-admin/analytics"    element={<CollegeAdminAnalyticsPage />} />
+        {/* College admin. Access is a role on the normal account, so
+            these only need a signed-in session -- the API enforces the
+            college_admins check per request. */}
+        <Route path="/college-admin"              element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/college-admin/applications" element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/college-admin/events"       element={<RequireAuth><CollegeAdminEventsPage /></RequireAuth>} />
+        <Route path="/college-admin/analytics"    element={<RequireAuth><CollegeAdminAnalyticsPage /></RequireAuth>} />
 
         {/* ── Super Admin ── */}
-        <Route path="/superadmin"                    element={<SuperAdminLoginPage />} />
-        <Route path="/superadmin/dashboard"          element={<SuperAdminDashboardPage />} />
-        <Route path="/superadmin/college-admins"     element={<SuperAdminCollegeAdminsPage />} />
-        <Route path="/superadmin/organizers"         element={<SuperAdminOrganizersPage />} />
-        <Route path="/superadmin/support-tickets"    element={<SuperAdminSupportPage />} />
-        <Route path="/superadmin/config"             element={<SuperAdminConfigPage />} />
-        <Route path="/superadmin/audit-log"          element={<SuperAdminAuditLogPage />} />
-        <Route path="/superadmin/trending-curation"  element={<SuperAdminTrendingPage />} />
+        {/* Every super admin route sits behind the emailed-code gate. */}
+        <Route path="/superadmin"                    element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
+        <Route path="/superadmin/dashboard"          element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
+        <Route path="/superadmin/college-admins"     element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/superadmin/admin-access"       element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/superadmin/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
+        <Route path="/superadmin/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
+        <Route path="/superadmin/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
+        <Route path="/superadmin/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
+        <Route path="/superadmin/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />
 
         {/* ── 404 ── */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </ErrorBoundary>
 
       {/* Global toast container */}
       <ToastContainer />

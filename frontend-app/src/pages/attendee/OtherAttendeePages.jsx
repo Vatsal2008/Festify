@@ -1,22 +1,28 @@
 // pages/attendee/OtherAttendeePages.jsx — Wishlist, PrimePass, Notifications
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventCard, NotificationItem, PrimePassBadge } from '@/components/domain';
+import { EventCard, PrimePassBadge } from '@/components/domain';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
+import QueryBoundary from '@/components/primitives/QueryBoundary';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
-import { mockEvents, mockNotifications } from '@/data/mockData';
+import { meApi } from '@/lib/api/endpoints';
+import { queryKeys } from '@/constants/queryKeys';
 import { HeartIcon, BellIcon, CheckIcon, ZapIcon, TicketIcon, StarIcon, BarChartIcon, SparklesIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
 // ── WishlistPage ──────────────────────────────────────────────────
 export function WishlistPage() {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  if (!isAuthenticated) { navigate('/login'); return null; }
-  const wishlisted = mockEvents.filter(e => e.is_wishlisted);
+
+  const wishlistQuery = useQuery({
+    queryKey: queryKeys.user.wishlist(user?.id),
+    queryFn: meApi.wishlist,
+    enabled: !!user,
+  });
 
   return (
     <PageShell>
@@ -24,16 +30,24 @@ export function WishlistPage() {
         <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>My Wishlist</h1>
       </TealBand>
       <CanvasBand>
-        {wishlisted.length > 0 ? (
-          <div className="wishlist-grid">
-            {wishlisted.map(e => <EventCard key={e.id} event={e} />)}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <HeartIcon size={64} style={{ color: 'var(--color-ink)' }} />
-            <h2 className="empty-state__title">Your wishlist is empty</h2>
-            <p className="empty-state__sub">Hit the heart icon on any event to save it here</p>
-            <Button variant="primary" onClick={() => navigate('/')}>Explore Events</Button>
+        <QueryBoundary
+          query={wishlistQuery}
+          emptyTitle="Your wishlist is empty"
+          emptySub="Hit the heart icon on any event to save it here."
+          loadingLabel="Loading your wishlist"
+        >
+          {(events) => (
+            <div className="wishlist-grid">
+              {events.map(e => <EventCard key={e.id} event={e} />)}
+            </div>
+          )}
+        </QueryBoundary>
+
+        {!wishlistQuery.isPending && (wishlistQuery.data ?? []).length === 0 && (
+          <div style={{ textAlign: 'center', marginTop: 'var(--space-xl)' }}>
+            <Button variant="primary" onClick={() => navigate('/')}>
+              <HeartIcon size={16} /> Explore Events
+            </Button>
           </div>
         )}
       </CanvasBand>
@@ -69,7 +83,7 @@ export function PrimePassPage() {
           <h1 className="type-display-lg" style={{ color: 'var(--color-canvas)', marginBottom: 'var(--space-xl)' }}>
             You have <span style={{ color: 'var(--color-accent)' }}>Prime Pass</span> <CheckIcon size={28} style={{ color: 'var(--color-accent)', verticalAlign: 'middle' }} />
           </h1>
-          <p className="type-body-md" style={{ color: 'rgba(252,252,248,0.8)', marginBottom: 'var(--space-xl)' }}>
+          <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.8)', marginBottom: 'var(--space-xl)' }}>
             Your Prime Pass is active and all benefits are enabled.
           </p>
           <PrimePassBadge />
@@ -96,7 +110,7 @@ export function PrimePassPage() {
           <h1 className="type-display-lg" style={{ color: 'var(--color-canvas)', marginBottom: 'var(--space-xl)' }}>
             Festify <span style={{ color: 'var(--color-accent)' }}>Prime Pass</span>
           </h1>
-          <p className="type-body-md" style={{ color: 'rgba(252,252,248,0.8)' }}>
+          <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.8)' }}>
             Get early access, dedicated pools, and a Prime badge across all events.
           </p>
         </div>
@@ -131,50 +145,26 @@ export function PrimePassPage() {
 
 // ── NotificationsPage ─────────────────────────────────────────────
 export function NotificationsPage() {
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
-  const [notifs, setNotifs] = useState(mockNotifications);
-  if (!isAuthenticated) { navigate('/login'); return null; }
 
-  const markAllRead = () => {
-    setNotifs(notifs.map(n => ({ ...n, read_at: new Date().toISOString() })));
-    toast.success('All notifications marked as read');
-  };
-
-  const unreadCount = notifs.filter(n => !n.read_at).length;
-
+  // The notification subsystem (Firebase push, the delivery pipeline and
+  // its storage) has not been built on the API yet, so there is nothing
+  // real to list. Showing an honest empty state beats rendering
+  // fabricated notifications that no action of the user's produced.
   return (
     <PageShell>
       <TealBand variant="compact">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>Notifications</h1>
-            {unreadCount > 0 && <Badge variant="accent" style={{ marginTop: 'var(--space-sm)' }}>{unreadCount} unread</Badge>}
-          </div>
-          {unreadCount > 0 && (
-            <Button variant="ghost-canvas" size="sm" onClick={markAllRead}>Mark all read</Button>
-          )}
-        </div>
+        <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>Notifications</h1>
       </TealBand>
       <CanvasBand variant="compact">
-        {notifs.length > 0 ? (
-          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-            {notifs.map((notif, idx) => (
-              <div key={notif.id} style={{ borderBottom: idx < notifs.length - 1 ? 'var(--border-hairline)' : 'none' }}>
-                <NotificationItem
-                  notification={notif}
-                  onClick={(n) => { setNotifs(prev => prev.map(p => p.id === n.id ? { ...p, read_at: new Date().toISOString() } : p)); if (n.event_id) navigate(`/events/${n.event_id}`); }}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <BellIcon size={64} style={{ color: 'var(--color-ink)' }} />
-            <h2 className="empty-state__title">No notifications</h2>
-          </div>
-        )}
+        <div className="empty-state">
+          <BellIcon size={64} style={{ color: 'var(--color-ink)' }} />
+          <h2 className="empty-state__title">Notifications aren&apos;t switched on yet</h2>
+          <p className="empty-state__sub">
+            Ticket confirmations, wishlist alerts and organizer updates will land here once notifications go live.
+          </p>
+          <Button variant="primary" onClick={() => navigate('/')}>Browse events</Button>
+        </div>
       </CanvasBand>
     </PageShell>
   );

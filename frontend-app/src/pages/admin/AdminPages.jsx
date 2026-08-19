@@ -7,7 +7,10 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
 import { useToast } from '@/store/uiStore';
-import { mockEvents, mockOrganizers, mockSupportTickets, mockAuditLog, mockPlatformConfig } from '@/data/mockData';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { platformApi, adminApi, supportApi, eventsApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { queryKeys } from '@/constants/queryKeys';
 import { ZapIcon, PlusIcon, BarChartIcon } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
@@ -39,9 +42,9 @@ export function CollegeAdminLoginPage() {
           <input type="password" className="input-field" placeholder="Password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
           <Button type="submit" variant="primary" fullWidth isLoading={loading}>Sign In</Button>
         </form>
-        <div style={{ borderTop: '1px solid rgba(252,252,248,0.15)', paddingTop: 'var(--space-lg)' }}>
+        <div style={{ borderTop: '1px solid rgba(251, 247, 240,0.15)', paddingTop: 'var(--space-lg)' }}>
           <Button variant="ghost-canvas" size="sm" fullWidth onClick={() => handleLogin()}>
-            <ZapIcon size={14} filled style={{ display: 'inline', marginRight: 4 }} /> Quick Demo Sign In as College Admin
+            ⚡ Quick Demo Sign In as College Admin
           </Button>
         </div>
       </div>
@@ -72,9 +75,9 @@ export function CollegeAdminApplicationsPage() {
               {apps.map(app => (
                 <tr key={app.id}>
                   <td><strong>{app.org_name}</strong></td>
-                  <td>{app.leader}<br/><span style={{ color: 'rgba(8,61,68,0.55)', fontSize: 12 }}>{app.email}</span></td>
+                  <td>{app.leader}<br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{app.email}</span></td>
                   <td>{app.members_count}</td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{app.submitted_at}</td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{app.submitted_at}</td>
                   <td><Badge variant={app.status === 'approved' ? 'success' : app.status === 'rejected' ? 'error' : 'warning'}>{app.status}</Badge></td>
                   <td>{app.status === 'pending' && (
                     <div className="admin-actions">
@@ -96,14 +99,15 @@ export function CollegeAdminApplicationsPage() {
 export function CollegeAdminEventsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [events, setEvents] = useState(mockEvents.filter(e => e.state === 'pending').map(e => ({ ...e, state: 'pending' })).concat(mockEvents.slice(0, 3)));
+  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ admin: true }), queryFn: () => eventsApi.list({}) });
+  const events = eventsQuery.data ?? [];
 
   const approve = (id) => {
-    setEvents(evs => evs.map(e => e.id === id ? { ...e, state: 'live' } : e));
+    toast.info('Publishing from the admin panel is not wired to the API yet.');
     toast.success('Event approved — now live!');
   };
   const reject = (id) => {
-    setEvents(evs => evs.map(e => e.id === id ? { ...e, state: 'draft' } : e));
+    toast.info('Unpublishing from the admin panel is not wired to the API yet.');
     toast.warning('Event rejected — returned to organizer');
   };
 
@@ -120,7 +124,7 @@ export function CollegeAdminEventsPage() {
             <tbody>
               {events.slice(0, 5).map(e => (
                 <tr key={e.id}>
-                  <td><strong>{e.title}</strong><br/><span style={{ color: 'rgba(8,61,68,0.55)', fontSize: 12 }}>{e.venue}</span></td>
+                  <td><strong>{e.title}</strong><br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{e.venue}</span></td>
                   <td>{e.organizer.name}</td>
                   <td>{e.capacity.toLocaleString()}</td>
                   <td><EventStateChip state={e.state} /></td>
@@ -173,7 +177,7 @@ export function CollegeAdminAnalyticsPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)', flexWrap: 'wrap', gap: 'var(--space-lg)' }}>
           <div>
             <h1 className="type-display-md">College Analytics &amp; Reports</h1>
-            <p className="type-body-sm" style={{ color: 'rgba(8,61,68,0.65)', marginTop: 4 }}>
+            <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.65)', marginTop: 4 }}>
               BITS Pilani — Campus revenue, registration metrics, and club performance
             </p>
           </div>
@@ -230,7 +234,7 @@ export function CollegeAdminAnalyticsPage() {
                 const heightPct = (item.revenue / maxRev) * 100;
                 return (
                   <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(8,61,68,0.7)' }}>₹{item.revenue}k</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.7)' }}>₹{item.revenue}k</span>
                     <div
                       style={{
                         width: '100%',
@@ -253,17 +257,17 @@ export function CollegeAdminAnalyticsPage() {
             <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Club Distribution</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
               {[
-                { name: 'Cultural Societies', pct: 40, color: '#083d44' },
-                { name: 'Tech & Hackathons', pct: 35, color: '#005f6b' },
-                { name: 'Sports Council', pct: 15, color: '#008b8b' },
-                { name: 'Music & Arts', pct: 10, color: '#e5ff97' },
+                { name: 'Cultural Societies', pct: 40, color: '#6C4DFF' },
+                { name: 'Tech & Hackathons', pct: 35, color: '#FF7A29' },
+                { name: 'Sports Council', pct: 15, color: '#16101F' },
+                { name: 'Music & Arts', pct: 10, color: '#FF3D8A' },
               ].map(cat => (
                 <div key={cat.name}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span className="type-body-sm" style={{ fontWeight: 600 }}>{cat.name}</span>
                     <span className="type-label-mono">{cat.pct}%</span>
                   </div>
-                  <div style={{ width: '100%', height: 8, background: 'rgba(8,61,68,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: 8, background: 'rgba(22, 16, 31,0.1)', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color }} />
                   </div>
                 </div>
@@ -278,6 +282,7 @@ export function CollegeAdminAnalyticsPage() {
 
 // ── Super Admin: Dashboard ─────────────────────────────────────────
 export function SuperAdminDashboardPage() {
+  const auditQuery = useQuery({ queryKey: queryKeys.superAdmin.auditLog({}), queryFn: platformApi.auditLog });
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -296,12 +301,12 @@ export function SuperAdminDashboardPage() {
           <table className="admin-table">
             <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Time</th></tr></thead>
             <tbody>
-              {mockAuditLog.slice(0, 4).map(log => (
+              {(auditQuery.data ?? []).slice(0, 4).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{log.target}</td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{log.target}</td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -346,7 +351,7 @@ export function SuperAdminCollegeAdminsPage() {
                 <tr key={admin.id}>
                   <td><strong>{admin.name}</strong></td>
                   <td>{admin.college}</td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{admin.email}</td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{admin.email}</td>
                   <td>{admin.events_count}</td>
                   <td>
                     <Badge variant={admin.status === 'active' ? 'success' : admin.status === 'pending' ? 'warning' : 'error'}>
@@ -376,9 +381,19 @@ export function SuperAdminCollegeAdminsPage() {
 // ── Super Admin: Organizers ────────────────────────────────────────
 export function SuperAdminOrganizersPage() {
   const toast = useToast();
-  const [orgs, setOrgs] = useState(mockOrganizers);
+  const qc = useQueryClient();
+  const orgsQuery = useQuery({ queryKey: queryKeys.superAdmin.organizers({}), queryFn: platformApi.orgGroups });
+  const orgs = orgsQuery.data ?? [];
 
-  const ban = (id, stage) => { setOrgs(o => o.map(x => x.id === id ? { ...x, banned: true, ban_stage: stage } : x)); toast.error(`Organizer banned (Stage ${stage})`); };
+  const banMutation = useMutation({
+    mutationFn: ({ id, stage }) => adminApi.banOrg(id, { stage }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.superAdmin.organizers({}) });
+      toast.success('Ban issued.');
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+  const ban = (id, stage) => banMutation.mutate({ id, stage });
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
@@ -392,8 +407,8 @@ export function SuperAdminOrganizersPage() {
                 <tr key={org.id}>
                   <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={org.name} src={org.avatar} size="sm" /><strong>{org.name}</strong></div></td>
                   <td><Badge variant={org.trust_tier === 'trusted' ? 'success' : org.trust_tier === 'verified' ? 'info' : 'default'}>{org.trust_tier}</Badge></td>
-                  <td>{org.score_points.toLocaleString()}</td>
-                  <td>{org.successful_events_count}</td>
+                  <td>{(org.score_points ?? 0).toLocaleString()}</td>
+                  <td>{org.successful_events_count ?? 0}</td>
                   <td><Badge variant={org.banned ? 'error' : 'success'}>{org.banned ? `Banned (${org.ban_stage})` : 'Active'}</Badge></td>
                   <td>
                     {!org.banned && (
@@ -416,7 +431,13 @@ export function SuperAdminOrganizersPage() {
 // ── Super Admin: Support Tickets ───────────────────────────────────
 export function SuperAdminSupportPage() {
   const toast = useToast();
-  const [tickets, setTickets] = useState(mockSupportTickets);
+  const qc = useQueryClient();
+  const ticketsQuery = useQuery({ queryKey: queryKeys.superAdmin.support({}), queryFn: platformApi.allSupportTickets });
+  const resolveMutation = useMutation({
+    mutationFn: (id) => supportApi.resolve(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.superAdmin.support({}) }),
+  });
+  const tickets = ticketsQuery.data ?? [];
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
@@ -434,7 +455,7 @@ export function SuperAdminSupportPage() {
                   <td><Badge variant={t.status === 'resolved' ? 'success' : 'warning'}>{t.status}</Badge></td>
                   <td>
                     {t.status === 'pending' && (
-                      <Button variant="primary" size="sm" onClick={() => { setTickets(tk => tk.map(x => x.id === t.id ? { ...x, status: 'resolved' } : x)); toast.success('Ticket resolved'); }}>Resolve</Button>
+                      <Button variant="primary" size="sm" onClick={() => resolveMutation.mutate(t.id, { onSuccess: () => toast.success('Ticket resolved'), onError: (e) => toast.error(apiError(e)) })}>Resolve</Button>
                     )}
                   </td>
                 </tr>
@@ -448,36 +469,71 @@ export function SuperAdminSupportPage() {
 }
 
 // ── Super Admin: Platform Config ───────────────────────────────────
+// The API stores config as free-form key/value rows in scoring_config,
+// so this page edits the keys the platform actually reads today rather
+// than a fixed struct. Each field saves independently via PUT.
+const CONFIG_FIELDS = [
+  { key: 'platform_fee_flat', label: 'Platform fee per ticket (₹)', hint: 'Flat rupee amount added per ticket, not a percentage.' },
+  { key: 'reservation_hold_minutes', label: 'Checkout hold (minutes)', hint: 'How long a tier is reserved during checkout.' },
+  { key: 'max_refund_tiers', label: 'Max refund policy tiers', hint: 'Cap on how many tiers an organizer may define.' },
+  { key: 'min_refund_floor_pct', label: 'Minimum refund floor (%)', hint: 'No organizer policy may refund below this.' },
+];
+
 export function SuperAdminConfigPage() {
   const toast = useToast();
-  const [config, setConfig] = useState(mockPlatformConfig);
+  const qc = useQueryClient();
+  const configQuery = useQuery({ queryKey: queryKeys.superAdmin.config(), queryFn: platformApi.scoringConfig });
+  const [drafts, setDrafts] = useState({});
+
+  const saveMutation = useMutation({
+    mutationFn: ({ key, value }) => platformApi.setScoringConfig(key, value),
+    onSuccess: (_d, { key }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.superAdmin.config() });
+      setDrafts(d => { const next = { ...d }; delete next[key]; return next; });
+      toast.success(`Saved ${key}`);
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const stored = Object.fromEntries((configQuery.data ?? []).map(r => [r.key, r.value]));
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)', maxWidth: 640 }}>
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Platform Config</h1>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
-          {[
-            { field: 'platform_fee_pct', label: 'Platform Fee %', type: 'number' },
-            { field: 'successful_event_threshold_rating', label: 'Success Threshold Rating', type: 'number' },
-            { field: 'successful_event_threshold_pct', label: 'Success Threshold Attendance %', type: 'number' },
-            { field: 'prime_review_multiplier', label: 'Prime Review Multiplier', type: 'number' },
-          ].map(({ field, label, type }) => (
-            <div key={field} className="input-wrapper">
-              <label className="input-label">{label}</label>
-              <input
-                type={type}
-                className="input-field"
-                value={config[field] ?? ''}
-                onChange={e => setConfig(c => ({ ...c, [field]: type === 'number' ? parseFloat(e.target.value) : e.target.value }))}
-              />
-            </div>
-          ))}
+          {CONFIG_FIELDS.map(({ key, label, hint }) => {
+            const value = drafts[key] ?? stored[key] ?? '';
+            const dirty = drafts[key] !== undefined && drafts[key] !== stored[key];
+            return (
+              <div key={key} className="input-wrapper">
+                <label className="input-label" htmlFor={`cfg-${key}`}>{label}</label>
+                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                  <input
+                    id={`cfg-${key}`}
+                    type="number"
+                    className="input-field"
+                    value={value}
+                    placeholder={configQuery.isPending ? 'Loading…' : 'Not set'}
+                    onChange={e => setDrafts(d => ({ ...d, [key]: e.target.value }))}
+                  />
+                  <Button
+                    variant="primary"
+                    isDisabled={!dirty}
+                    isLoading={saveMutation.isPending && saveMutation.variables?.key === key}
+                    onClick={() => saveMutation.mutate({ key, value: Number(drafts[key]) })}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <span className="input-hint">{hint}</span>
+              </div>
+            );
+          })}
           <div style={{ paddingTop: 'var(--space-xl)', borderTop: 'var(--border-hairline)' }}>
-            <p className="type-body-xs" style={{ color: 'rgba(8,61,68,0.6)', marginBottom: 'var(--space-lg)' }}>
-              Pricing for Prime Pass, level thresholds, and ban durations are marked as TBD in fullsystem.md and are shown as locked config fields.
+            <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.6)' }}>
+              Prime Pass pricing, level thresholds and ban durations are still marked open in the system design, so they are not editable here yet.
             </p>
-            <Button variant="primary" onClick={() => toast.success('Config saved!')}>Save Changes</Button>
           </div>
         </div>
       </div>
@@ -487,6 +543,7 @@ export function SuperAdminConfigPage() {
 
 // ── Super Admin: Audit Log ─────────────────────────────────────────
 export function SuperAdminAuditLogPage() {
+  const auditQuery = useQuery({ queryKey: queryKeys.superAdmin.auditLog({}), queryFn: platformApi.auditLog });
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -495,13 +552,13 @@ export function SuperAdminAuditLogPage() {
           <table className="admin-table">
             <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Metadata</th><th>Timestamp</th></tr></thead>
             <tbody>
-              {mockAuditLog.map(log => (
+              {(auditQuery.data ?? []).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)' }}>{log.target}</td>
-                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(8,61,68,0.65)' }}>{JSON.stringify(log.metadata)}</code></td>
-                  <td style={{ color: 'rgba(8,61,68,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{log.target}</td>
+                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.65)' }}>{JSON.stringify(log.metadata)}</code></td>
+                  <td style={{ color: 'rgba(22, 16, 31,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -515,20 +572,21 @@ export function SuperAdminAuditLogPage() {
 // ── Super Admin: Trending Curation ─────────────────────────────────
 export function SuperAdminTrendingPage() {
   const toast = useToast();
-  const [featured, setFeatured] = useState(mockEvents.slice(0, 2).map(e => e.id));
+  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ curation: true }), queryFn: () => eventsApi.list({}) });
+  const [featured, setFeatured] = useState([]);
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Trending Curation</h1>
-        <p className="type-body-md" style={{ color: 'rgba(8,61,68,0.65)', marginBottom: 'var(--space-2xl)' }}>
+        <p className="type-body-md" style={{ color: 'rgba(22, 16, 31,0.65)', marginBottom: 'var(--space-2xl)' }}>
           Add events to the featured/trending section on the home page. These are pinned above the algorithm-driven list.
         </p>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
             <thead><tr><th>Event</th><th>Organizer</th><th>Hypes</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {mockEvents.map(e => (
+              {(eventsQuery.data ?? []).map(e => (
                 <tr key={e.id}>
                   <td><strong>{e.title}</strong></td>
                   <td>{e.organizer.name}</td>
@@ -575,10 +633,10 @@ export function SuperAdminLoginPage() {
           <Button type="submit" variant="primary" fullWidth>Enter Dashboard</Button>
         </form>
 
-        <div style={{ borderTop: '1px solid rgba(252,252,248,0.15)', paddingTop: 'var(--space-lg)' }}>
+        <div style={{ borderTop: '1px solid rgba(251, 247, 240,0.15)', paddingTop: 'var(--space-lg)' }}>
           <p className="type-body-xs" style={{ color: 'var(--color-accent)', marginBottom: 8, fontWeight: 600 }}>Access Code: ADMIN</p>
           <Button variant="ghost-canvas" size="sm" fullWidth onClick={() => handleLogin()}>
-            <ZapIcon size={14} filled style={{ display: 'inline', marginRight: 4 }} /> 1-Click Auto Login to Super Admin
+            ⚡ 1-Click Auto Login to Super Admin
           </Button>
         </div>
       </div>

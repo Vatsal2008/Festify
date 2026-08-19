@@ -31,17 +31,23 @@
   border: var(--border-hairline-teal);
 }
 
-/* ── Interactive card ── */
+/* ── Interactive card — manga-panel lift: hard offset shadow, not blur ── */
 .card--interactive {
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-out),
+  transition: transform var(--duration-normal) var(--ease-spring),
+              box-shadow var(--duration-normal) var(--ease-spring),
               border-color var(--duration-fast) var(--ease-out);
 }
 .card--interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-accent);
+  transform: translate(-3px, -3px);
+  border-color: var(--color-ink);
+  box-shadow: 5px 5px 0 var(--color-accent);
 }
-.card--interactive:active { transform: translateY(0); }
+.card--interactive:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+  transition-duration: var(--duration-instant);
+}
 .card--interactive:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
@@ -50,7 +56,8 @@
 /* ── Selected state ── */
 .card--selected {
   border: 2px solid var(--color-accent);
-  background-color: rgba(229, 255, 151, 0.06);
+  background-color: rgba(255, 61, 138, 0.08);
+  box-shadow: 4px 4px 0 var(--color-accent);
 }
 .card--teal.card--selected {
   border: 2px solid var(--color-accent);

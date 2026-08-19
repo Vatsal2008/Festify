@@ -108,14 +108,14 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
             e.currentTarget.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85';
           }}
         />
-      </div>
-
-      {/* Body */}
-      <div className="event-card__body">
         <div className="event-card__chips">
           <EventStateChip state={event.state} />
           <Badge variant="teal">{event.category}</Badge>
         </div>
+      </div>
+
+      {/* Body */}
+      <div className="event-card__body">
         <h3 className="event-card__title">{event.title}</h3>
         <div className="event-card__meta">
           <span className="event-card__meta-item"><CalendarIcon size={14} /> {formatDateShort(event.start_date)}</span>
@@ -249,7 +249,7 @@ export function QRDisplay({ ticket }) {
     const size = 200;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#083d44';
+    ctx.fillStyle = '#16101F';
     const seed = ticket.booking_code.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     const modules = 21;
     const moduleSize = Math.floor(size / modules);
@@ -410,11 +410,11 @@ export function OrganizerCard({ org, onFollow }) {
         </Button>
       </div>
       {org.description && (
-        <p className="type-body-xs" style={{ color: 'rgba(8,61,68,0.7)', lineHeight: 'var(--lh-body-xs)' }}>{org.description}</p>
+        <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.7)', lineHeight: 'var(--lh-body-xs)' }}>{org.description}</p>
       )}
       <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap' }}>
-        <span className="type-label-mono" style={{ color: 'rgba(8,61,68,0.6)' }}>{org.successful_events_count} events</span>
-        <span className="type-label-mono" style={{ color: 'rgba(8,61,68,0.6)' }}>{(org.followers || 0).toLocaleString()} followers</span>
+        <span className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.6)' }}>{org.successful_events_count} events</span>
+        <span className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.6)' }}>{(org.followers || 0).toLocaleString()} followers</span>
       </div>
     </Card>
   );

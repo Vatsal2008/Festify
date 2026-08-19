@@ -1,51 +1,65 @@
 /* =========================================================
    Festify Design System — Color Tokens
-   Source: Frontend/theme.md (Elicit design system)
+   "Fest at night" — a warm-black canvas lit by three stage
+   colors (violet / pink / orange), with acid lime reserved
+   strictly for live-right-now urgency. Flat color blocking,
+   not gradients — this is poster/flyer color, not app-glow.
    ========================================================= */
 
 :root {
   /* ── Structural ── */
-  --color-ink:            #083d44;   /* primary text + dark band bg + hairline border */
-  --color-ink-deep:       #09272b;   /* darkest teal depth stop */
-  --color-canvas:         #fcfcf8;   /* parchment off-white — main surface */
-  --color-surface-sage:   #f3f6e4;   /* warm sage — differentiated card surfaces */
-  --color-surface-cool:   #e8eced;   /* cool gray — alternate card fills */
-  --color-primary:        #026370;   /* mid-range teal — gradients, secondary surfaces */
-  --color-accent:         #e5ff97;   /* chartreuse — ONE primary CTA per section only */
-  --color-link-blue:      #0000ee;   /* browser-default hyperlink — never overridden */
-  --color-hairline:       #000000;   /* 1px card borders on canvas sections */
-  --color-hairline-light: #083d44;   /* 1px card borders on teal dark sections */
+  --color-ink:            #16101F;   /* warm-black text + dark band bg — "the venue at night" */
+  --color-ink-deep:       #0B0714;   /* darkest depth stop — backstage */
+  --color-canvas:         #FBF7F0;   /* warm paper off-white — main light surface */
+  --color-surface-sage:   #F1EAFB;   /* soft lavender-tinted card surface */
+  --color-surface-cool:   #EEEAFA;   /* cool lavender-gray card surface */
+  --color-primary:        #6C4DFF;   /* electric violet — the main-stage brand color */
+  --color-accent:         #FF3D8A;   /* hype pink — the single loudest CTA/highlight per section */
+  --color-link-blue:      #6C4DFF;   /* inline links — violet, not browser-default blue */
+  --color-hairline:       #E4DCF2;   /* 1px card borders on canvas (light) sections */
+  --color-hairline-light: #2E2140;   /* 1px card borders on ink (dark) sections */
+
+  /* ── Stage lights (named accents — flat color blocks, use deliberately) ── */
+  --color-electric:  #6C4DFF;   /* violet — primary / structural brand */
+  --color-hype:      #FF3D8A;   /* pink — Prime, hype, reviews, social heat */
+  --color-flare:     #FF7A29;   /* orange — price, CTAs, warmth */
+  --color-live:      #D4FF3D;   /* acid lime — reserved ONLY for "live now" / scarcity */
 
   /* ── Status / Semantic ── */
-  --color-success:        #22c55e;
-  --color-warning:        #f59e0b;
-  --color-error:          #ef4444;
-  --color-info:           #3b82f6;
-  --color-success-bg:     rgba(34, 197, 94, 0.08);
-  --color-warning-bg:     rgba(245, 158, 11, 0.08);
-  --color-error-bg:       rgba(239, 68, 68, 0.08);
-  --color-info-bg:        rgba(59, 130, 246, 0.08);
+  --color-success:        #2ECC71;
+  --color-warning:        #FF7A29;
+  --color-error:          #FF3D5A;
+  --color-info:           #6C4DFF;
+  --color-success-bg:     rgba(46, 204, 113, 0.1);
+  --color-warning-bg:     rgba(255, 122, 41, 0.1);
+  --color-error-bg:       rgba(255, 61, 90, 0.1);
+  --color-info-bg:        rgba(108, 77, 255, 0.1);
 
   /* ── Event State ── */
-  --state-draft:          #6b7280;
-  --state-pending:        #f59e0b;
-  --state-live:           #22c55e;
-  --state-early-access:   #e5ff97;
-  --state-on-sale:        #083d44;
-  --state-sold-out:       #ef4444;
-  --state-ongoing:        #8b5cf6;
-  --state-completed:      #026370;
-  --state-postponed:      #f59e0b;
-  --state-cancelled:      #ef4444;
+  --state-draft:          #8A7F9E;
+  --state-pending:        #FF7A29;
+  --state-live:           #D4FF3D;
+  --state-early-access:   #FF3D8A;
+  --state-on-sale:        #6C4DFF;
+  --state-sold-out:       #FF3D5A;
+  --state-ongoing:        #FF3D8A;
+  --state-completed:      #8A7F9E;
+  --state-postponed:      #FF7A29;
+  --state-cancelled:      #FF3D5A;
 
   /* ── Customer Level ── */
-  --level-bronze:         #cd7f32;
-  --level-silver:         #a8a9ad;
-  --level-gold:           #ffd700;
-  --level-platinum:       #b4c0cc;
-  --level-prime:          #e5ff97;   /* chartreuse — highest earned tier */
+  --level-bronze:         #CD7F32;
+  --level-silver:         #A8A9AD;
+  --level-gold:           #FFD700;
+  --level-platinum:       #B4C0CC;
+  --level-prime:          #D4FF3D;   /* acid lime — highest earned tier, deliberately scarce */
 
   /* ── Overlay ── */
-  --color-overlay:        rgba(8, 61, 68, 0.6);
-  --color-overlay-light:  rgba(8, 61, 68, 0.15);
+  --color-overlay:        rgba(11, 7, 20, 0.7);
+  --color-overlay-light:  rgba(22, 16, 31, 0.2);
+
+  /* ── Glow (used sparingly — live badges, primary CTA hover) ── */
+  --glow-electric: 0 0 0 1px rgba(108, 77, 255, 0.4), 0 8px 24px rgba(108, 77, 255, 0.35);
+  --glow-hype:     0 0 0 1px rgba(255, 61, 138, 0.4), 0 8px 24px rgba(255, 61, 138, 0.35);
+  --glow-live:     0 0 12px rgba(212, 255, 61, 0.6);
 }

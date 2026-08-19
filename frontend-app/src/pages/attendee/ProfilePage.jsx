@@ -6,7 +6,6 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { mockTickets } from '@/data/mockData';
 import {
   TicketIcon, HeartIcon, UsersIcon, StarIcon, SparklesIcon, BellIcon,
   GraduationCapIcon, CheckIcon, ZapIcon
@@ -48,9 +47,9 @@ export default function ProfilePage() {
             <Avatar name={user.name} size="xl" level={user.customer_level} src={user.avatar_url} />
             <div className="profile-hero__info">
               <h1 className="profile-hero__name">{user.name}</h1>
-              <p className="type-body-md" style={{ color: 'rgba(252,252,248,0.75)', marginBottom: 'var(--space-sm)' }}>{user.email}</p>
+              <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.75)', marginBottom: 'var(--space-sm)' }}>{user.email}</p>
               {user.college_name && (
-                <p className="type-body-sm" style={{ color: 'rgba(252,252,248,0.65)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <p className="type-body-sm" style={{ color: 'rgba(251, 247, 240,0.65)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <GraduationCapIcon size={16} /> {user.college_name}
                 </p>
               )}
@@ -73,11 +72,11 @@ export default function ProfilePage() {
           {/* Level Progress */}
           <div style={{ marginTop: 'var(--space-xl)', maxWidth: 480 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span className="type-label-mono" style={{ color: 'rgba(252,252,248,0.7)' }}>
+              <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.7)' }}>
                 Level: {user.customer_level.charAt(0).toUpperCase() + user.customer_level.slice(1)}
               </span>
               {nextLevel && (
-                <span className="type-label-mono" style={{ color: 'rgba(252,252,248,0.5)' }}>
+                <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.5)' }}>
                   Next: {nextLevel.charAt(0).toUpperCase() + nextLevel.slice(1)}
                 </span>
               )}
@@ -90,7 +89,7 @@ export default function ProfilePage() {
         <CanvasBand variant="compact">
           <div className="profile-stats">
             {[
-              { value: mockTickets.length, label: 'Events Attended' },
+              { value: user.lifetime_events_attended ?? 0, label: 'Events Attended' },
               { value: user.is_prime ? <ZapIcon size={20} filled /> : '—', label: 'Prime Status' },
               { value: user.has_prime_pass ? <SparklesIcon size={20} /> : '—', label: 'Prime Pass' },
             ].map(stat => (

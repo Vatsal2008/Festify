@@ -4,6 +4,8 @@ export { default as Card } from './Card';
 export { default as Badge } from './Badge';
 export { default as Tag } from './Tag';
 export { default as Modal } from './Modal';
+export { default as RevealGrid } from './RevealGrid';
+export { default as QueryBoundary } from './QueryBoundary';
 export { Toast, default as ToastContainer } from './ToastContainer';
 
 export {

@@ -1,7 +1,5 @@
 // components/primitives/Input.jsx
 import './primitives.css';
-import { StarIcon } from '@/components/icons/Icons';
-
 export default function Input({ label, error, hint, type = 'text', isSearch = false, className = '', id, ...rest }) {
   const fieldId = id || `input-${Math.random().toString(36).slice(2, 7)}`;
   return (
@@ -76,20 +74,16 @@ export function StarRating({ value = 0, max = 5, interactive = false, onChange, 
       <div className={`star-rating star-input ${className}`} role="radiogroup" aria-label="Star rating">
         {stars.map((s) => (
           <button key={s} type="button" role="radio" aria-checked={value === s} aria-label={`${s} star`}
-            className={`star ${s <= value ? 'star--filled' : ''}`} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex' }}
-            onClick={() => onChange?.(s)}>
-            <StarIcon size={size} filled={s <= value} />
-          </button>
+            className={`star ${s <= value ? 'star--filled' : ''}`} style={{ fontSize: size }}
+            onClick={() => onChange?.(s)}>★</button>
         ))}
       </div>
     );
   }
   return (
-    <div className={`star-rating ${className}`} style={{ display: 'inline-flex', gap: 2 }} aria-label={`${value} out of ${max} stars`}>
+    <div className={`star-rating ${className}`} aria-label={`${value} out of ${max} stars`}>
       {stars.map((s) => (
-        <span key={s} className={`star ${s <= Math.floor(value) ? 'star--filled' : ''}`} aria-hidden="true" style={{ display: 'inline-flex' }}>
-          <StarIcon size={size} filled={s <= Math.floor(value)} />
-        </span>
+        <span key={s} className={`star ${s <= Math.floor(value) ? 'star--filled' : ''}`} style={{ fontSize: size }} aria-hidden="true">★</span>
       ))}
     </div>
   );

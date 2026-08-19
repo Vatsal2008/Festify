@@ -23,16 +23,23 @@
 /* ── Variants ── */
 .btn--primary {
   background-color: var(--color-accent);
-  color: var(--color-ink);
-  border-radius: var(--radius-none); /* squared — archival */
+  color: var(--color-canvas);
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-none); /* squared — manga panel edge */
   padding: 12px 24px;
   height: 44px;
+  transition:
+    box-shadow var(--duration-normal) var(--ease-spring),
+    transform var(--duration-normal) var(--ease-spring);
 }
 .btn--primary:hover:not(:disabled) {
-  opacity: 0.92;
-  transform: scale(0.99);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  transform: translate(-2px, -2px);
 }
-.btn--primary:active:not(:disabled) { transform: scale(0.97); }
+.btn--primary:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(0, 0) scale(0.97);
+}
 
 .btn--secondary {
   background-color: var(--color-ink);
@@ -69,7 +76,7 @@
   padding: 10px 16px;
   height: 40px;
 }
-.btn--ghost-canvas:hover:not(:disabled) { background-color: rgba(252,252,248,0.1); }
+.btn--ghost-canvas:hover:not(:disabled) { background-color: rgba(251, 247, 240,0.1); }
 
 .btn--danger {
   background-color: var(--color-error);

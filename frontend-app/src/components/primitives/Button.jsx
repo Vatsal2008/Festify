@@ -22,6 +22,7 @@ export default function Button({
     size !== 'md' ? `btn--${size}` : '',
     fullWidth ? 'btn--full' : '',
     (isDisabled || isLoading) ? 'btn--disabled' : '',
+    variant === 'primary' ? 'impact-flash-on-active speed-lines' : '',
     className,
   ].filter(Boolean).join(' ');
 

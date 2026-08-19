@@ -1,57 +1,59 @@
 /* =========================================================
    Festify Design System — Typography Tokens
-   Source: Frontend/theme.md (Elicit design system)
-   
+
    FONT STRATEGY:
-   • Martina Plantijn → EB Garamond (Google Fonts — old-style serif)
-   • Special Gothic Variable → Barlow Condensed (Google Fonts — condensed grotesque)
-   • DM Mono → DM Mono (Google Fonts — monospace labels)
-   • Inter → Inter (Google Fonts — button labels only)
+   • Display → Bricolage Grotesque (Google Fonts, variable) —
+     an expressive grotesque with real poster-headline energy;
+     used bold and large, never at body sizes.
+   • Body → Instrument Sans (Google Fonts) — clean, warm,
+     high-legibility for dense ticket/price/date information.
+   • Mono/label → Space Mono (Google Fonts) — the ticket-stub
+     face: verify codes, timestamps, "LIVE" tags, prices.
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Barlow+Condensed:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
   /* ── Font Families ── */
-  --font-display: 'EB Garamond', Georgia, 'Times New Roman', serif;
-  --font-body:    'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
-  --font-mono:    'DM Mono', 'Courier New', monospace;
-  --font-ui:      'Inter', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body:    'Instrument Sans', system-ui, sans-serif;
+  --font-mono:    'Space Mono', 'Courier New', monospace;
+  --font-ui:      'Instrument Sans', system-ui, sans-serif;
 
   /* ── Type Scale ── */
-  --text-display-xl:  64px;
-  --text-display-lg:  48px;
-  --text-display-md:  32px;
-  --text-heading-lg:  27.2px;
-  --text-heading-md:  20.8px;
-  --text-body-lg:     20px;
-  --text-body-md:     17.6px;
-  --text-body-sm:     16px;
-  --text-body-xs:     15.2px;
-  --text-label-mono:  14.4px;
+  --text-display-xl:  88px;
+  --text-display-lg:  56px;
+  --text-display-md:  36px;
+  --text-heading-lg:  28px;
+  --text-heading-md:  22px;
+  --text-body-lg:     19px;
+  --text-body-md:     17px;
+  --text-body-sm:     15px;
+  --text-body-xs:     13px;
+  --text-label-mono:  13px;
 
   /* ── Line Heights ── */
-  --lh-display-xl:   76.8px;
-  --lh-display-lg:   64.8px;
-  --lh-display-md:   42.24px;
+  --lh-display-xl:   86px;
+  --lh-display-lg:   58px;
+  --lh-display-md:   40px;
   --lh-heading-lg:   34px;
-  --lh-heading-md:   29.12px;
-  --lh-body-lg:      29px;
-  --lh-body-md:      26.4px;
-  --lh-body-sm:      24px;
-  --lh-body-xs:      21.28px;
-  --lh-label-mono:   18.72px;
+  --lh-heading-md:   28px;
+  --lh-body-lg:      28px;
+  --lh-body-md:      25px;
+  --lh-body-sm:      22px;
+  --lh-body-xs:      18px;
+  --lh-label-mono:   18px;
 
   /* ── Letter Spacing ── */
-  --ls-display-xl:  -1.28px;
-  --ls-display-lg:  -0.24px;
-  --ls-display-md:  0px;
-  --ls-body-lg:     0.15px;
-  --ls-body-md:     0.25px;
-  --ls-body-sm:     0.15px;
+  --ls-display-xl:  -3px;
+  --ls-display-lg:  -1.5px;
+  --ls-display-md:  -0.5px;
+  --ls-body-lg:     0px;
+  --ls-body-md:     0px;
+  --ls-body-sm:     0.1px;
   --ls-body-xs:     0.15px;
-  --ls-label-mono:  0.72px;
-  --ls-heading:     0.1px;
+  --ls-label-mono:  1.2px;
+  --ls-heading:     -0.3px;
 }
 
 /* ── Semantic type utility classes ── */
@@ -61,7 +63,7 @@
   font-size: var(--text-display-xl);
   line-height: var(--lh-display-xl);
   letter-spacing: var(--ls-display-xl);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .type-display-lg {
@@ -69,7 +71,7 @@
   font-size: var(--text-display-lg);
   line-height: var(--lh-display-lg);
   letter-spacing: var(--ls-display-lg);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .type-display-md {
@@ -77,7 +79,7 @@
   font-size: var(--text-display-md);
   line-height: var(--lh-display-md);
   letter-spacing: var(--ls-display-md);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .type-heading-lg {
@@ -85,7 +87,7 @@
   font-size: var(--text-heading-lg);
   line-height: var(--lh-heading-lg);
   letter-spacing: var(--ls-heading);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .type-heading-md {
@@ -93,7 +95,7 @@
   font-size: var(--text-heading-md);
   line-height: var(--lh-heading-md);
   letter-spacing: var(--ls-heading);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .type-body-lg {
@@ -133,26 +135,27 @@
   font-size: var(--text-label-mono);
   line-height: var(--lh-label-mono);
   letter-spacing: var(--ls-label-mono);
-  font-weight: 500;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
 .type-ui-button {
   font-family: var(--font-ui);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 24px;
-  letter-spacing: 0;
+  letter-spacing: -0.1px;
 }
 
 /* ── Responsive type scale (mobile) ── */
 @media (max-width: 768px) {
   :root {
-    --text-display-xl:  40px;
-    --text-display-lg:  32px;
-    --text-display-md:  24px;
-    --lh-display-xl:    48px;
-    --lh-display-lg:    40px;
-    --lh-display-md:    32px;
+    --text-display-xl:  48px;
+    --text-display-lg:  34px;
+    --text-display-md:  26px;
+    --lh-display-xl:    50px;
+    --lh-display-lg:    38px;
+    --lh-display-md:    30px;
+    --ls-display-xl:    -1.5px;
   }
 }

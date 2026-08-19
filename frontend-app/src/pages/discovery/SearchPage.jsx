@@ -1,12 +1,18 @@
-// pages/discovery/SearchPage.jsx — Search page with inline search bar and category filters
-import { useState, useMemo } from 'react';
+// pages/discovery/SearchPage.jsx — server-side search, filter and sort
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PageShell, CanvasBand, TealBand } from '@/components/layout';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { PageShell, CanvasBand } from '@/components/layout';
 import { EventCard } from '@/components/domain';
-import { Tag, Input } from '@/components/primitives';
-import { mockEvents, eventCategories } from '@/data/mockData';
-import { SearchIcon } from '@/components/icons/Icons';
+import { Tag, Input, RevealGrid, QueryBoundary } from '@/components/primitives';
+import { eventsApi } from '@/lib/api/endpoints';
+import { queryKeys } from '@/constants/queryKeys';
 import '@/pages/pages.css';
+
+const CATEGORIES = [
+  'All', 'Hackathon', 'Cultural', 'Music', 'Sports',
+  'Talk', 'Workshop', 'Party', 'Comedy', 'Theatre',
+];
 
 const SORT_OPTIONS = [
   { id: 'trending', label: 'Trending' },
@@ -17,46 +23,58 @@ const SORT_OPTIONS = [
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [input, setInput] = useState(searchParams.get('q') || '');
+  const [q, setQ] = useState(searchParams.get('q') || '');
   const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
-  const [sort, setSort] = useState('trending');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'trending');
 
-  const results = useMemo(() => {
-    let evts = [...mockEvents];
-    if (query) evts = evts.filter(e => e.title.toLowerCase().includes(query.toLowerCase()) || e.venue.toLowerCase().includes(query.toLowerCase()));
-    if (activeCategory !== 'All') evts = evts.filter(e => e.category === activeCategory);
-    if (sort === 'date') evts.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-    if (sort === 'price-asc') evts.sort((a, b) => Math.min(...a.tiers.map(t => t.price)) - Math.min(...b.tiers.map(t => t.price)));
-    if (sort === 'price-desc') evts.sort((a, b) => Math.max(...b.tiers.map(t => t.price)) - Math.max(...a.tiers.map(t => t.price)));
-    if (sort === 'trending') evts.sort((a, b) => b.hype_count - a.hype_count);
-    return evts;
-  }, [query, activeCategory, sort]);
+  // Debounce so typing doesn't fire a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setQ(input), 350);
+    return () => clearTimeout(t);
+  }, [input]);
+
+  // Keep the URL shareable/bookmarkable as filters change.
+  useEffect(() => {
+    const next = {};
+    if (q) next.q = q;
+    if (activeCategory !== 'All') next.category = activeCategory;
+    if (sort !== 'trending') next.sort = sort;
+    setSearchParams(next, { replace: true });
+  }, [q, activeCategory, sort, setSearchParams]);
+
+  const searchQuery = useQuery({
+    queryKey: queryKeys.search.events(q, { category: activeCategory, sort }),
+    queryFn: () => eventsApi.list({ q: q || undefined, category: activeCategory, sort }),
+    // Keeps previous results on screen while refining, instead of
+    // flashing a spinner on every filter change.
+    placeholderData: keepPreviousData,
+  });
+
+  const results = searchQuery.data ?? [];
 
   return (
     <PageShell>
       <CanvasBand>
-        {/* ── Search Header with Big Theme Icon ── */}
-        <div style={{ marginBottom: 'var(--space-3xl)' }}>
-          <h1 className="type-display-lg" style={{ color: 'var(--color-ink)', marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-            <SearchIcon size={44} style={{ color: 'var(--color-ink)' }} />
+        <div style={{ marginBottom: 'var(--space-2xl)' }}>
+          <h1 className="type-display-md" style={{ color: 'var(--color-ink)', marginBottom: 'var(--space-lg)' }}>
             Search Events
           </h1>
-          <form onSubmit={e => { e.preventDefault(); setSearchParams({ q: query }); }} role="search" style={{ maxWidth: 640 }}>
+          <form onSubmit={e => { e.preventDefault(); setQ(input); }} role="search" style={{ maxWidth: 640 }}>
             <Input
               isSearch
               placeholder="Search by event title, college, venue, or keyword..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
+              value={input}
+              onChange={e => setInput(e.target.value)}
               aria-label="Search events"
               style={{ background: 'var(--color-surface-sage)', borderColor: 'var(--color-hairline)' }}
             />
           </form>
         </div>
 
-        {/* ── Category & Sort Filters ── */}
         <div className="search-filters" style={{ marginBottom: 'var(--space-lg)' }}>
           <span className="type-label-mono" style={{ marginRight: 'var(--space-sm)' }}>Category:</span>
-          {eventCategories.map(cat => (
+          {CATEGORIES.map(cat => (
             <Tag key={cat} isActive={activeCategory === cat} onClick={() => setActiveCategory(cat)}>{cat}</Tag>
           ))}
         </div>
@@ -72,7 +90,7 @@ export default function SearchPage() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: sort === opt.id ? 'var(--color-ink)' : 'rgba(8,61,68,0.5)',
+                color: sort === opt.id ? 'var(--color-ink)' : 'rgba(22, 16, 31,0.5)',
                 borderBottom: sort === opt.id ? '2px solid var(--color-ink)' : '2px solid transparent',
                 padding: '4px 0',
                 marginRight: 'var(--space-md)',
@@ -83,22 +101,24 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {/* ── Results Grid ── */}
         <div className="search-results-header" style={{ marginBottom: 'var(--space-xl)' }}>
-          <p className="type-label-mono" style={{ color: 'rgba(8,61,68,0.7)' }}>{results.length} events found</p>
+          <p className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.7)' }}>
+            {searchQuery.isPending ? 'Searching…' : `${results.length} event${results.length === 1 ? '' : 's'} found`}
+          </p>
         </div>
 
-        {results.length > 0 ? (
-          <div className="events-grid">
-            {results.map(evt => <EventCard key={evt.id} event={evt} />)}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <SearchIcon size={48} style={{ color: 'var(--color-ink)' }} />
-            <h2 className="empty-state__title">No events found</h2>
-            <p className="empty-state__sub">Try a different search term or clear the filters</p>
-          </div>
-        )}
+        <QueryBoundary
+          query={searchQuery}
+          emptyTitle="No events found"
+          emptySub="Try a different search term or clear the filters."
+          loadingLabel="Searching"
+        >
+          {(data) => (
+            <RevealGrid className="events-grid">
+              {data.map(evt => <EventCard key={evt.id} event={evt} />)}
+            </RevealGrid>
+          )}
+        </QueryBoundary>
       </CanvasBand>
     </PageShell>
   );

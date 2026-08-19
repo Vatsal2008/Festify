@@ -1,6 +1,5 @@
 // components/primitives/Modal.jsx
 import { useEffect, useRef } from 'react';
-import { XIcon } from '@/components/icons/Icons';
 import './Modal.css';
 
 export default function Modal({
@@ -45,7 +44,7 @@ export default function Modal({
       >
         <div className="modal-header">
           {title && <h2 id="modal-title" className="modal-title type-display-md">{title}</h2>}
-          <button className="modal-close" onClick={onClose} aria-label="Close modal" type="button"><XIcon size={18} /></button>
+          <button className="modal-close" onClick={onClose} aria-label="Close modal" type="button">✕</button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
