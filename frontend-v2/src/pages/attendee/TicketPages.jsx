@@ -1,7 +1,7 @@
 // pages/attendee/TicketPages.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, CanvasBand, TealBand } from '@/components/layout';
 import { TicketCard, QRDisplay } from '@/components/domain';
 import Button from '@/components/primitives/Button';
@@ -10,7 +10,7 @@ import Modal from '@/components/primitives/Modal';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
 import { useAuth } from '@/lib/auth/AuthContext';
 import api, { apiError } from '@/lib/api/client';
-import { supportApi } from '@/lib/api/endpoints';
+import { supportApi, ordersApi } from '@/lib/api/endpoints';
 import { queryKeys } from '@/constants/queryKeys';
 import { useToast } from '@/store/uiStore';
 import { TicketIcon, AlertTriangleIcon, ArrowLeftIcon } from '@/components/icons/Icons';
@@ -24,6 +24,8 @@ const fetchMyTickets = () => api.get('/users/me/tickets').then(r => r.data);
 export default function TicketWalletPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState('Active');
 
   const ticketsQuery = useQuery({
@@ -31,6 +33,25 @@ export default function TicketWalletPage() {
     queryFn: fetchMyTickets,
     enabled: !!user,
   });
+
+  // A redirect-based payment (netbanking) can land the user back here
+  // with the purchase already captured but never confirmed, because the
+  // page that opened Checkout was destroyed mid-flow. Reconcile any
+  // order left pending so the ticket appears instead of silently
+  // vanishing.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('festify_pending_order');
+    if (!pending || !user) return;
+    sessionStorage.removeItem('festify_pending_order');
+    ordersApi.sync(pending)
+      .then((res) => {
+        if (res?.tickets?.length) {
+          qc.invalidateQueries({ queryKey: queryKeys.tickets.wallet(user.id) });
+          toast.success('Payment confirmed — your ticket is ready.');
+        }
+      })
+      .catch(() => { /* nothing to reconcile; the wallet below is the truth */ });
+  }, [user, qc, toast]);
 
   const all = ticketsQuery.data ?? [];
   const filtered = all.filter(t => {

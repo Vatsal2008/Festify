@@ -94,18 +94,21 @@ export default function EventDetailPage() {
     return true;
   };
 
-  /** Create the order, open Razorpay, then verify the signed result. */
+  /** Create the order, open Razorpay, then confirm it. */
   const handleConfirmPurchase = async () => {
     if (!selectedTier) return;
     setIsPaying(true);
+    let createdOrderId = null;
     try {
       const created = await ordersApi.create({
         ticket_tier_id: selectedTier.id,
         quantity,
       });
+      createdOrderId = created.order.id;
+      // Survives a redirect: netbanking sends the browser to the bank and
+      // back, losing all in-page state, so the order id has to outlive it.
+      sessionStorage.setItem('festify_pending_order', createdOrderId);
 
-      // A free tier still creates a zero-amount Razorpay order; skip
-      // Checkout entirely rather than showing a ₹0 payment window.
       if (created.amount === 0) {
         toast.info('Free event — confirming your ticket.');
       }
@@ -116,11 +119,27 @@ export default function EventDetailPage() {
         eventTitle: event.title,
       });
 
-      const confirmed = await ordersApi.verifyPayment(created.order.id, signed);
+      const confirmed = await ordersApi.verifyPayment(createdOrderId, signed);
+      sessionStorage.removeItem('festify_pending_order');
       setShowPurchaseModal(false);
       setSuccessOrder(confirmed);
       invalidateEvent();
     } catch (err) {
+      // The in-page callback may never fire even though the payment went
+      // through, so ask the server to check with Razorpay before treating
+      // this as a failure.
+      if (createdOrderId) {
+        try {
+          const synced = await ordersApi.sync(createdOrderId);
+          sessionStorage.removeItem('festify_pending_order');
+          setShowPurchaseModal(false);
+          setSuccessOrder(synced);
+          invalidateEvent();
+          return;
+        } catch {
+          // Genuinely not paid — fall through to the original error.
+        }
+      }
       toast.error(apiError(err, err.message));
     } finally {
       setIsPaying(false);

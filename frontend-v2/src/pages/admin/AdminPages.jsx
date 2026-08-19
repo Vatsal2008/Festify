@@ -407,8 +407,8 @@ export function SuperAdminOrganizersPage() {
                 <tr key={org.id}>
                   <td><div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}><Avatar name={org.name} src={org.avatar} size="sm" /><strong>{org.name}</strong></div></td>
                   <td><Badge variant={org.trust_tier === 'trusted' ? 'success' : org.trust_tier === 'verified' ? 'info' : 'default'}>{org.trust_tier}</Badge></td>
-                  <td>{org.score_points.toLocaleString()}</td>
-                  <td>{org.successful_events_count}</td>
+                  <td>{(org.score_points ?? 0).toLocaleString()}</td>
+                  <td>{org.successful_events_count ?? 0}</td>
                   <td><Badge variant={org.banned ? 'error' : 'success'}>{org.banned ? `Banned (${org.ban_stage})` : 'Active'}</Badge></td>
                   <td>
                     {!org.banned && (

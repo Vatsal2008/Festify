@@ -36,6 +36,9 @@ export const ordersApi = {
   create: (body) => api.post('/orders', body).then(r => r.data),
   verifyPayment: (orderId, body) =>
     api.post(`/orders/${orderId}/verify-payment`, body).then(r => r.data),
+  // Server-side reconciliation against Razorpay, for when the in-page
+  // callback never runs (redirect-based methods navigate the page away).
+  sync: (orderId) => api.post(`/orders/${orderId}/sync`).then(r => r.data),
   get: (orderId) => api.get(`/orders/${orderId}`).then(r => r.data),
 };
 
@@ -99,6 +102,9 @@ export const platformApi = {
 
   // admin management
   myRoles: () => api.get('/auth/my-roles').then(r => r.data),
+  superAdminStatus: () => api.get('/auth/super-admin/status').then(r => r.data),
+  requestSuperAdminCode: () => api.post('/auth/super-admin/request-code').then(r => r.data),
+  verifySuperAdminCode: (code) => api.post('/auth/super-admin/verify-code', { code }).then(r => r.data),
   searchUsers: (q) => api.get('/users/search', { params: { q } }).then(r => r.data),
   superAdmins: () => api.get('/super-admins').then(r => r.data),
   addSuperAdmin: (userId) => api.post('/super-admins', { user_id: userId }).then(r => r.data),

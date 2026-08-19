@@ -23,13 +23,15 @@ import { OrgDashboardPage, EventBuilderPage, QRScannerPage, BulkRequestsPage, Or
 
 // ── Admin ──────────────────────────────────────────────────────────
 import {
-  CollegeAdminLoginPage, CollegeAdminApplicationsPage,
+  CollegeAdminApplicationsPage,
   CollegeAdminEventsPage, CollegeAdminAnalyticsPage,
-  SuperAdminLoginPage, SuperAdminDashboardPage, SuperAdminOrganizersPage,
+  SuperAdminDashboardPage, SuperAdminOrganizersPage,
   SuperAdminSupportPage, SuperAdminConfigPage, SuperAdminAuditLogPage,
-  SuperAdminTrendingPage, SuperAdminCollegeAdminsPage
+  SuperAdminTrendingPage
 } from '@/pages/admin/AdminPages';
 import AdminManagementPage from '@/pages/admin/AdminManagementPage';
+import SuperAdminGate from '@/pages/admin/SuperAdminGate';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
 function ScrollToTop() {
@@ -77,6 +79,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <ErrorBoundary>
       <Routes>
         {/* ── Public ── */}
         <Route path="/"          element={<HomePage />} />
@@ -104,25 +107,30 @@ export default function App() {
         <Route path="/org/:orgId/analytics"                    element={<RequireAuth><OrgAnalyticsPage /></RequireAuth>} />
 
         {/* ── College Admin ── */}
-        <Route path="/college-admin/login"        element={<CollegeAdminLoginPage />} />
-        <Route path="/college-admin/applications" element={<CollegeAdminApplicationsPage />} />
-        <Route path="/college-admin/events"       element={<CollegeAdminEventsPage />} />
-        <Route path="/college-admin/analytics"    element={<CollegeAdminAnalyticsPage />} />
+        {/* College admin. Access is a role on the normal account, so
+            these only need a signed-in session -- the API enforces the
+            college_admins check per request. */}
+        <Route path="/college-admin"              element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/college-admin/applications" element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/college-admin/events"       element={<RequireAuth><CollegeAdminEventsPage /></RequireAuth>} />
+        <Route path="/college-admin/analytics"    element={<RequireAuth><CollegeAdminAnalyticsPage /></RequireAuth>} />
 
         {/* ── Super Admin ── */}
-        <Route path="/superadmin"                    element={<SuperAdminLoginPage />} />
-        <Route path="/superadmin/dashboard"          element={<SuperAdminDashboardPage />} />
-        <Route path="/superadmin/college-admins"     element={<RequireAuth><AdminManagementPage /></RequireAuth>} />
-        <Route path="/superadmin/admin-access"       element={<RequireAuth><AdminManagementPage /></RequireAuth>} />
-        <Route path="/superadmin/organizers"         element={<SuperAdminOrganizersPage />} />
-        <Route path="/superadmin/support-tickets"    element={<SuperAdminSupportPage />} />
-        <Route path="/superadmin/config"             element={<SuperAdminConfigPage />} />
-        <Route path="/superadmin/audit-log"          element={<SuperAdminAuditLogPage />} />
-        <Route path="/superadmin/trending-curation"  element={<SuperAdminTrendingPage />} />
+        {/* Every super admin route sits behind the emailed-code gate. */}
+        <Route path="/superadmin"                    element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
+        <Route path="/superadmin/dashboard"          element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
+        <Route path="/superadmin/college-admins"     element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/superadmin/admin-access"       element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/superadmin/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
+        <Route path="/superadmin/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
+        <Route path="/superadmin/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
+        <Route path="/superadmin/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
+        <Route path="/superadmin/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />
 
         {/* ── 404 ── */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </ErrorBoundary>
 
       {/* Global toast container */}
       <ToastContainer />
