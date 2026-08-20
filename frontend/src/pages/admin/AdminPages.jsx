@@ -56,7 +56,6 @@ export function CollegeAdminLoginPage() {
 export function CollegeAdminApplicationsPage() {
   const toast = useToast();
   const qc = useQueryClient();
-  const { user } = useAuth();
 
   // This page used to render three hardcoded applications and approve
   // them by mutating local state, so real submissions never appeared and

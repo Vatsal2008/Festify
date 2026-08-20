@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +10,7 @@ from app.deps import get_current_user
 from app.schemas import OrgBanCreate, OrgFlagCreate, OrganizerApplicationCreate
 
 router = APIRouter(tags=["organizer-admin"])
+logger = logging.getLogger(__name__)
 
 BAN_ESCALATION_ORDER = ("warning", "7d", "30d", "long")
 
@@ -162,7 +164,73 @@ def _decide_application(application_id: str, current_user: dict, decision: str) 
         .eq("id", application_id)
         .execute()
     )
-    return updated.data[0]
+
+    org = None
+    if decision == "approved":
+        org = _provision_org(supabase, application, current_user["id"])
+
+    return {**updated.data[0], "org_group": org}
+
+
+def _provision_org(supabase, application: dict, approver_id: str) -> dict | None:
+    """Create the organizer's group and make them its leader.
+
+    Approval used to flip a status column and stop there, which left the
+    applicant approved on paper and unable to do anything: publishing an
+    event needs an org_group, and every organizer surface is keyed by
+    org id. The decision is only meaningful once the group exists.
+    """
+    applicant_id = application.get("applicant_id")
+    if not applicant_id:
+        return None
+
+    # Someone may already lead a group -- a second application, or an
+    # earlier manual setup. Re-approving must not hand them a duplicate.
+    existing = (
+        supabase.table("org_member_roles")
+        .select("org_group_id")
+        .eq("user_id", applicant_id)
+        .eq("role", "leader")
+        .execute()
+    )
+    if existing.data:
+        org_id = existing.data[0]["org_group_id"]
+        found = supabase.table("org_groups").select("*").eq("id", org_id).execute()
+        return found.data[0] if found.data else None
+
+    applicant = supabase.table("users").select("full_name, email, college_id").eq(
+        "id", applicant_id
+    ).execute()
+    profile = applicant.data[0] if applicant.data else {}
+
+    # Name it after the applicant so the group is identifiable
+    # immediately; they can rename it from the dashboard.
+    display = (profile.get("full_name") or (profile.get("email") or "New").split("@")[0]).strip()
+    name = f"{display}'s Group"
+
+    org = (
+        supabase.table("org_groups")
+        .insert({
+            "name": name,
+            # Prefer the college on the application, falling back to the
+            # applicant's own -- an application routed to a super admin
+            # carries no college but the person may still belong to one.
+            "college_id": application.get("college_id") or profile.get("college_id"),
+            "is_college_committee": False,
+        })
+        .execute()
+        .data[0]
+    )
+
+    supabase.table("org_member_roles").insert({
+        "org_group_id": org["id"],
+        "user_id": applicant_id,
+        "role": "leader",
+        "granted_by": approver_id,
+    }).execute()
+
+    logger.info("Provisioned org %s for applicant %s", org["id"], applicant_id)
+    return org
 
 
 @router.post("/org-groups/{org_group_id}/flags")
