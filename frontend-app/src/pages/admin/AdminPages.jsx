@@ -55,47 +55,141 @@ export function CollegeAdminLoginPage() {
 // ── College Admin: Applications ───────────────────────────────────
 export function CollegeAdminApplicationsPage() {
   const toast = useToast();
-  const [apps, setApps] = useState([
-    { id: 'app-1', org_name: 'Tech Society BITS', leader: 'Vatsal Shah', email: 'vatsal@bits.ac.in', members_count: 12, status: 'pending', submitted_at: '2026-08-12' },
-    { id: 'app-2', org_name: 'Campus Music Club', leader: 'Priya Nair', email: 'priya@bits.ac.in', members_count: 5, status: 'pending', submitted_at: '2026-08-13' },
-    { id: 'app-3', org_name: 'Debate Society', leader: 'Karan M', email: 'karan@bits.ac.in', members_count: 8, status: 'approved', submitted_at: '2026-08-08' },
-  ]);
+  const qc = useQueryClient();
+  const { user } = useAuth();
 
-  const approve = (id) => { setApps(a => a.map(x => x.id === id ? { ...x, status: 'approved' } : x)); toast.success('Organizer approved!'); };
-  const reject  = (id) => { setApps(a => a.map(x => x.id === id ? { ...x, status: 'rejected' } : x)); toast.info('Application rejected'); };
+  // This page used to render three hardcoded applications and approve
+  // them by mutating local state, so real submissions never appeared and
+  // no decision reached the server.
+  const rolesQuery = useQuery({ queryKey: ['auth', 'my-roles'], queryFn: platformApi.myRoles });
+  const roles = rolesQuery.data;
+  const isSuper = !!roles?.is_super_admin;
+  const collegeId = (roles?.college_admin_of ?? [])[0];
+
+  // A super admin reviews everything, including applications submitted
+  // without a college -- those are routed to super_admin and carry no
+  // college_id, so the college-scoped listing can never return them.
+  const appsQuery = useQuery({
+    queryKey: ['organizer-applications', isSuper ? 'all' : collegeId],
+    queryFn: () => (isSuper ? adminApi.allApplications() : adminApi.pendingApplications(collegeId)),
+    enabled: !!roles && (isSuper || !!collegeId),
+  });
+
+  const decide = useMutation({
+    mutationFn: ({ id, approve }) =>
+      approve ? adminApi.approveApplication(id) : adminApi.rejectApplication(id),
+    onSuccess: (_d, { approve }) => {
+      qc.invalidateQueries({ queryKey: ['organizer-applications'] });
+      toast[approve ? 'success' : 'info'](approve ? 'Organizer approved.' : 'Application rejected.');
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const apps = appsQuery.data ?? [];
+  const pending = apps.filter(a => a.status === 'pending');
+  const decided = apps.filter(a => a.status !== 'pending');
+
+  const fmt = (v) => { try { return new Date(v).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return v ?? '—'; } };
+
+  const Row = ({ app }) => (
+    <tr key={app.id}>
+      <td>
+        <strong>{app.applicant?.full_name || 'Unknown applicant'}</strong><br />
+        <span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{app.applicant?.email}</span>
+      </td>
+      <td>{app.college?.name || <span style={{ opacity: 0.5 }}>No college</span>}</td>
+      <td>{app.routed_to === 'college_admin' ? 'College admin' : 'Festify team'}</td>
+      <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{fmt(app.created_at)}</td>
+      <td>
+        <Badge variant={app.status === 'approved' ? 'success' : app.status === 'rejected' ? 'error' : 'warning'}>
+          {app.status}
+        </Badge>
+      </td>
+      <td>
+        {app.status === 'pending' && (
+          <div className="admin-actions">
+            <Button variant="primary" size="sm" isLoading={decide.isPending && decide.variables?.id === app.id}
+              onClick={() => decide.mutate({ id: app.id, approve: true })}>Approve</Button>
+            <Button variant="danger" size="sm"
+              onClick={() => decide.mutate({ id: app.id, approve: false })}>Reject</Button>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
 
   return (
-    <DashboardShell orgId={null} sidebarType="college-admin">
+    <DashboardShell orgId={null} sidebarType={isSuper ? 'super-admin' : 'college-admin'}>
       <div style={{ padding: 'var(--space-2xl)' }}>
-        <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Organizer Applications</h1>
-        <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          <table className="admin-table">
-            <thead><tr><th>Org Name</th><th>Leader</th><th>Members</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {apps.map(app => (
-                <tr key={app.id}>
-                  <td><strong>{app.org_name}</strong></td>
-                  <td>{app.leader}<br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{app.email}</span></td>
-                  <td>{app.members_count}</td>
-                  <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{app.submitted_at}</td>
-                  <td><Badge variant={app.status === 'approved' ? 'success' : app.status === 'rejected' ? 'error' : 'warning'}>{app.status}</Badge></td>
-                  <td>{app.status === 'pending' && (
-                    <div className="admin-actions">
-                      <Button variant="primary" size="sm" onClick={() => approve(app.id)}>Approve</Button>
-                      <Button variant="danger"  size="sm" onClick={() => reject(app.id)}>Reject</Button>
-                    </div>
-                  )}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h1 className="type-display-md" style={{ marginBottom: 'var(--space-sm)' }}>Organizer applications</h1>
+        <p className="type-body-md" style={{ color: 'rgba(22,16,31,0.65)', marginBottom: 'var(--space-2xl)' }}>
+          {isSuper
+            ? 'Every application across the platform, including those with no college.'
+            : 'Applications from students at your college.'}
+        </p>
+
+        {rolesQuery.isLoading && <p className="type-body-md">Checking your access…</p>}
+
+        {!rolesQuery.isLoading && !isSuper && !collegeId && (
+          <div className="empty-state">
+            <h2 className="empty-state__title">You do not review applications</h2>
+            <p className="empty-state__sub">
+              This page is for college admins and super admins. Ask a super admin to grant you access.
+            </p>
+          </div>
+        )}
+
+        {appsQuery.isError && (
+          <div className="empty-state" role="alert">
+            <h2 className="empty-state__title">Couldn&apos;t load applications</h2>
+            <p className="empty-state__sub">{apiError(appsQuery.error)}</p>
+            <Button variant="primary" onClick={() => appsQuery.refetch()}>Try again</Button>
+          </div>
+        )}
+
+        {appsQuery.isSuccess && apps.length === 0 && (
+          <div className="empty-state">
+            <h2 className="empty-state__title">No applications yet</h2>
+            <p className="empty-state__sub">
+              Applications appear here as soon as someone applies from their profile page.
+            </p>
+          </div>
+        )}
+
+        {apps.length > 0 && (
+          <>
+            <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-md)' }}>
+              Pending ({pending.length})
+            </h2>
+            <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 'var(--space-2xl)' }}>
+              <table className="admin-table">
+                <thead><tr><th>Applicant</th><th>College</th><th>Reviewed by</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {pending.length > 0
+                    ? pending.map(a => <Row key={a.id} app={a} />)
+                    : <tr><td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-xl)', opacity: 0.6 }}>Nothing waiting on you.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+
+            {decided.length > 0 && (
+              <>
+                <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-md)' }}>Decided ({decided.length})</h2>
+                <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                  <table className="admin-table">
+                    <thead><tr><th>Applicant</th><th>College</th><th>Reviewed by</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
+                    <tbody>{decided.map(a => <Row key={a.id} app={a} />)}</tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
     </DashboardShell>
   );
 }
 
-// ── College Admin: Events ─────────────────────────────────────────
 export function CollegeAdminEventsPage() {
   const toast = useToast();
   const navigate = useNavigate();

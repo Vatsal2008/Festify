@@ -101,6 +101,7 @@ export const adminApi = {
   applyAsOrganizer: (collegeId) =>
     api.post('/organizer-applications', { college_id: collegeId }).then(r => r.data),
   myApplications: () => api.get('/organizer-applications/mine').then(r => r.data),
+  allApplications: () => api.get('/organizer-applications/all').then(r => r.data),
   pendingApplications: (collegeId) =>
     api.get('/organizer-applications/pending', { params: { college_id: collegeId } }).then(r => r.data),
   approveApplication: (id) => api.post(`/organizer-applications/${id}/approve`).then(r => r.data),
