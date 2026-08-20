@@ -25,7 +25,7 @@ export function CollegeAdminLoginPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      navigate('/college-admin/applications');
+      navigate('/admin/applications');
     }, 600);
   };
 
@@ -209,7 +209,7 @@ export function CollegeAdminEventsPage() {
       <div style={{ padding: 'var(--space-2xl)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)' }}>
           <h1 className="type-display-md">College Events</h1>
-          <Button variant="primary" onClick={() => navigate('/college-admin/create-event')}><PlusIcon size={16} /> Create Event</Button>
+          <Button variant="primary" onClick={() => navigate('/admin/create-event')}><PlusIcon size={16} /> Create Event</Button>
         </div>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
@@ -709,7 +709,7 @@ export function SuperAdminLoginPage() {
 
   const handleLogin = (e) => {
     e?.preventDefault();
-    if (code.trim() === 'ADMIN') { navigate('/superadmin/dashboard'); }
+    if (code.trim() === 'ADMIN') { navigate('/super/dashboard'); }
     else { setError('Invalid access code'); }
   };
 

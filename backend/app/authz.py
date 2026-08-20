@@ -65,12 +65,31 @@ def is_super_admin(user: dict | None) -> bool:
     if email and email.lower() in allowlist:
         return True
 
+    supabase = get_supabase()
+
+    # Email is the identity in super_admins now, so an admin approved
+    # before they ever signed in still resolves. Matching on user_id
+    # alone would miss them entirely -- their row has no user_id until
+    # their first login links it.
+    if email:
+        by_email = (
+            supabase.table("super_admins")
+            .select("id, is_active")
+            .ilike("email", email.strip().lower())
+            .execute()
+        )
+        if any(r.get("is_active", True) for r in by_email.data):
+            return True
+
     if not user.get("id"):
         return False
-    result = (
-        get_supabase().table("super_admins").select("id").eq("user_id", user["id"]).execute()
+    by_id = (
+        supabase.table("super_admins")
+        .select("id, is_active")
+        .eq("user_id", user["id"])
+        .execute()
     )
-    return bool(result.data)
+    return any(r.get("is_active", True) for r in by_id.data)
 
 
 def require_super_admin(current_user: dict) -> None:

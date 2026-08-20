@@ -170,21 +170,21 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
   ];
 
   const collegeAdminLinks = [
-    { path: '/college-admin/applications', label: 'Applications', icon: <UsersIcon size={18} /> },
-    { path: '/college-admin/events',       label: 'Events',       icon: <CalendarIcon size={18} /> },
-    { path: '/college-admin/create-event', label: 'Create Event', icon: <PlusIcon size={18} /> },
-    { path: '/college-admin/analytics',    label: 'Analytics',    icon: <BarChartIcon size={18} /> },
+    { path: '/admin/applications', label: 'Applications', icon: <UsersIcon size={18} /> },
+    { path: '/admin/events',       label: 'Events',       icon: <CalendarIcon size={18} /> },
+    { path: '/admin/create-event', label: 'Create Event', icon: <PlusIcon size={18} /> },
+    { path: '/admin/analytics',    label: 'Analytics',    icon: <BarChartIcon size={18} /> },
   ];
 
   const superAdminLinks = [
-    { path: '/superadmin/dashboard',          label: 'Dashboard',   icon: <ZapIcon size={18} /> },
-    { path: '/superadmin/applications',       label: 'Applications', icon: <UsersIcon size={18} /> },
-    { path: '/superadmin/college-admins',     label: 'Admin Access', icon: <UsersIcon size={18} /> },
-    { path: '/superadmin/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
-    { path: '/superadmin/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
-    { path: '/superadmin/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },
-    { path: '/superadmin/config',             label: 'Config',      icon: <SettingsIcon size={18} /> },
-    { path: '/superadmin/audit-log',          label: 'Audit Log',   icon: <BarChartIcon size={18} /> },
+    { path: '/super/dashboard',          label: 'Dashboard',   icon: <ZapIcon size={18} /> },
+    { path: '/super/applications',       label: 'Applications', icon: <UsersIcon size={18} /> },
+    { path: '/super/college-admins',     label: 'Admin Access', icon: <UsersIcon size={18} /> },
+    { path: '/super/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
+    { path: '/super/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
+    { path: '/super/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },
+    { path: '/super/config',             label: 'Config',      icon: <SettingsIcon size={18} /> },
+    { path: '/super/audit-log',          label: 'Audit Log',   icon: <BarChartIcon size={18} /> },
   ];
 
   const links = type === 'organizer' ? orgLinks : type === 'college-admin' ? collegeAdminLinks : superAdminLinks;

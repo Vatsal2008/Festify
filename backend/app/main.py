@@ -24,6 +24,7 @@ from app.routers import (
     platform,
     prime_pass,
     scoring,
+    super_auth,
     support,
     team_size_overrides,
     tickets,
@@ -96,6 +97,7 @@ app.include_router(media.router)
 app.include_router(wishlist.router)
 app.include_router(gate.router)
 app.include_router(prime_pass.router)
+app.include_router(super_auth.router)
 app.include_router(waitlist.router)
 app.include_router(scoring.router)
 app.include_router(organizer_interactions.router)

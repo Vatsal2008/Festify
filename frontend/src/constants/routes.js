@@ -39,21 +39,21 @@ export const ROUTES = {
   ORG_ANALYTICS:     '/org/:orgId/analytics/export',
 
   // College Admin
-  COLLEGE_ADMIN_LOGIN:        '/college-admin/login',
-  COLLEGE_ADMIN_APPLICATIONS: '/college-admin/applications',
-  COLLEGE_ADMIN_EVENTS:       '/college-admin/events',
-  COLLEGE_ADMIN_CREATE_EVENT: '/college-admin/create-event',
-  COLLEGE_ADMIN_ANALYTICS:    '/college-admin/analytics',
+  COLLEGE_ADMIN_LOGIN:        '/admin/login',
+  COLLEGE_ADMIN_APPLICATIONS: '/admin/applications',
+  COLLEGE_ADMIN_EVENTS:       '/admin/events',
+  COLLEGE_ADMIN_CREATE_EVENT: '/admin/create-event',
+  COLLEGE_ADMIN_ANALYTICS:    '/admin/analytics',
 
   // Super Admin (isolated bundle)
-  SUPER_ADMIN:               '/superadmin',
-  SUPER_ADMIN_DASHBOARD:     '/superadmin/dashboard',
-  SUPER_ADMIN_ORGANIZERS:    '/superadmin/organizers',
-  SUPER_ADMIN_COLLEGE_ADMINS:'/superadmin/college-admins',
-  SUPER_ADMIN_CONFIG:        '/superadmin/config',
-  SUPER_ADMIN_SUPPORT:       '/superadmin/support-tickets',
-  SUPER_ADMIN_TRENDING:      '/superadmin/trending-curation',
-  SUPER_ADMIN_AUDIT:         '/superadmin/audit-log',
+  SUPER_ADMIN:               '/super',
+  SUPER_ADMIN_DASHBOARD:     '/super/dashboard',
+  SUPER_ADMIN_ORGANIZERS:    '/super/organizers',
+  SUPER_ADMIN_COLLEGE_ADMINS:'/super/college-admins',
+  SUPER_ADMIN_CONFIG:        '/super/config',
+  SUPER_ADMIN_SUPPORT:       '/super/support-tickets',
+  SUPER_ADMIN_TRENDING:      '/super/trending-curation',
+  SUPER_ADMIN_AUDIT:         '/super/audit-log',
 
   // Utilities
   NOT_FOUND: '/404',

@@ -110,6 +110,16 @@ export const adminApi = {
   flagOrg: (orgId, reason) => api.post(`/org-groups/${orgId}/flags`, { reason }).then(r => r.data),
 };
 
+// ── super admin login (email + OTP, no Google) ────────────────────
+export const superAuthApi = {
+  requestCode: (email) => api.post('/auth/super/request-code', { email }).then(r => r.data),
+  verifyCode: (email, code) => api.post('/auth/super/verify-code', { email, code }).then(r => r.data),
+  admins: () => api.get('/auth/super/admins').then(r => r.data),
+  addAdmin: (email) => api.post('/auth/super/admins', { email }).then(r => r.data),
+  removeAdmin: (id) => api.delete(`/auth/super/admins/${id}`).then(r => r.data),
+  logout: () => api.post('/auth/super/logout').then(r => r.data),
+};
+
 // ── platform-wide (admin surfaces + signup flows) ─────────────────
 export const platformApi = {
   colleges: () => api.get('/colleges').then(r => r.data),

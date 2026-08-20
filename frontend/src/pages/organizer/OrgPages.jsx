@@ -253,9 +253,15 @@ export function EventBuilderPage() {
                 </div>
               ))}
             </div>
-            <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)', padding: 'var(--space-lg)', display: 'flex', gap: 12, alignItems: 'center' }}>
-              <AlertTriangleIcon size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
-              <p className="type-body-sm">Publishing sends your event to your college admin for review. Once approved, it will go live for early access or general sale.</p>
+            {/* Approval happens once, when the organizer account is
+                granted -- not per event. Telling an already-approved
+                organizer their event goes for review was simply wrong,
+                and made publishing feel like it might not have worked. */}
+            <div style={{ background: 'var(--color-surface-sage)', border: 'var(--border-hairline)', borderRadius: 'var(--radius-md)', padding: 'var(--space-lg)', display: 'flex', gap: 12, alignItems: 'center' }}>
+              <CheckIcon size={20} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+              <p className="type-body-sm">
+                Publishing puts this event live immediately. You can edit it or take it down at any time from your events list.
+              </p>
             </div>
           </div>
         )}

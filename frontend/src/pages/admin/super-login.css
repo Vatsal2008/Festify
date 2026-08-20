@@ -1,0 +1,144 @@
+/* pages/admin/super-login.css
+   The admin door. Deliberately unlike the attendee-facing app: darker,
+   tighter, no marketing. It should be obvious at a glance that you have
+   left the public product. */
+
+.super-login {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xl);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  overflow: hidden;
+}
+
+/* Faint grid, the only decoration on the page. */
+.super-login__grid {
+  position: absolute;
+  inset: -50%;
+  background-image:
+    linear-gradient(rgba(251, 247, 240, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 247, 240, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+
+.super-login__card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-2xl);
+  border: 1px solid rgba(251, 247, 240, 0.13);
+  border-radius: var(--radius-lg);
+  background: rgba(251, 247, 240, 0.035);
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+
+.super-login__badge {
+  width: 48px; height: 48px;
+  margin: 0 auto var(--space-lg);
+  display: grid; place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.super-login__title {
+  font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px;
+}
+.super-login__sub {
+  font-size: 13.5px; line-height: 1.6;
+  color: rgba(251, 247, 240, 0.65);
+  margin: 0 0 var(--space-xl);
+}
+.super-login__sub strong { color: var(--color-canvas); font-weight: 600; }
+
+.super-login__label {
+  display: block; text-align: left;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: rgba(251, 247, 240, 0.6);
+  margin-bottom: var(--space-sm);
+}
+
+.super-login__input {
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit; font-size: 15px;
+  color: var(--color-canvas);
+  background: rgba(251, 247, 240, 0.06);
+  border: 1px solid rgba(251, 247, 240, 0.16);
+  border-radius: var(--radius-md);
+}
+.super-login__input::placeholder { color: rgba(251, 247, 240, 0.32); }
+.super-login__input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+  background: rgba(251, 247, 240, 0.09);
+}
+.super-login__input--code {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  letter-spacing: 0.42em;
+  text-align: center;
+  padding-left: 0.42em; /* balances the trailing letter-space */
+}
+
+.super-login__row {
+  display: flex; justify-content: space-between; gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+.super-login__link {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: rgba(251, 247, 240, 0.62);
+  padding: 0;
+}
+.super-login__link:hover:not(:disabled) { color: var(--color-accent); }
+.super-login__link:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.super-login__done {
+  display: grid; place-items: center;
+  width: 72px; height: 72px; margin: var(--space-lg) auto;
+  border-radius: 50%;
+  background: rgba(56, 211, 159, 0.15);
+  color: var(--color-success);
+}
+
+.super-login__error {
+  margin: var(--space-lg) 0 0;
+  font-size: 13px;
+  color: #ff8b95;
+}
+
+.super-login__back {
+  margin-top: var(--space-xl);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(251, 247, 240, 0.42);
+}
+.super-login__back:hover { color: rgba(251, 247, 240, 0.75); }
+
+.super-login__foot {
+  position: absolute; bottom: var(--space-xl);
+  font-size: 11.5px;
+  color: rgba(251, 247, 240, 0.32);
+  text-align: center;
+  padding: 0 var(--space-lg);
+}
+
+@media (max-width: 480px) {
+  .super-login__card { padding: var(--space-xl); }
+  .super-login__input--code { font-size: 21px; letter-spacing: 0.3em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .super-login__grid { display: none; }
+}

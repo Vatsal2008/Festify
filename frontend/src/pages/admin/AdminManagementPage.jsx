@@ -8,7 +8,7 @@ import { DashboardShell } from '@/components/layout';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { Avatar, Spinner } from '@/components/primitives/Primitives';
-import { platformApi } from '@/lib/api/endpoints';
+import { superAuthApi, platformApi } from '@/lib/api/endpoints';
 import { apiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
@@ -93,21 +93,26 @@ export default function AdminManagementPage() {
   const [collegeId, setCollegeId] = useState('');
 
   const rolesQuery = useQuery({ queryKey: ['auth', 'my-roles'], queryFn: platformApi.myRoles });
-  const superAdminsQuery = useQuery({ queryKey: ['super-admins'], queryFn: platformApi.superAdmins });
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const superAdminsQuery = useQuery({ queryKey: ['super-admins'], queryFn: superAuthApi.admins });
   const collegeAdminsQuery = useQuery({ queryKey: ['college-admins'], queryFn: platformApi.collegeAdmins });
   const collegesQuery = useQuery({ queryKey: ['colleges'], queryFn: platformApi.colleges });
 
+  // Approval is by email, not by picking an existing account: the point
+  // is to grant access to someone who may never have signed in, so
+  // searching the users table would not find them.
   const addSuper = useMutation({
-    mutationFn: (u) => platformApi.addSuperAdmin(u.id),
-    onSuccess: (_d, u) => {
+    mutationFn: (email) => superAuthApi.addAdmin(email),
+    onSuccess: (_d, email) => {
       qc.invalidateQueries({ queryKey: ['super-admins'] });
-      toast.success(`${u.email} is now a super admin.`);
+      setNewAdminEmail('');
+      toast.success(`${email} can now sign in at /super.`);
     },
     onError: (e) => toast.error(apiError(e)),
   });
 
   const removeSuper = useMutation({
-    mutationFn: (userId) => platformApi.removeSuperAdmin(userId),
+    mutationFn: (adminId) => superAuthApi.removeAdmin(adminId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['super-admins'] });
       toast.info('Super admin access removed.');
@@ -147,14 +152,14 @@ export default function AdminManagementPage() {
     );
   }
 
-  const superAdmins = superAdminsQuery.data ?? { granted: [], bootstrap_emails: [] };
+  const superAdmins = superAdminsQuery.data ?? { admins: [], bootstrap_emails: [] };
 
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)', maxWidth: 860 }}>
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-sm)' }}>Admin Access</h1>
         <p className="type-body-md" style={{ color: 'rgba(22,16,31,0.7)', marginBottom: 'var(--space-3xl)' }}>
-          Admin access is a role on a normal Google account. There is no separate admin password.
+          Super admins sign in at /super with an emailed code. College admins use their normal account.
         </p>
 
         {/* ── Super admins ── */}
@@ -175,21 +180,29 @@ export default function AdminManagementPage() {
 
           <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 'var(--space-lg)' }}>
             <table className="admin-table">
-              <thead><tr><th>Admin</th><th>Email</th><th>Granted</th><th></th></tr></thead>
+              <thead><tr><th>Email</th><th>Signed in</th><th>Last login</th><th></th></tr></thead>
               <tbody>
-                {superAdmins.granted.length === 0 && (
+                {superAdmins.admins.length === 0 && (
                   <tr><td colSpan={4} style={{ padding: 'var(--space-2xl)', textAlign: 'center', color: 'rgba(22,16,31,0.6)' }}>
-                    No super admins granted from the panel yet.
+                    No super admins approved yet.
                   </td></tr>
                 )}
-                {superAdmins.granted.map(a => (
+                {superAdmins.admins.map(a => (
                   <tr key={a.id}>
-                    <td>{a.user?.full_name || '—'}</td>
-                    <td style={{ color: 'rgba(22,16,31,0.65)' }}>{a.user?.email}</td>
-                    <td style={{ color: 'rgba(22,16,31,0.65)' }}>{new Date(a.created_at).toLocaleDateString()}</td>
+                    <td><strong>{a.email}</strong></td>
                     <td>
-                      {a.user_id !== user?.id && (
-                        <Button variant="danger" size="sm" onClick={() => removeSuper.mutate(a.user_id)}>Remove</Button>
+                      <Badge variant={a.user_id ? 'success' : 'default'}>
+                        {a.user_id ? 'Yes' : 'Never'}
+                      </Badge>
+                    </td>
+                    <td style={{ color: 'rgba(22,16,31,0.65)' }}>
+                      {a.last_login_at ? new Date(a.last_login_at).toLocaleString() : '—'}
+                    </td>
+                    <td>
+                      {(a.email || '').toLowerCase() !== (user?.email || '').toLowerCase() && (
+                        <Button variant="danger" size="sm"
+                          isLoading={removeSuper.isPending && removeSuper.variables === a.id}
+                          onClick={() => removeSuper.mutate(a.id)}>Remove</Button>
                       )}
                     </td>
                   </tr>
@@ -198,11 +211,31 @@ export default function AdminManagementPage() {
             </table>
           </div>
 
-          <UserPicker
-            actionLabel="Make super admin"
-            isPending={addSuper.isPending}
-            onPick={(u) => addSuper.mutate(u)}
-          />
+          <form
+            style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'flex-end', flexWrap: 'wrap' }}
+            onSubmit={(e) => { e.preventDefault(); if (newAdminEmail.includes('@')) addSuper.mutate(newAdminEmail.trim().toLowerCase()); }}
+          >
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <label className="type-label-mono" style={{ display: 'block', marginBottom: 'var(--space-sm)' }} htmlFor="new-admin">
+                Approve an email
+              </label>
+              <input
+                id="new-admin"
+                type="email"
+                className="input-field"
+                placeholder="colleague@example.com"
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+              />
+            </div>
+            <Button variant="primary" type="submit"
+              isDisabled={!newAdminEmail.includes('@')} isLoading={addSuper.isPending}>
+              Approve
+            </Button>
+          </form>
+          <p className="type-body-sm" style={{ color: 'rgba(22,16,31,0.6)', marginTop: 'var(--space-sm)' }}>
+            They sign in at <strong>/super</strong> with this address and a emailed code. No account needed beforehand.
+          </p>
         </section>
 
         {/* ── College admins ── */}

@@ -52,6 +52,28 @@ Environment variables go in each host's dashboard, not in the repo.
 Paste values **without quotes**: a `.env` file treats quotes as
 delimiters, a hosting dashboard treats them as part of the value.
 
+## Admin surfaces
+
+Two separate panels on separate URL prefixes, so they cannot be confused
+for one another:
+
+| Panel | URL | Sign-in |
+|---|---|---|
+| Super admin | `/super` → `/super/dashboard` | approved email + emailed code |
+| College admin | `/admin` → `/admin/applications` | normal account sign-in |
+
+Super admin sign-in has nothing to do with Google. An address must be in
+the `super_admins` table (or the `SUPER_ADMIN_EMAILS` bootstrap) to
+receive a code at all, so an unapproved address can never obtain a
+session regardless of what it submits. Existing super admins approve new
+ones by email from **Admin Access** — the person does not need an account
+first; one is created on their first successful sign-in.
+
+Requesting a code returns the same response whether or not the address is
+approved. Saying "not an admin" would turn the login form into a way to
+discover exactly which addresses hold the highest privilege on the
+platform.
+
 ## Health and diagnostics
 
 Two unauthenticated endpoints report deployment state without exposing

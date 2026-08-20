@@ -34,6 +34,7 @@ import {
 } from '@/pages/admin/AdminPages';
 import AdminManagementPage from '@/pages/admin/AdminManagementPage';
 import SuperAdminGate from '@/pages/admin/SuperAdminGate';
+import SuperLoginPage from '@/pages/admin/SuperLoginPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
@@ -114,23 +115,23 @@ export default function App() {
         {/* College admin. Access is a role on the normal account, so
             these only need a signed-in session -- the API enforces the
             college_admins check per request. */}
-        <Route path="/college-admin"              element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
-        <Route path="/college-admin/applications" element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
-        <Route path="/college-admin/events"       element={<RequireAuth><CollegeAdminEventsPage /></RequireAuth>} />
-        <Route path="/college-admin/analytics"    element={<RequireAuth><CollegeAdminAnalyticsPage /></RequireAuth>} />
+        <Route path="/admin"              element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/admin/applications" element={<RequireAuth><CollegeAdminApplicationsPage /></RequireAuth>} />
+        <Route path="/admin/events"       element={<RequireAuth><CollegeAdminEventsPage /></RequireAuth>} />
+        <Route path="/admin/analytics"    element={<RequireAuth><CollegeAdminAnalyticsPage /></RequireAuth>} />
 
         {/* ── Super Admin ── */}
         {/* Every super admin route sits behind the emailed-code gate. */}
-        <Route path="/superadmin"                    element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
-        <Route path="/superadmin/dashboard"          element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
-        <Route path="/superadmin/college-admins"     element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
-        <Route path="/superadmin/admin-access"       element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
-        <Route path="/superadmin/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
-        <Route path="/superadmin/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
-        <Route path="/superadmin/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
-        <Route path="/superadmin/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
-        <Route path="/superadmin/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
-        <Route path="/superadmin/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />
+        <Route path="/super" element={<SuperLoginPage />} />
+        <Route path="/super/dashboard"          element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
+        <Route path="/super/college-admins"     element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/super/admin-access"       element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/super/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
+        <Route path="/super/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
+        <Route path="/super/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
+        <Route path="/super/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
+        <Route path="/super/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
+        <Route path="/super/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />
 
         {/* ── 404 ── */}
         <Route path="*" element={<NotFoundPage />} />
