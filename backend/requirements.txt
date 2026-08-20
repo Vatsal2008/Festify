@@ -8,3 +8,10 @@ google-auth==2.37.0
 requests==2.32.3
 python-multipart==0.0.20
 razorpay==2.0.1
+
+# Imported directly by application code, not just pulled in by supabase.
+# Relying on a transitive dependency means a resolver change can remove
+# it and the app then fails at import with no code change of our own --
+# which surfaces as an instant 502, not as a build error.
+PyJWT==2.13.0
+postgrest==0.19.3
