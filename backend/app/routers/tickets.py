@@ -118,9 +118,31 @@ def get_ticket(ticket_id: str, current_user: dict = Depends(get_current_user)):
 def scan_ticket(body: TicketScanRequest, current_user: dict = Depends(get_current_user)):
     supabase = get_supabase()
 
-    ticket_result = (
-        supabase.table("tickets").select("*").eq("verify_code", body.verify_code).execute()
-    )
+    code = (body.verify_code or "").strip()
+    if not code:
+        raise HTTPException(status_code=422, detail="No ticket code supplied")
+
+    # A QR carries the full 32-character verify_code, but the wallet
+    # *shows* the holder a booking code -- its first 8 characters,
+    # uppercased. Gate staff read that off the screen and type it, so an
+    # exact match alone made manual entry impossible while scanning
+    # worked perfectly.
+    ticket_result = supabase.table("tickets").select("*").eq("verify_code", code).execute()
+
+    if not ticket_result.data and len(code) >= 6:
+        prefix = code.lower()
+        ticket_result = (
+            supabase.table("tickets").select("*").ilike("verify_code", f"{prefix}%").execute()
+        )
+        # A prefix is not guaranteed unique. Admitting the first of
+        # several matches would be admitting an arbitrary person, so
+        # ambiguity is an error rather than a guess.
+        if len(ticket_result.data) > 1:
+            raise HTTPException(
+                status_code=409,
+                detail="That code matches more than one ticket. Scan the QR code instead.",
+            )
+
     if not ticket_result.data:
         raise HTTPException(status_code=404, detail="Invalid ticket code")
     ticket = ticket_result.data[0]
