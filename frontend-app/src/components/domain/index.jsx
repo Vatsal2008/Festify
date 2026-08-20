@@ -1,8 +1,11 @@
 // components/domain/index.jsx — All domain components with SVG icons & image overlays
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
+import { eventsApi } from '@/lib/api/endpoints';
 import { Avatar, StarRating } from '@/components/primitives/Primitives';
 import Badge from '@/components/primitives/Badge';
 import Card from '@/components/primitives/Card';
@@ -75,24 +78,62 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const qc = useQueryClient();
 
   const cardVariant = variant === 'featured' ? 'teal' : 'default';
   const cardClass = `event-card ${variant === 'list' ? 'event-card--list' : ''}`;
+
+  // The event prop is replaced whenever a list refetches, so local state
+  // has to follow it -- otherwise a card keeps showing the optimistic
+  // value from before the refresh and drifts from the server.
+  useEffect(() => { setWishlisted(event.is_wishlisted); }, [event.is_wishlisted]);
+  useEffect(() => { setIsHyped(event.is_hyped); setHyped(event.hype_count); }, [event.is_hyped, event.hype_count]);
+
+  // Both of these used to update local state and nothing else, so the
+  // heart filled in, a toast claimed success, and the server never heard
+  // about it -- the wishlist page stayed empty and a refresh undid it.
+  const hypeMutation = useMutation({
+    mutationFn: () => eventsApi.toggleHype(event.id),
+    onError: () => {
+      setIsHyped(event.is_hyped);
+      setHyped(event.hype_count);
+      toast.error('Could not update hype. Try again.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['events'] }),
+  });
+
+  const wishlistMutation = useMutation({
+    mutationFn: () => eventsApi.toggleWishlist(event.id),
+    onError: () => {
+      setWishlisted(event.is_wishlisted);
+      toast.error('Could not update your wishlist. Try again.');
+    },
+    onSuccess: (data) => {
+      // The server is the authority on the resulting state; trust its
+      // answer over the optimistic guess.
+      if (typeof data?.wishlisted === 'boolean') setWishlisted(data.wishlisted);
+      qc.invalidateQueries({ queryKey: ['user'] });
+      qc.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
 
   const handleHype = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) { navigate('/login'); return; }
     setAnimating(true);
     setIsHyped(h => !h);
-    setHyped(c => isHyped ? c - 1 : c + 1);
+    setHyped(c => (isHyped ? c - 1 : c + 1));
     setTimeout(() => setAnimating(false), 300);
+    hypeMutation.mutate();
   };
 
   const handleWishlist = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) { navigate('/login'); return; }
-    setWishlisted(w => !w);
-    toast[isWishlisted ? 'info' : 'success'](isWishlisted ? 'Removed from wishlist' : 'Added to wishlist!');
+    const next = !isWishlisted;
+    setWishlisted(next);
+    toast[next ? 'success' : 'info'](next ? 'Added to wishlist' : 'Removed from wishlist');
+    wishlistMutation.mutate();
   };
 
   return (
@@ -242,45 +283,79 @@ export function TicketCard({ ticket }) {
 // ── QRDisplay ─────────────────────────────────────────────────────
 export function QRDisplay({ ticket }) {
   const canvasRef = useRef(null);
+  const [error, setError] = useState(null);
+
+  // This drew a deterministic pattern from the booking code before --
+  // it looked like a QR code and no scanner on earth could read it. It
+  // now encodes the real verify_code, which is what /tickets/scan
+  // matches against.
+  const payload = ticket.verify_code;
+  const revealed = ticket.qr_revealed !== false && !!payload;
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    const size = 200;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#16101F';
-    const seed = ticket.booking_code.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const modules = 21;
-    const moduleSize = Math.floor(size / modules);
-    for (let row = 0; row < modules; row++) {
-      for (let col = 0; col < modules; col++) {
-        const isCorner = (row < 7 && col < 7) || (row < 7 && col > 13) || (row > 13 && col < 7);
-        const val = isCorner ? 1 : (seed * (row + 1) * (col + 1) * 2654435761) % 2;
-        if (val) ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize - 1, moduleSize - 1);
-      }
-    }
-  }, [ticket]);
+    if (!canvasRef.current || !revealed) return;
+    let cancelled = false;
+    import('qrcode')
+      .then(({ default: QRCode }) => {
+        if (cancelled || !canvasRef.current) return;
+        return QRCode.toCanvas(canvasRef.current, payload, {
+          width: 220,
+          margin: 1,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#16101F', light: '#ffffff' },
+        });
+      })
+      .catch(() => { if (!cancelled) setError('Could not render the code'); });
+    return () => { cancelled = true; };
+  }, [payload, revealed]);
+
+  if (!revealed) {
+    return (
+      <div className="qr-display">
+        <div className="qr-display__frame qr-display__frame--locked">
+          <div className="qr-locked">
+            <motion.div
+              animate={{ opacity: [0.45, 1, 0.45] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <TicketIcon size={44} />
+            </motion.div>
+            <p className="type-label-mono" style={{ marginTop: 12 }}>Code not released</p>
+            <p className="type-body-sm" style={{ marginTop: 6, opacity: 0.7, maxWidth: 190 }}>
+              The organizer releases QR codes shortly before doors open.
+            </p>
+          </div>
+        </div>
+        <p className="qr-display__code">{ticket.booking_code}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="qr-display">
-      <div className="qr-display__frame">
+      <motion.div
+        className="qr-display__frame"
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      >
         <canvas
           ref={canvasRef}
-          width={200}
-          height={200}
+          width={220}
+          height={220}
           aria-label={`QR code for ${ticket.event.title} ticket`}
           style={{ display: 'block', userSelect: 'none', pointerEvents: 'none' }}
         />
+        {error && <p className="type-body-sm" style={{ padding: 16 }}>{error}</p>}
         {ticket.status === 'used' && (
           <div className="qr-display__used-overlay">
             <CheckIcon size={48} />
             <p className="type-label-mono">Ticket Used</p>
           </div>
         )}
-      </div>
+      </motion.div>
       <p className="qr-display__warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <AlertTriangleIcon size={14} /> Screenshots don't work — show this screen at the gate
+        <AlertTriangleIcon size={14} /> Show this screen at the gate
       </p>
       <p className="qr-display__code">{ticket.booking_code}</p>
     </div>

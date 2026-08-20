@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, CanvasBand, TealBand } from '@/components/layout';
-import { TicketCard, QRDisplay } from '@/components/domain';
+import { QRDisplay } from '@/components/domain';
+import TicketBundle, { groupTickets } from '@/components/domain/TicketBundle';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
@@ -89,7 +90,7 @@ export default function TicketWalletPage() {
         >
           {() => (
             <div className="tickets-list" role="tabpanel">
-              {filtered.map(t => <TicketCard key={t.id} ticket={t} />)}
+              {groupTickets(filtered).map(g => <TicketBundle key={g.key} group={g} />)}
             </div>
           )}
         </QueryBoundary>

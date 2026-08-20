@@ -56,6 +56,24 @@ export const meApi = {
   following: () => api.get('/users/me/following').then(r => r.data),
 };
 
+// ── prime pass ────────────────────────────────────────────────────
+export const primePassApi = {
+  plans: () => api.get('/prime-pass/plans').then(r => r.data),
+  mine: () => api.get('/prime-pass/me').then(r => r.data),
+  createOrder: (plan) => api.post('/prime-pass/orders', { plan }).then(r => r.data),
+  verify: (passId, body) => api.post(`/prime-pass/orders/${passId}/verify`, body).then(r => r.data),
+  sync: (passId) => api.post(`/prime-pass/orders/${passId}/sync`).then(r => r.data),
+};
+
+// ── gate control (organizer) ──────────────────────────────────────
+export const gateApi = {
+  status: (eventId) => api.get(`/events/${eventId}/gate`).then(r => r.data),
+  revealQr: (eventId) => api.post(`/events/${eventId}/gate/reveal-qr`).then(r => r.data),
+  hideQr: (eventId) => api.post(`/events/${eventId}/gate/hide-qr`).then(r => r.data),
+  open: (eventId) => api.post(`/events/${eventId}/gate/open`).then(r => r.data),
+  close: (eventId) => api.post(`/events/${eventId}/gate/close`).then(r => r.data),
+};
+
 // ── orgs ──────────────────────────────────────────────────────────
 export const orgsApi = {
   get: (id) => api.get(`/org-groups/${id}`).then(r => r.data),

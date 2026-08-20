@@ -64,9 +64,6 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-            <Button variant="ghost-canvas" size="sm" onClick={() => navigate('/organizer-application')}>
-              Apply as Organizer
-            </Button>
           </div>
 
           {/* Level Progress */}

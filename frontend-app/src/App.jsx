@@ -16,10 +16,13 @@ import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 // ── Attendee ───────────────────────────────────────────────────────
 import ProfilePage      from '@/pages/attendee/ProfilePage';
 import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
-import { WishlistPage, PrimePassPage, NotificationsPage } from '@/pages/attendee/OtherAttendeePages';
+import { WishlistPage, NotificationsPage } from '@/pages/attendee/OtherAttendeePages';
+import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
 // ── Organizer ──────────────────────────────────────────────────────
-import { OrgDashboardPage, EventBuilderPage, QRScannerPage, BulkRequestsPage, OrgMembersPage, OrgChatPage, OrgEventsPage, OrgAnalyticsPage } from '@/pages/organizer/OrgPages';
+import OrganizerApplicationPage from '@/pages/organizer/OrganizerApplicationPage';
+import GateScannerPage from '@/pages/organizer/GateScannerPage';
+import { OrgDashboardPage, EventBuilderPage, BulkRequestsPage, OrgMembersPage, OrgChatPage, OrgEventsPage, OrgAnalyticsPage } from '@/pages/organizer/OrgPages';
 
 // ── Admin ──────────────────────────────────────────────────────────
 import {
@@ -95,12 +98,13 @@ export default function App() {
         <Route path="/me/wishlist"       element={<RequireAuth><WishlistPage /></RequireAuth>} />
         <Route path="/me/prime-pass"     element={<RequireAuth><PrimePassPage /></RequireAuth>} />
         <Route path="/me/notifications"  element={<RequireAuth><NotificationsPage /></RequireAuth>} />
+        <Route path="/organizer-application" element={<RequireAuth><OrganizerApplicationPage /></RequireAuth>} />
 
         {/* ── Organizer ── */}
         <Route path="/org/:orgId/dashboard"                    element={<RequireAuth><OrgDashboardPage /></RequireAuth>} />
         <Route path="/org/:orgId/events"                       element={<RequireAuth><OrgEventsPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/new"                   element={<RequireAuth><EventBuilderPage /></RequireAuth>} />
-        <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><QRScannerPage /></RequireAuth>} />
+        <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><GateScannerPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/bulk-requests" element={<RequireAuth><BulkRequestsPage /></RequireAuth>} />
         <Route path="/org/:orgId/members"                      element={<RequireAuth><OrgMembersPage /></RequireAuth>} />
         <Route path="/org/:orgId/chat"                         element={<RequireAuth><OrgChatPage /></RequireAuth>} />

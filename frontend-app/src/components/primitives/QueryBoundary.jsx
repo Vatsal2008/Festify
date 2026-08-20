@@ -15,7 +15,12 @@ export default function QueryBoundary({
   loadingLabel = 'Loading',
   minHeight = 280,
 }) {
-  if (query.isPending) {
+  // isPending is true for a *disabled* query too, and stays true
+  // forever because nothing will ever fetch. Testing it alone renders a
+  // spinner that never resolves -- the failure mode that left the admin
+  // panel as a blank dark screen. A spinner is only right while a
+  // request is genuinely in flight.
+  if (query.isLoading || (query.isPending && query.isFetching)) {
     return (
       <div style={{ minHeight, display: 'grid', placeItems: 'center', gap: 'var(--space-lg)' }}>
         <Spinner size="lg" />
@@ -34,9 +39,14 @@ export default function QueryBoundary({
     );
   }
 
-  const empty = typeof isEmpty === 'function'
-    ? isEmpty(query.data)
-    : Array.isArray(query.data) && query.data.length === 0;
+  // A disabled query that never ran has no data at all. Treat that as
+  // empty rather than handing undefined to children, which would throw
+  // inside the very boundary meant to prevent broken screens.
+  const empty = query.data === undefined
+    ? true
+    : typeof isEmpty === 'function'
+      ? isEmpty(query.data)
+      : Array.isArray(query.data) && query.data.length === 0;
 
   if (empty) {
     return (

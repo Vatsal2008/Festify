@@ -303,3 +303,42 @@ export function ArrowLeftIcon(props) {
     </IconWrapper>
   );
 }
+
+export function ChevronDownIcon(props) {
+  return (
+    <IconWrapper {...props}>
+      <polyline points="6 9 12 15 18 9" />
+    </IconWrapper>
+  );
+}
+
+export function QrCodeIcon(props) {
+  return (
+    <IconWrapper {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3z" />
+      <path d="M20 14v.01M14 20v.01M20 20v.01M17 20v.01M20 17v.01" />
+    </IconWrapper>
+  );
+}
+
+export function EyeIcon(props) {
+  return (
+    <IconWrapper {...props}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </IconWrapper>
+  );
+}
+
+export function EyeOffIcon(props) {
+  return (
+    <IconWrapper {...props}>
+      <path d="M10.7 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.8 17.8 0 0 1-3.2 4.2M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 7 10 7a10.3 10.3 0 0 0 5.4-1.5" />
+      <path d="m2 2 20 20" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </IconWrapper>
+  );
+}

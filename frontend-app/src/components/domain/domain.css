@@ -116,3 +116,113 @@
 .notif-item__title { font-family: var(--font-body); font-size: var(--text-body-sm); font-weight: 400; color: var(--color-ink); margin-bottom: 2px; }
 .notif-item__message { font-family: var(--font-body); font-size: var(--text-body-xs); color: rgba(22, 16, 31,0.65); line-height: var(--lh-body-xs); }
 .notif-item__time { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(22, 16, 31,0.45); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+
+/* ── Ticket bundle ────────────────────────────────────────────────
+   Ten tickets to one event rendered as ten cards made the wallet
+   unusable precisely when someone bought for a group. One card per
+   event+tier, expanding to the individual tickets. */
+.ticket-bundle {
+  position: relative;
+  background: var(--color-canvas);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+.ticket-bundle:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+  transform: translateY(-2px);
+}
+.ticket-bundle--used { opacity: 0.68; }
+
+/* Paper edges peeking out behind the card, so a stack reads as a stack
+   before the count is even parsed. */
+.ticket-bundle__stack {
+  position: absolute;
+  left: 12px; right: 12px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+  z-index: -1;
+}
+.ticket-bundle__stack--1 { bottom: -5px; height: 22px; opacity: 0.75; }
+.ticket-bundle__stack--2 { bottom: -10px; left: 22px; right: 22px; height: 22px; opacity: 0.45; }
+
+.ticket-bundle__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: var(--radius-lg);
+}
+.ticket-bundle__main { flex: 1; min-width: 0; }
+.ticket-bundle__title-row { display: flex; align-items: center; gap: var(--space-md); margin-bottom: 6px; }
+.ticket-bundle__title {
+  font-size: 17px; font-weight: 650; letter-spacing: -0.01em;
+  margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ticket-bundle__count {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  background: var(--color-ink); color: var(--color-canvas);
+  padding: 2px 9px; border-radius: 999px;
+}
+.ticket-bundle__meta {
+  display: flex; flex-wrap: wrap; gap: var(--space-lg);
+  font-size: 13px; color: rgba(22, 16, 31, 0.62); margin-bottom: 10px;
+}
+.ticket-bundle__meta span { display: inline-flex; align-items: center; gap: 5px; }
+.ticket-bundle__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ticket-bundle__chevron { flex: none; display: grid; place-items: center; opacity: 0.55; }
+
+.ticket-bundle__list {
+  list-style: none; margin: 0; padding: 0 var(--space-lg) var(--space-md);
+  overflow: hidden; border-top: var(--border-hairline);
+}
+.ticket-bundle__list > li:first-child { margin-top: var(--space-md); }
+.ticket-bundle__row {
+  width: 100%; display: flex; align-items: center; gap: var(--space-lg);
+  padding: 10px var(--space-md); background: none; border: none;
+  border-radius: var(--radius-sm); cursor: pointer; font: inherit; color: inherit;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.ticket-bundle__row:hover { background: var(--color-surface-sage); }
+.ticket-bundle__row--used { opacity: 0.55; }
+.ticket-bundle__row-index {
+  font-family: var(--font-mono); font-size: 11px; opacity: 0.45; flex: none;
+}
+.ticket-bundle__row-code {
+  flex: 1; font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.08em;
+}
+.ticket-bundle__row-status {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.7;
+}
+
+/* Locked QR: shown while the organizer has not released codes yet. */
+.qr-display__frame--locked {
+  display: grid; place-items: center;
+  background: var(--color-surface-sage);
+  min-height: 220px; min-width: 220px;
+}
+.qr-locked { text-align: center; padding: var(--space-lg); color: var(--color-ink); }
+
+@media (max-width: 560px) {
+  .ticket-bundle__meta { gap: var(--space-md); font-size: 12px; }
+  .ticket-bundle__title { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-bundle, .ticket-bundle:hover { transition: none; transform: none; }
+}

@@ -46,10 +46,15 @@ export default function SuperAdminGate({ children }) {
     onError: (e) => setError(apiError(e)),
   });
 
-  if (authLoading || statusQuery.isPending) {
+  if (authLoading) {
     return <Centered><Spinner size="lg" /></Centered>;
   }
 
+  // Checked before the query's loading state, not after. The status
+  // query is disabled while signed out, and a disabled query in
+  // TanStack Query v5 reports isPending forever -- so testing it first
+  // rendered a spinner on a dark background with no way out, and this
+  // branch was unreachable.
   if (!user) {
     return (
       <Centered>
@@ -58,6 +63,27 @@ export default function SuperAdminGate({ children }) {
           The admin panel needs a signed-in account.
         </p>
         <Button variant="primary" onClick={() => navigate('/login')}>Sign in</Button>
+      </Centered>
+    );
+  }
+
+  // isLoading, not isPending: it is only true while a fetch is actually
+  // in flight, so it cannot latch on again for any other reason.
+  if (statusQuery.isLoading) {
+    return <Centered><Spinner size="lg" /></Centered>;
+  }
+
+  if (statusQuery.isError) {
+    return (
+      <Centered>
+        <h1 className="type-display-md">Could not check your access</h1>
+        <p className="type-body-md" style={{ color: 'rgba(251,247,240,0.75)', maxWidth: 420 }}>
+          {apiError(statusQuery.error)}
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+          <Button variant="primary" onClick={() => statusQuery.refetch()}>Try again</Button>
+          <Button variant="ghost-canvas" onClick={() => navigate('/')}>Back to Festify</Button>
+        </div>
       </Centered>
     );
   }
