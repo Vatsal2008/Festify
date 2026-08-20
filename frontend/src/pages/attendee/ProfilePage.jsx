@@ -17,6 +17,13 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   if (!user) { navigate('/login'); return null; }
 
+  // org_memberships comes from /auth/me and is the same source the
+  // organizer dashboard routes on, so this cannot disagree with whether
+  // the dashboard actually opens.
+  const memberships = user.org_memberships ?? [];
+  const isOrganizer = memberships.length > 0;
+  const primaryOrgId = memberships[0]?.org_id;
+
   const quickLinks = [
     { icon: <TicketIcon size={22} />, label: 'My Tickets', path: '/me/tickets' },
     { icon: <HeartIcon size={22} />, label: 'Wishlist',   path: '/me/wishlist' },
@@ -129,7 +136,19 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ marginTop: 'var(--space-xl)', paddingTop: 'var(--space-lg)', borderTop: 'var(--border-hairline)', display: 'flex', gap: 'var(--space-lg)', justifyContent: 'flex-end' }}>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/organizer-application')}>Apply as Organizer</Button>
+            {/* Someone who already runs an organization has nothing to
+                apply for. Offering it again reads as the approval not
+                having worked, and sends them to a page that can only
+                tell them they are already an organizer. */}
+            {isOrganizer ? (
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/org/${primaryOrgId}/dashboard`)}>
+                Organizer Dashboard
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => navigate('/organizer-application')}>
+                Apply as Organizer
+              </Button>
+            )}
             <Button variant="danger" size="sm" onClick={() => { logout(); navigate('/'); }}>Sign Out</Button>
           </div>
         </CanvasBand>

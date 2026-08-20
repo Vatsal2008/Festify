@@ -35,7 +35,7 @@ export function CanvasBand({ children, variant = '', className = '', style }) {
 
 /* ── TopNav (Floating Capsule + Floating Notification Bell on Right) ── */
 export function TopNav() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const orgId = user?.org_memberships?.[0]?.org_id;
@@ -87,18 +87,15 @@ export function TopNav() {
             )}
 
             {isAuthenticated ? (
-              <>
-                <li>
-                  <Link to="/me" className={`top-nav__link ${location.pathname === '/me' ? 'top-nav__link--active' : ''}`}>
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <button onClick={logout} className="top-nav__link" style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.8 }}>
-                    Sign Out
-                  </button>
-                </li>
-              </>
+              // Sign Out lives on the profile page, not here. A
+              // destructive action sitting one slip away from Profile in
+              // a persistent bar is easy to hit by accident, and the nav
+              // is for navigation.
+              <li>
+                <Link to="/me" className={`top-nav__link ${location.pathname === '/me' ? 'top-nav__link--active' : ''}`}>
+                  Profile
+                </Link>
+              </li>
             ) : (
               <li>
                 <Link to="/login" className="top-nav__link top-nav__link--active" style={{ borderRadius: '9999px', padding: '6px 18px' }}>
