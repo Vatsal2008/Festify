@@ -102,6 +102,7 @@ export function EventBuilderPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const qc = useQueryClient();
   const [step, setStep] = useState(1);
   const STEPS = ['Basic Info', 'Details', 'Tickets', 'Review & Publish'];
 
@@ -113,10 +114,51 @@ export function EventBuilderPage() {
 
   const update = (field, val) => setForm(f => ({ ...f, [field]: val }));
 
-  const handlePublish = () => {
-    toast.success('Event published! It\'s now pending college admin review.');
-    navigate(`/org/${orgId}/events`);
-  };
+  // This used to raise a success toast and navigate away without calling
+  // the API at all, so every event "published" here was never created --
+  // it appeared in no dashboard, no listing, and no database.
+  const publish = useMutation({
+    mutationFn: async () => {
+      if (!form.title.trim()) throw new Error('Give the event a title.');
+      if (!form.start_date) throw new Error('Set a start date.');
+
+      const event = await eventsApi.create({
+        org_group_id: orgId,
+        title: form.title.trim(),
+        description: form.description || null,
+        category: form.category,
+        venue: form.venue || null,
+        // datetime-local gives no timezone; send it as an ISO instant so
+        // the server does not have to guess what the organizer meant.
+        starts_at: new Date(form.start_date).toISOString(),
+        ends_at: form.end_date ? new Date(form.end_date).toISOString() : null,
+        capacity: form.capacity ? Number(form.capacity) : null,
+        visibility: form.visibility,
+        status: 'on_sale',
+      });
+
+      // Tiers are a separate resource, so an event with none would be
+      // published with nothing to buy.
+      for (const tier of form.tiers) {
+        await eventsApi.createTier(event.id, {
+          name: tier.name,
+          price: Number(tier.price) || 0,
+          pool_capacity: Number(tier.quantity) || 0,
+          is_college_only: tier.type === 'college_only',
+        });
+      }
+      return event;
+    },
+    onSuccess: (event) => {
+      qc.invalidateQueries({ queryKey: ['org', orgId] });
+      qc.invalidateQueries({ queryKey: ['events'] });
+      toast.success(`"${event.title}" is live.`);
+      navigate(`/org/${orgId}/events`);
+    },
+    onError: (e) => toast.error(e?.message?.includes('Give the event') || e?.message?.includes('Set a start')
+      ? e.message
+      : apiError(e)),
+  });
 
   return (
     <DashboardShell orgId={orgId} sidebarType="organizer">
@@ -272,7 +314,7 @@ export function EventBuilderPage() {
           </Button>
           {step < 4
             ? <Button variant="primary" onClick={() => setStep(s => s + 1)}>Next <ArrowRightIcon size={16} /></Button>
-            : <Button variant="primary" onClick={handlePublish}>Publish Event</Button>
+            : <Button variant="primary" isLoading={publish.isPending} onClick={() => publish.mutate()}>Publish Event</Button>
           }
         </div>
       </div>

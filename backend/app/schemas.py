@@ -17,6 +17,9 @@ class EventCreate(BaseModel):
     ends_at: str | None = None
     capacity: int | None = None
     visibility: str = "public"
+    # Defaults to draft so a half-finished event is never public by
+    # accident; the builder sends "on_sale" when the organizer publishes.
+    status: str = "draft"
 
 
 class TicketTierCreate(BaseModel):

@@ -122,6 +122,16 @@ def create_event(body: EventCreate, current_user: dict = Depends(get_current_use
     org_result = supabase.table("org_groups").select("college_id").eq("id", body.org_group_id).execute()
     college_id = org_result.data[0]["college_id"] if org_result.data else None
 
+    # Only states an organizer may set directly. The rest of the state
+    # machine (sold_out, ongoing, completed) is reached by what happens
+    # to the event, not by asking for it.
+    allowed_status = {"draft", "live", "early_access", "on_sale"}
+    if body.status not in allowed_status:
+        raise HTTPException(
+            status_code=422,
+            detail=f"status must be one of: {', '.join(sorted(allowed_status))}",
+        )
+
     inserted = (
         supabase.table("events")
         .insert(
@@ -136,6 +146,7 @@ def create_event(body: EventCreate, current_user: dict = Depends(get_current_use
                 "ends_at": body.ends_at,
                 "capacity": body.capacity,
                 "visibility": body.visibility,
+                "status": body.status,
             }
         )
         .execute()
@@ -152,7 +163,17 @@ def list_events(
     viewer: dict | None = Depends(get_current_user_optional),
 ):
     supabase = get_supabase()
-    query = supabase.table("events").select("*").eq("visibility", "public")
+    # Drafts and cancelled events must never appear in public discovery.
+    # Filtering on visibility alone let an unfinished draft show up on
+    # the homepage the moment it was created, since visibility defaults
+    # to public and status defaults to draft.
+    PUBLIC_STATUSES = ["live", "early_access", "on_sale", "sold_out", "ongoing", "completed"]
+    query = (
+        supabase.table("events")
+        .select("*")
+        .eq("visibility", "public")
+        .in_("status", PUBLIC_STATUSES)
+    )
 
     if category and category != "All":
         query = query.eq("category", category)
