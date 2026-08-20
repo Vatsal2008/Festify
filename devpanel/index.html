@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Festify · dev panel</title>
+<style>
+  :root {
+    --ink: #0d0a14;
+    --ink-2: #16101f;
+    --surface: #1d1629;
+    --line: rgba(255,255,255,0.09);
+    --text: #f3efe9;
+    --muted: rgba(243,239,233,0.58);
+    --accent: #ff4d8d;
+    --accent-2: #7c5cff;
+    --ok: #38d39f;
+    --warn: #ffb648;
+    --err: #ff5f6d;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ink); color: var(--text);
+    font: 15px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 28px 32px 20px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  h1 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .spacer { margin-left: auto; }
+  main { padding: 24px 32px 60px; max-width: 1100px; margin: 0 auto; }
+
+  .warn-bar {
+    background: rgba(255,182,72,0.12); border: 1px solid rgba(255,182,72,0.35);
+    color: var(--warn); padding: 10px 14px; border-radius: 10px;
+    font-size: 13px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card-top { display: flex; align-items: flex-start; gap: 10px; }
+  .name { font-weight: 600; }
+  .detail { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 4px rgba(56,211,159,0.16); }
+  .dot.off { background: rgba(255,255,255,0.22); }
+  .pill {
+    margin-left: auto; font-family: var(--mono); font-size: 11px;
+    color: var(--muted); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-size: 13px; font-weight: 550; cursor: pointer;
+    border-radius: 9px; padding: 7px 14px; border: 1px solid transparent;
+    background: rgba(255,255,255,0.07); color: var(--text);
+    transition: background .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { background: rgba(255,255,255,0.13); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.go { background: var(--accent); color: #fff; }
+  button.go:hover:not(:disabled) { background: #ff639b; }
+  button.stop { background: rgba(255,95,109,0.16); color: var(--err); border-color: rgba(255,95,109,0.3); }
+  a.link {
+    font-size: 13px; color: var(--accent-2); text-decoration: none;
+    align-self: center; margin-left: auto;
+  }
+  a.link:hover { text-decoration: underline; }
+
+  .logs {
+    margin-top: 8px; background: #0a0810; border: 1px solid var(--line);
+    border-radius: 9px; padding: 10px 12px; font-family: var(--mono);
+    font-size: 11.5px; line-height: 1.55; color: rgba(243,239,233,0.8);
+    max-height: 190px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .logs:empty { display: none; }
+
+  section.wide { margin-top: 28px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.09em;
+       color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+  .kv { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .kv:last-child { border-bottom: 0; }
+  .kv b { font-weight: 550; min-width: 120px; }
+  .kv span { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
+  .yes { color: var(--ok); } .no { color: var(--err); }
+  .url { font-family: var(--mono); font-size: 12.5px; color: var(--accent-2); word-break: break-all; }
+  .err { color: var(--err); font-size: 13px; }
+  @media (max-width: 640px) { header, main { padding-left: 18px; padding-right: 18px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Festify <span>·</span> dev panel</h1>
+  <div class="sub" id="clock">—</div>
+  <div class="spacer"></div>
+  <button onclick="refresh()">Refresh</button>
+</header>
+
+<main>
+  <div id="warnings"></div>
+  <div class="grid" id="cards"></div>
+
+  <section class="wide">
+    <h2>Public tunnel</h2>
+    <div class="card">
+      <div id="tunnel">Checking…</div>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>Deployed backend (Render)</h2>
+    <div class="card">
+      <div id="prod">Checking… <span class="sub">(cold start can take ~30s)</span></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let openLogs = {};
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || r.statusText);
+  return body;
+}
+
+function card(s) {
+  const busy = !s.cwd_exists;
+  return `
+  <div class="card">
+    <div class="card-top">
+      <div class="dot ${s.running ? 'on' : 'off'}"></div>
+      <div>
+        <div class="name">${s.label}</div>
+        <div class="detail">${busy ? 'Directory not found' : s.detail}</div>
+      </div>
+      <div class="pill">:${s.port}</div>
+    </div>
+    <div class="row">
+      <button class="go" ${s.running || busy ? 'disabled' : ''} onclick="act('start','${s.key}')">Start</button>
+      <button class="stop" ${s.ours ? '' : 'disabled'} onclick="act('stop','${s.key}')"
+        title="${s.ours ? '' : 'Only processes started here can be stopped here'}">Stop</button>
+      <button onclick="toggleLogs('${s.key}')">Logs</button>
+      ${s.running ? `<a class="link" href="${s.open}" target="_blank" rel="noreferrer">Open ↗</a>` : ''}
+    </div>
+    <div class="logs" id="log-${s.key}"></div>
+  </div>`;
+}
+
+async function refresh() {
+  try {
+    const d = await api('/api/status');
+    $('cards').innerHTML = d.services.map(card).join('');
+    $('clock').textContent = 'updated ' + d.checked_at;
+    $('warnings').innerHTML = d.warnings.map(w =>
+      `<div class="warn-bar">${w}
+        <button onclick="installDeps()">Install deps</button>
+      </div>`).join('');
+    for (const k of Object.keys(openLogs)) if (openLogs[k]) loadLogs(k);
+  } catch (e) {
+    $('cards').innerHTML = `<div class="card err">Panel error: ${e.message}</div>`;
+  }
+}
+
+async function act(what, key) {
+  try { await api(`/api/${what}/${key}`, { method: 'POST' }); }
+  catch (e) { alert(e.message); }
+  setTimeout(refresh, what === 'start' ? 1400 : 500);
+}
+
+async function installDeps() {
+  try {
+    await api('/api/install-frontend', { method: 'POST' });
+    openLogs['frontend'] = true;
+    alert('npm install started — watch the Frontend logs.');
+    refresh();
+  } catch (e) { alert(e.message); }
+}
+
+function toggleLogs(key) {
+  openLogs[key] = !openLogs[key];
+  const el = $('log-' + key);
+  if (!openLogs[key]) { el.textContent = ''; return; }
+  loadLogs(key);
+}
+
+async function loadLogs(key) {
+  try {
+    const d = await api('/api/logs/' + key);
+    const el = $('log-' + key);
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    el.textContent = d.lines.join('\n');
+    if (atBottom) el.scrollTop = el.scrollHeight;
+  } catch {}
+}
+
+async function loadTunnel() {
+  const d = await api('/api/tunnel').catch(() => ({ urls: [] }));
+  $('tunnel').innerHTML = d.urls.length
+    ? d.urls.map(u => `<div class="url"><a class="url" href="${u}" target="_blank" rel="noreferrer">${u}</a></div>`).join('')
+    : `<span class="sub">No tunnel running. Start “ngrok tunnel” above to publish localhost:8000.</span>`;
+}
+
+async function loadProd() {
+  const d = await api('/api/prod-health').catch(e => ({ ok: false, error: e.message }));
+  if (!d.ok) { $('prod').innerHTML = `<div class="err">Unreachable — ${d.error || 'no response'}</div>`; return; }
+  const e = d.data;
+  const yn = (v) => v ? '<span class="yes">yes</span>' : '<span class="no">no</span>';
+  $('prod').innerHTML = `
+    <div class="kv"><b>Email</b> <span>${e.email.transport}</span> ${yn(e.email.configured)}</div>
+    <div class="kv"><b>Database</b> ${yn(e.database.configured)}</div>
+    <div class="kv"><b>Redis</b> ${yn(e.redis.configured)}</div>
+    <div class="kv"><b>Payments</b> ${yn(e.payments.configured)}</div>
+    <div class="kv"><b>Google auth</b> ${yn(e.google_auth.configured)}</div>`;
+}
+
+refresh(); loadTunnel(); loadProd();
+setInterval(refresh, 4000);
+setInterval(loadTunnel, 10000);
+</script>
+</body>
+</html>

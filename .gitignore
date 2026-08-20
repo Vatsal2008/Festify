@@ -18,6 +18,6 @@ build/
 
 # Raw AI video/image generation output dumped at the repo root.
 # Only the processed, compressed, watermark-cropped assets under
-# frontend-app/public/media/ belong in the repo.
+# frontend/public/media/ belong in the repo.
 /*.mp4
 /*.mov
