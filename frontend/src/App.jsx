@@ -125,6 +125,7 @@ export default function App() {
         <Route path="/superadmin/dashboard"          element={<SuperAdminGate><SuperAdminDashboardPage /></SuperAdminGate>} />
         <Route path="/superadmin/college-admins"     element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
         <Route path="/superadmin/admin-access"       element={<SuperAdminGate><AdminManagementPage /></SuperAdminGate>} />
+        <Route path="/superadmin/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
         <Route path="/superadmin/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
         <Route path="/superadmin/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
         <Route path="/superadmin/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
