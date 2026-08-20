@@ -161,7 +161,7 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
         <div className="event-card__meta">
           <span className="event-card__meta-item"><CalendarIcon size={14} /> {formatDateShort(event.start_date)}</span>
           <span className="event-card__meta-item"><MapPinIcon size={14} /> {event.venue}</span>
-          <span className="event-card__meta-item"><UsersIcon size={14} /> {event.organizer.name}</span>
+          <span className="event-card__meta-item"><UsersIcon size={14} /> {event.organizer?.name ?? 'Organizer'}</span>
         </div>
         <p className="event-card__price">{formatPrice(event.tiers)}</p>
 
@@ -250,21 +250,21 @@ export function TicketCard({ ticket }) {
   const navigate = useNavigate();
 
   return (
-    <Card padding="md" onClick={() => navigate(buildRoute.ticketDetail(ticket.id))} ariaLabel={`Ticket for ${ticket.event.title}`}>
+    <Card padding="md" onClick={() => navigate(buildRoute.ticketDetail(ticket.id))} ariaLabel={`Ticket for ${ticket.event?.title ?? 'event'}`}>
       <div className="ticket-card">
         <div className="ticket-card__event-img" aria-hidden="true" style={{ overflow: 'hidden' }}>
-          {ticket.event.cover_image ? (
-            <img src={ticket.event.cover_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          {ticket.event?.cover_image ? (
+            <img src={ticket.event?.cover_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <CategoryIcon category={ticket.event.category} size={28} />
+            <CategoryIcon category={ticket.event?.category} size={28} />
           )}
         </div>
         <div className="ticket-card__info">
-          <h3 className="ticket-card__event-name">{ticket.event.title}</h3>
+          <h3 className="ticket-card__event-name">{ticket.event?.title ?? 'Event'}</h3>
           <div className="ticket-card__meta">
-            <span>{ticket.tier.name} · {ticket.tier.price === 0 ? 'Free' : `₹${ticket.tier.price}`}</span>
+            <span>{ticket.tier?.name ?? 'Ticket'} · {(ticket.tier?.price ?? 0) === 0 ? 'Free' : `₹${ticket.tier.price}`}</span>
             <br />
-            <span>{formatDate(ticket.event.start_date)}</span>
+            <span>{formatDate(ticket.event?.start_date)}</span>
             <br />
             <span>Code: {ticket.booking_code}</span>
           </div>
@@ -343,7 +343,7 @@ export function QRDisplay({ ticket }) {
           ref={canvasRef}
           width={220}
           height={220}
-          aria-label={`QR code for ${ticket.event.title} ticket`}
+          aria-label={`QR code for ${ticket.event?.title ?? 'this'} ticket`}
           style={{ display: 'block', userSelect: 'none', pointerEvents: 'none' }}
         />
         {error && <p className="type-body-sm" style={{ padding: 16 }}>{error}</p>}
@@ -397,13 +397,20 @@ export function PrimePassBadge() {
 
 // ── ReviewCard ────────────────────────────────────────────────────
 export function ReviewCard({ review }) {
+  // The API returned raw rows with only user_id for a while, and reading
+  // review.user.name off that took down the whole event page. A review
+  // whose author cannot be resolved is still worth showing -- the rating
+  // and comment are the point -- so this degrades instead of throwing.
+  const author = review.user ?? {};
+  const authorName = author.name || 'Festify user';
+
   return (
     <Card padding="md" className="review-card">
       <div className="review-card__header">
-        <Avatar name={review.user.name} src={review.user.avatar_url} size="sm" />
+        <Avatar name={authorName} src={author.avatar_url} size="sm" />
         <div className="review-card__user">
           <p className="review-card__user-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {review.user.name}
+            {authorName}
             {review.is_prime_review && (
               <span className="review-card__prime-tag" style={{ marginLeft: 4 }}>
                 <ZapIcon size={10} filled /> Prime

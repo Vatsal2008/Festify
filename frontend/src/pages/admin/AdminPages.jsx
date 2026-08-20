@@ -218,8 +218,8 @@ export function CollegeAdminEventsPage() {
               {events.slice(0, 5).map(e => (
                 <tr key={e.id}>
                   <td><strong>{e.title}</strong><br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{e.venue}</span></td>
-                  <td>{e.organizer.name}</td>
-                  <td>{e.capacity.toLocaleString()}</td>
+                  <td>{e.organizer?.name ?? '—'}</td>
+                  <td>{(e.capacity ?? 0).toLocaleString()}</td>
                   <td><EventStateChip state={e.state} /></td>
                   <td>
                     {e.state === 'pending' ? (
@@ -682,8 +682,8 @@ export function SuperAdminTrendingPage() {
               {(eventsQuery.data ?? []).map(e => (
                 <tr key={e.id}>
                   <td><strong>{e.title}</strong></td>
-                  <td>{e.organizer.name}</td>
-                  <td>{e.hype_count.toLocaleString()}</td>
+                  <td>{e.organizer?.name ?? '—'}</td>
+                  <td>{(e.hype_count ?? 0).toLocaleString()}</td>
                   <td><EventStateChip state={e.state} /></td>
                   <td>
                     {featured.includes(e.id)

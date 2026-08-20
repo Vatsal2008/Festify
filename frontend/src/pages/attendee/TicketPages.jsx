@@ -152,8 +152,8 @@ export function TicketDetailPage() {
               <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'rgba(251, 247, 240,0.7)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-label-mono)', fontWeight: 700, letterSpacing: 'var(--ls-label-mono)', textTransform: 'uppercase', marginBottom: 'var(--space-lg)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <ArrowLeftIcon size={14} /> Back
               </button>
-              <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>{ticket.event.title}</h1>
-              <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.7)', marginTop: 'var(--space-sm)' }}>{ticket.tier.name}</p>
+              <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>{ticket.event?.title ?? 'Ticket'}</h1>
+              <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.7)', marginTop: 'var(--space-sm)' }}>{ticket.tier?.name ?? ''}</p>
             </TealBand>
 
             <CanvasBand>
@@ -161,11 +161,11 @@ export function TicketDetailPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
                   <div>
                     <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Event Date</p>
-                    <p className="type-body-md">{fmt(ticket.event.start_date)}</p>
+                    <p className="type-body-md">{fmt(ticket.event?.start_date)}</p>
                   </div>
                   <div>
                     <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Venue</p>
-                    <p className="type-body-md">{ticket.event.venue}</p>
+                    <p className="type-body-md">{ticket.event?.venue ?? '—'}</p>
                   </div>
                   <div>
                     <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Booking Code</p>

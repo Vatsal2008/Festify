@@ -196,12 +196,12 @@ export default function EventDetailPage() {
                   </span>
                   {ev.organizer && (
                     <span className="event-detail-hero__meta-item">
-                      <UsersIcon size={16} /> {ev.organizer.name}
+                      <UsersIcon size={16} /> {ev.organizer?.name ?? 'Organizer'}
                     </span>
                   )}
                   {ev.capacity != null && (
                     <span className="event-detail-hero__meta-item">
-                      <TicketIcon size={16} /> {ev.capacity.toLocaleString()} capacity
+                      <TicketIcon size={16} /> {(ev.capacity ?? 0).toLocaleString()} capacity
                     </span>
                   )}
                 </div>
@@ -214,7 +214,7 @@ export default function EventDetailPage() {
                     aria-pressed={ev.is_hyped}
                   >
                     <ZapIcon size={16} filled={ev.is_hyped} className="hype-btn__icon" />
-                    Hype · {ev.hype_count.toLocaleString()}
+                    Hype · {(ev.hype_count ?? 0).toLocaleString()}
                   </button>
                   <button
                     onClick={() => requireAuth() && wishlistMutation.mutate()}

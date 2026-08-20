@@ -84,6 +84,13 @@ def create_review(event_id: str, body: ReviewCreate, current_user: dict = Depend
 
 @router.get("/{event_id}/reviews")
 def list_reviews(event_id: str):
+    """Reviews with their author inlined.
+
+    This returned raw rows carrying only user_id, so the client had no
+    name or avatar to show and crashed reading review.user.name. A
+    review without its author is not renderable, so the join belongs
+    here rather than as a lookup per row on the client.
+    """
     supabase = get_supabase()
     result = (
         supabase.table("event_reviews")
@@ -92,4 +99,34 @@ def list_reviews(event_id: str):
         .order("created_at", desc=True)
         .execute()
     )
-    return result.data
+    if not result.data:
+        return []
+
+    user_ids = list({r["user_id"] for r in result.data if r.get("user_id")})
+    users_by_id = {}
+    if user_ids:
+        users = (
+            supabase.table("users")
+            .select("id, full_name, avatar_url, customer_level")
+            .in_("id", user_ids)
+            .execute()
+        )
+        users_by_id = {u["id"]: u for u in users.data}
+
+    out = []
+    for r in result.data:
+        u = users_by_id.get(r.get("user_id")) or {}
+        out.append({
+            **r,
+            "user": {
+                # The client reads `name`; the column is full_name. A
+                # deleted account still leaves its review, so fall back
+                # rather than emitting a user without one.
+                "id": u.get("id"),
+                "name": u.get("full_name") or "Festify user",
+                "avatar_url": u.get("avatar_url"),
+                "customer_level": u.get("customer_level"),
+            },
+            "is_prime_review": u.get("customer_level") == "prime",
+        })
+    return out
