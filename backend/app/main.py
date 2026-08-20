@@ -1,4 +1,5 @@
 import logging
+import re
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,22 +58,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_VERCEL_ORIGIN = re.compile(r"^https://[a-z0-9-]+\.vercel\.app$")
+
+
+def _cors_headers_for(request: Request) -> dict:
+    """CORS headers for an error response, or none if the origin is not allowed.
+
+    A handler registered for bare Exception is installed as Starlette's
+    ServerErrorMiddleware, which wraps the *outside* of the stack -- so
+    its response never passes back through CORSMiddleware and comes out
+    with no CORS headers at all. The browser then reports a genuine
+    server error as "blocked by CORS policy", hiding the real message and
+    sending you to debug the wrong system entirely. Setting the headers
+    here is what makes a 500 legible from the client.
+    """
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    if origin not in _origins and not _VERCEL_ORIGIN.match(origin):
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Vary": "Origin",
+    }
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    """Return unhandled errors as a normal JSON response.
-
-    Without this, an unhandled exception escapes past CORSMiddleware and
-    Starlette returns a bare 500 with no CORS headers. The browser then
-    reports it as "blocked by CORS policy: No Access-Control-Allow-Origin
-    header", which sends you chasing a CORS problem that does not exist
-    while the real error stays invisible. Handling it here keeps the
-    response inside the middleware stack, so the CORS headers survive and
-    the actual message reaches the client.
-    """
+    """Return unhandled errors as JSON the browser can actually read."""
     logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={"detail": f"{type(exc).__name__}: {exc}"},
+        headers=_cors_headers_for(request),
     )
 
 

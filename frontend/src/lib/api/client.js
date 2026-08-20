@@ -19,7 +19,12 @@ export const tokenStore = {
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000, // Render free tier cold-starts can take ~30s
+  // A cold Render instance takes ~30s to wake on its own. When email is
+  // relayed through a tunnel, a send adds the round trip to that machine
+  // and Gmail's handshake on top, so 30s aborted requests that were
+  // still working -- and an aborted request reports as a network failure,
+  // which the browser then blames on CORS.
+  timeout: 75000,
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -36,8 +41,18 @@ apiClient.interceptors.response.use(
       // Only redirect if we're on a page that actually required auth —
       // public pages send an optional token and must not bounce guests.
       const path = window.location.pathname;
-      const isProtected = /^\/(me|org|college-admin|superadmin)/.test(path);
-      if (isProtected) {
+      // Super admins sign in at /super, not through Google, so an
+      // expired admin session must go back to its own door. Sending it
+      // to /login would offer a Google button that cannot grant admin
+      // access, which reads as the panel being broken.
+      if (/^\/super/.test(path)) {
+        window.location.href = '/super';
+        return Promise.reject(error);
+      }
+      // These prefixes changed when the admin URLs were split; the old
+      // names matched nothing, so a 401 on an admin page silently did
+      // nothing at all.
+      if (/^\/(me|org|admin)/.test(path)) {
         sessionStorage.setItem('festify_return_url', path);
         window.location.href = '/login';
       }

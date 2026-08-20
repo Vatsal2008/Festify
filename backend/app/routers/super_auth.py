@@ -30,8 +30,11 @@ logger = logging.getLogger(__name__)
 OTP_TTL = 600           # 10 minutes
 SESSION_HOURS = 8
 MAX_ATTEMPTS = 5        # per code, before it is burned
-REQUEST_WINDOW = 900    # 15 minutes
-MAX_REQUESTS = 5        # per email per window
+REQUEST_WINDOW = 600    # 10 minutes
+# Generous enough to survive a few genuine failures -- a slow cold start
+# or a relay hiccup makes people retry, and locking them out for that is
+# punishing the wrong thing. Still far too low to be useful for probing.
+MAX_REQUESTS = 10       # per email per window
 
 
 def _bootstrap_emails() -> set[str]:
@@ -84,9 +87,15 @@ def request_code(body: dict = Body(...), request: Request = None):
     rate_key = f"sa_login_rate:{email}"
     attempts = int(redis_client.get(rate_key) or 0)
     if attempts >= MAX_REQUESTS:
+        # Say how long. A bare "try again later" after a failure the
+        # person did not cause reads as the login being broken, and they
+        # retry -- which is exactly what got them limited.
         raise HTTPException(
             status_code=429,
-            detail="Too many code requests. Wait a few minutes and try again.",
+            detail=(
+                f"Too many code requests for this address. "
+                f"Try again in about {REQUEST_WINDOW // 60} minutes."
+            ),
         )
     redis_client.set_with_ttl(rate_key, str(attempts + 1), REQUEST_WINDOW)
 
@@ -165,6 +174,17 @@ def verify_code(body: dict = Body(...)):
     supabase.table("super_admins").update(
         {"user_id": user["id"], "last_login_at": datetime.now(timezone.utc).isoformat()}
     ).ilike("email", email).execute()
+
+    # Without this the failure is "InvalidKeyError: HMAC key must not be
+    # empty" raised from deep inside the JWT library, surfaced as a bare
+    # 500 -- which reads as the login being broken rather than as one
+    # unset environment variable.
+    if not (settings.jwt_secret or "").strip():
+        logger.error("JWT_SECRET is not set; cannot issue a session token")
+        raise HTTPException(
+            status_code=500,
+            detail="The server is missing JWT_SECRET, so it cannot issue a session. Set it in the backend environment.",
+        )
 
     token = jwt.encode(
         {"sub": user["id"], "exp": datetime.now(timezone.utc) + timedelta(hours=SESSION_HOURS)},

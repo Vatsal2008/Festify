@@ -52,6 +52,10 @@ def config_check():
             },
             "relay_url": settings.local_mail_url,
         },
+        # Without a signing key nobody can log in at all, and the failure
+        # surfaces from inside the JWT library as a bare 500 rather than
+        # as a missing setting.
+        "auth": {"jwt_secret_set": configured(settings.jwt_secret)},
         "database": {"configured": configured(settings.supabase_url, settings.supabase_service_role_key)},
         "redis": {"configured": configured(settings.upstash_redis_rest_url, settings.upstash_redis_rest_token)},
         "payments": {"configured": configured(settings.razorpay_key_id, settings.razorpay_key_secret)},
