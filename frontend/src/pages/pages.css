@@ -1,19 +1,74 @@
 /* pages/pages.css — Shared page-level styles */
 
 /* ── Home Page ── */
-.home-hero { text-align: center; max-width: 780px; margin: 0 auto; position: relative; z-index: 2; }
+/* Asymmetric hero: a wide lead column and a narrow counterweight.
+   The old rule centred an 780px stack, which is the single most
+   recognisable generated-layout signature. */
+.home-hero {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
+  gap: var(--space-4xl, 56px);
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: left;
+}
+.home-hero__lead { min-width: 0; }
+
+/* Counterweight panel. Glass with a 1px inner edge rather than a plain
+   blur -- the inner border is what makes it read as a pane of glass
+   instead of a blurred rectangle. */
+.home-hero__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-2xl);
+  border-radius: 18px;
+  background: rgba(251, 247, 240, 0.06);
+  backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(251, 247, 240, 0.14);
+  box-shadow: inset 0 1px 0 rgba(251, 247, 240, 0.18),
+              0 24px 60px rgba(11, 7, 20, 0.45);
+}
+.home-hero__stat { display: flex; flex-direction: column; gap: 2px; }
+.home-hero__stat-num {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-canvas);
+  font-variant-numeric: tabular-nums;
+}
+.home-hero__stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(251, 247, 240, 0.6);
+}
+
+@media (max-width: 900px) {
+  .home-hero { grid-template-columns: 1fr; gap: var(--space-2xl); }
+  /* The panel is supporting information; on a narrow screen it sits
+     below the pitch rather than competing with it. */
+  .home-hero__panel { flex-direction: row; justify-content: space-between; }
+  .home-hero__stat-num { font-size: 32px; }
+}
 .home-hero__live { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: var(--radius-pill); background: rgba(212,255,61,0.12); border: 1px solid rgba(212,255,61,0.4); margin-bottom: var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-live); }
 .home-hero__live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-live); box-shadow: var(--glow-live); animation: pulse-dot 1.6s ease-in-out infinite; }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-.home-hero__title { font-family: var(--font-display); font-size: var(--text-display-xl); line-height: var(--lh-display-xl); letter-spacing: var(--ls-display-xl); font-weight: 800; color: var(--color-canvas); margin-bottom: var(--space-xl); text-wrap: balance; }
+.home-hero__title { font-family: var(--font-display); font-size: clamp(44px, 6.2vw, 92px); line-height: var(--lh-display-xl); letter-spacing: var(--ls-display-xl); font-weight: 800; color: var(--color-canvas); margin-bottom: var(--space-xl); text-wrap: balance; }
 .home-hero__title em { color: var(--color-accent); font-style: normal; }
-.home-hero__sub { font-family: var(--font-body); font-size: var(--text-body-lg); color: rgba(251, 247, 240,0.85); margin-bottom: var(--space-3xl); text-shadow: 0 2px 10px rgba(0,0,0,0.5); max-width: 560px; margin-left: auto; margin-right: auto; }
-.home-hero__search { display: flex; gap: 0; max-width: 560px; margin: 0 auto; box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-radius: var(--radius-sm); overflow: hidden; }
+.home-hero__sub { font-family: var(--font-body); font-size: var(--text-body-lg); color: rgba(251, 247, 240,0.85); margin-bottom: var(--space-2xl); text-shadow: 0 2px 10px rgba(0,0,0,0.5); max-width: 52ch; text-wrap: pretty; }
+.home-hero__search { display: flex; gap: 0; max-width: 560px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-radius: var(--radius-sm); overflow: hidden; }
 .home-hero__search input { flex: 1; height: 56px; font-family: var(--font-body); font-size: var(--text-body-md); padding: 14px 20px; border: 1px solid rgba(251, 247, 240,0.3); background: rgba(22, 16, 31,0.75); backdrop-filter: blur(12px); color: var(--color-canvas); outline: none; border-right: none; }
 .home-hero__search input::placeholder { color: rgba(251, 247, 240,0.6); }
 .home-hero__search button { height: 56px; padding: 0 28px; background: var(--color-accent); color: var(--color-canvas); border: none; cursor: pointer; font-family: var(--font-ui); font-weight: 700; font-size: 16px; white-space: nowrap; transition: filter 0.2s; }
 .home-hero__search button:hover { filter: brightness(1.1); }
-.home-hero__cats { display: flex; gap: var(--space-md); flex-wrap: wrap; justify-content: center; margin-top: var(--space-2xl); }
+.home-hero__cats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-start; margin-top: var(--space-2xl); }
 
 /* ── Hero video background ── */
 .home-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
@@ -30,9 +85,38 @@
 .home-section-header__link { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-accent); text-decoration: none; }
 .home-section-header__link:hover { opacity: 0.8; }
 
-.events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xl); }
-@media (max-width: 1024px) { .events-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px)  { .events-grid { grid-template-columns: 1fr; } }
+/* Editorial grid rather than three equal columns.
+   Equal thirds is the most generic layout in the AI-built canon, and it
+   also says every event matters exactly as much as every other. A six
+   column bed lets the first item take a wider, shorter slot -- the lead
+   story -- while the rest fall into threes. Nothing is centred and the
+   eye gets an entry point. */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-xl);
+  align-items: start;
+}
+.events-grid > * { grid-column: span 2; }
+
+/* Lead item takes two thirds of the first row with one companion
+   beside it; everything after falls into clean rows of three. Giving
+   the first item more room says the ordering means something, which
+   three identical columns cannot. */
+.events-grid > *:first-child { grid-column: span 4; }
+.events-grid > *:nth-child(n+2) { grid-column: span 2; }
+
+@media (max-width: 1024px) {
+  .events-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .events-grid > *,
+  .events-grid > *:first-child,
+  .events-grid > *:nth-child(2),
+  .events-grid > *:nth-child(3),
+  .events-grid > *:nth-child(n+4) { grid-column: span 1; }
+}
+@media (max-width: 640px) {
+  .events-grid { grid-template-columns: 1fr; }
+}
 
 /* ── Event Detail ── */
 .event-detail-hero { position: relative; }

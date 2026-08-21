@@ -84,18 +84,23 @@ export default function HomePage() {
         </video>
         <div className="home-hero-scrim" aria-hidden="true" />
 
+        {/* Two columns of unequal weight rather than one centred stack.
+            A dead-centre hero is the most recognisable generated layout
+            there is; an off-axis split gives the eye somewhere to enter
+            and somewhere to travel. */}
         <div className="home-hero">
-          <span className="home-hero__live">
-            <span className="home-hero__live-dot" aria-hidden="true" />
-            {liveCount > 0 ? `${liveCount} fests on sale right now` : 'Fresh fests every week'}
-          </span>
+          <div className="home-hero__lead">
+            <span className="home-hero__live">
+              <span className="home-hero__live-dot" aria-hidden="true" />
+              {liveCount > 0 ? `${liveCount} fests on sale right now` : 'Fresh fests every week'}
+            </span>
 
-          <h1 className="home-hero__title">
-            Your next fest <em>starts here.</em>
-          </h1>
-          <p className="home-hero__sub">
-            Every cultural night, tech fest, DJ set, and hackathon worth showing up for — across every college in India, in one place.
-          </p>
+            <h1 className="home-hero__title">
+              Your next fest <em>starts here.</em>
+            </h1>
+            <p className="home-hero__sub">
+              Every cultural night, tech fest, DJ set and hackathon worth showing up for — across every college in India, in one place.
+            </p>
 
           <form className="home-hero__search" onSubmit={handleSearch} role="search">
             <label htmlFor="hero-search" className="visually-hidden">Search events</label>
@@ -113,7 +118,7 @@ export default function HomePage() {
           </form>
 
           <div className="home-hero__cats" role="list" aria-label="Event categories">
-            {CATEGORIES.slice(0, 8).map(cat => (
+            {CATEGORIES.slice(0, 9).map(cat => (
               <Tag
                 key={cat}
                 isActive={activeCategory === cat}
@@ -127,7 +132,34 @@ export default function HomePage() {
                 {cat}
               </Tag>
             ))}
+            </div>
           </div>
+
+          {/* The counterweight. Real figures from the loaded events, not
+              invented stats -- a hero that lies about its own numbers is
+              worse than one with none. */}
+          <aside className="home-hero__panel" aria-label="At a glance">
+            <div className="home-hero__stat">
+              <span className="home-hero__stat-num">{events.length || '—'}</span>
+              <span className="home-hero__stat-label">fests listed</span>
+            </div>
+            {/* "on sale now" lived here and repeated the pill above it
+                verbatim -- two identical numbers side by side read as a
+                bug, not as emphasis. Colleges is the figure the pill
+                does not already carry. */}
+            <div className="home-hero__stat">
+              <span className="home-hero__stat-num" style={{ color: 'var(--hue-sports)' }}>
+                {new Set(events.map(e => e.venue?.split(',').pop()?.trim()).filter(Boolean)).size || '—'}
+              </span>
+              <span className="home-hero__stat-label">cities</span>
+            </div>
+            <div className="home-hero__stat">
+              <span className="home-hero__stat-num" style={{ color: 'var(--hue-talk)' }}>
+                {new Set(events.map(e => e.organizer?.name).filter(Boolean)).size || '—'}
+              </span>
+              <span className="home-hero__stat-label">organisers</span>
+            </div>
+          </aside>
         </div>
       </TealBand>
 

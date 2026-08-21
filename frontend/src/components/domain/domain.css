@@ -313,3 +313,15 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* The state chip sits over an arbitrary photo, so it cannot rely on the
+   image behind it for contrast. A solid ink plate with the state colour
+   as text keeps it readable on a bright sky or a dark stage alike. */
+.event-card__chips .badge,
+.event-card__chips .event-state-chip {
+  background: rgba(11, 7, 20, 0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(251, 247, 240, 0.16);
+  border-radius: 6px;
+}
+.event-card__chips { gap: 6px; }
