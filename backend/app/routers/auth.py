@@ -145,6 +145,11 @@ def _with_profile(user: dict) -> dict:
 
     return {
         **user,
+        # The column is full_name; every client surface reads `name`, so
+        # the profile header and avatar have been rendering blank for
+        # everyone. Aliasing here fixes each call site at once rather
+        # than patching them one at a time and missing one.
+        "name": user.get("full_name"),
         "is_prime": user.get("customer_level") == "prime",
         "has_prime_pass": bool(active_pass),
         "prime_pass_expires_at": (active_pass or {}).get("expires_at"),

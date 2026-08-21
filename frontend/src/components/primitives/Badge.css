@@ -22,10 +22,10 @@
 .badge--default  { background: var(--color-surface-cool); color: var(--color-ink); }
 .badge--teal     { background: var(--color-ink); color: var(--color-canvas); }
 .badge--accent   { background: var(--color-accent); color: var(--color-ink); }
-.badge--success  { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success); }
-.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); }
-.badge--error    { background: var(--color-error-bg);   color: var(--color-error);   border: 1px solid var(--color-error); }
-.badge--info     { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid var(--color-info); }
+.badge--success  { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid var(--color-success); }
+.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning-text); border: 1px solid var(--color-warning); }
+.badge--error    { background: var(--color-error-bg);   color: var(--color-error-text);   border: 1px solid var(--color-error); }
+.badge--info     { background: var(--color-info-bg);    color: var(--color-info-text);    border: 1px solid var(--color-info); }
 .badge--canvas   { background: transparent; color: var(--color-canvas); border: 1px solid var(--color-canvas); }
 
 /* Prime is the platform's highest-status badge — gets the full impact
@@ -60,3 +60,16 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(212,255,61,0.5); }
   50%      { box-shadow: 0 0 0 4px rgba(212,255,61,0); }
 }
+
+
+/* On a dark plate the darkened text would disappear, so contexts that
+   place a badge over photography or the ink band flip it back to the
+   bright value. */
+.event-card__chips .badge--success,
+.event-detail-hero .badge--success { color: var(--color-success); }
+.event-card__chips .badge--warning,
+.event-detail-hero .badge--warning { color: var(--color-warning); }
+.event-card__chips .badge--error,
+.event-detail-hero .badge--error   { color: var(--color-error); }
+.event-card__chips .badge--info,
+.event-detail-hero .badge--info    { color: var(--color-info); }

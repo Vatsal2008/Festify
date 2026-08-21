@@ -219,8 +219,25 @@
 .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xl); }
 @media (max-width: 640px) { .profile-stats { grid-template-columns: 1fr 1fr; } }
 .profile-stat { text-align: center; }
-.profile-stat__value { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700; color: var(--color-canvas); }
-.profile-stat__label { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(251, 247, 240,0.6); margin-top: 4px; }
+/* These read cream because the block once sat on the dark hero band.
+   It sits on the cream CanvasBand now, so the text was cream on cream
+   -- a 1:1 contrast ratio, literally invisible. */
+.profile-stat__value {
+  font-family: var(--font-display);
+  font-size: var(--text-display-md);
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.profile-stat__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-mono);
+  font-weight: 500;
+  letter-spacing: var(--ls-label-mono);
+  text-transform: uppercase;
+  color: rgba(22, 16, 31, 0.6);
+  margin-top: 4px;
+}
 .profile-quick-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }
 @media (max-width: 640px) { .profile-quick-links { grid-template-columns: repeat(2, 1fr); } }
 
