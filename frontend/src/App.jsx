@@ -1,5 +1,5 @@
 // App.jsx — Complete router tree for Festify
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Spinner } from '@/components/primitives/Primitives';
@@ -13,29 +13,44 @@ import SearchPage      from '@/pages/discovery/SearchPage';
 // ── Auth ───────────────────────────────────────────────────────────
 import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 
+// Everything past discovery is code-split. A visitor landing on the
+// homepage was downloading the organizer dashboard, both admin panels
+// and the QR scanner (which pulls in jsQR) before seeing a single
+// event -- most of it for surfaces they will never open.
+//
 // ── Attendee ───────────────────────────────────────────────────────
-import ProfilePage      from '@/pages/attendee/ProfilePage';
-import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
-import { WishlistPage } from '@/pages/attendee/OtherAttendeePages';
-import NotificationsPage from '@/pages/attendee/NotificationsPage';
-import PrimePassPage from '@/pages/attendee/PrimePassPage';
+const ProfilePage        = lazy(() => import('@/pages/attendee/ProfilePage'));
+const TicketWalletPage   = lazy(() => import('@/pages/attendee/TicketPages'));
+const TicketDetailPage   = lazy(() => import('@/pages/attendee/TicketPages').then(m => ({ default: m.TicketDetailPage })));
+const WishlistPage       = lazy(() => import('@/pages/attendee/OtherAttendeePages').then(m => ({ default: m.WishlistPage })));
+const NotificationsPage  = lazy(() => import('@/pages/attendee/NotificationsPage'));
+const PrimePassPage      = lazy(() => import('@/pages/attendee/PrimePassPage'));
 
 // ── Organizer ──────────────────────────────────────────────────────
-import OrganizerApplicationPage from '@/pages/organizer/OrganizerApplicationPage';
-import GateScannerPage from '@/pages/organizer/GateScannerPage';
-import { OrgDashboardPage, EventBuilderPage, BulkRequestsPage, OrgMembersPage, OrgChatPage, OrgEventsPage, OrgAnalyticsPage } from '@/pages/organizer/OrgPages';
+const OrganizerApplicationPage = lazy(() => import('@/pages/organizer/OrganizerApplicationPage'));
+const GateScannerPage    = lazy(() => import('@/pages/organizer/GateScannerPage'));
+const OrgDashboardPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgDashboardPage })));
+const EventBuilderPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.EventBuilderPage })));
+const BulkRequestsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.BulkRequestsPage })));
+const OrgMembersPage     = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgMembersPage })));
+const OrgChatPage        = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgChatPage })));
+const OrgEventsPage      = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgEventsPage })));
+const OrgAnalyticsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgAnalyticsPage })));
 
 // ── Admin ──────────────────────────────────────────────────────────
-import {
-  CollegeAdminApplicationsPage,
-  CollegeAdminEventsPage, CollegeAdminAnalyticsPage,
-  SuperAdminDashboardPage, SuperAdminOrganizersPage,
-  SuperAdminSupportPage, SuperAdminConfigPage, SuperAdminAuditLogPage,
-  SuperAdminTrendingPage
-} from '@/pages/admin/AdminPages';
-import AdminManagementPage from '@/pages/admin/AdminManagementPage';
-import SuperAdminGate from '@/pages/admin/SuperAdminGate';
-import SuperLoginPage from '@/pages/admin/SuperLoginPage';
+const CollegeAdminApplicationsPage = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminApplicationsPage })));
+const CollegeAdminEventsPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminEventsPage })));
+const CollegeAdminAnalyticsPage    = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminAnalyticsPage })));
+const SuperAdminDashboardPage      = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminDashboardPage })));
+const SuperAdminOrganizersPage     = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminOrganizersPage })));
+const SuperAdminSupportPage        = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminSupportPage })));
+const SuperAdminConfigPage         = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminConfigPage })));
+const SuperAdminAuditLogPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminAuditLogPage })));
+const SuperAdminTrendingPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminTrendingPage })));
+const AdminManagementPage          = lazy(() => import('@/pages/admin/AdminManagementPage'));
+const SuperAdminGate               = lazy(() => import('@/pages/admin/SuperAdminGate'));
+const SuperLoginPage               = lazy(() => import('@/pages/admin/SuperLoginPage'));
+
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
@@ -85,6 +100,7 @@ export default function App() {
     <>
       <ScrollToTop />
       <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* ── Public ── */}
         <Route path="/"          element={<HomePage />} />
@@ -137,6 +153,7 @@ export default function App() {
         {/* ── 404 ── */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
       </ErrorBoundary>
 
       {/* Global toast container */}

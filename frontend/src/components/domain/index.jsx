@@ -48,6 +48,19 @@ function timeAgo(dt) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+const CATEGORY_HUE = {
+  Hackathon: 'var(--hue-hackathon)',
+  Cultural:  'var(--hue-cultural)',
+  Music:     'var(--hue-music)',
+  Sports:    'var(--hue-sports)',
+  Talk:      'var(--hue-talk)',
+  Workshop:  'var(--hue-workshop)',
+  Party:     'var(--hue-party)',
+  Comedy:    'var(--hue-comedy)',
+  Theatre:   'var(--hue-theatre)',
+};
+export const hueFor = (category) => CATEGORY_HUE[category] || 'var(--hue-default)';
+
 export function CategoryIcon({ category, size = 16, className = '' }) {
   switch (category) {
     case 'Hackathon': return <CodeIcon size={size} className={className} />;
@@ -81,7 +94,16 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   const qc = useQueryClient();
 
   const cardVariant = variant === 'featured' ? 'teal' : 'default';
-  const cardClass = `event-card ${variant === 'list' ? 'event-card--list' : ''}`;
+  const cardClass = `event-card spotlight ${variant === 'list' ? 'event-card--list' : ''}`;
+
+  // Pointer position drives the spotlight border. Written as CSS custom
+  // properties rather than React state so moving the mouse never
+  // triggers a re-render.
+  const trackPointer = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+  };
 
   // The event prop is replaced whenever a list refetches, so local state
   // has to follow it -- otherwise a card keeps showing the optimistic
@@ -137,21 +159,31 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   };
 
   return (
-    <Card variant={cardVariant} padding="sm" onClick={() => navigate(buildRoute.eventDetail(event.id))} ariaLabel={`View ${event.title}`} className={cardClass}>
+    <Card
+      variant={cardVariant}
+      padding="sm"
+      onClick={() => navigate(buildRoute.eventDetail(event.id))}
+      ariaLabel={`View ${event.title}`}
+      className={cardClass}
+      style={{ '--cat': hueFor(event.category) }}
+      onPointerMove={trackPointer}
+    >
       {/* Image */}
       <div className="event-card__image-wrap">
         <img
-          src={event.cover_image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85'}
+          src={event.cover_image || `https://picsum.photos/seed/${event.id}/800/600`}
           alt={event.title}
           className="event-card__image"
           loading="lazy"
           onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85';
+            e.currentTarget.src = `https://picsum.photos/seed/${event.id}-alt/800/600`;
           }}
         />
         <div className="event-card__chips">
           <EventStateChip state={event.state} />
-          <Badge variant="teal">{event.category}</Badge>
+          <span className="event-card__cat">
+            <CategoryIcon category={event.category} size={12} /> {event.category}
+          </span>
         </div>
       </div>
 

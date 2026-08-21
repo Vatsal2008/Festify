@@ -231,8 +231,11 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
 
 /* ── PageShell ── */
 export function PageShell({ children }) {
+  // "grain" adds a fixed noise layer over the page: flat digital colour
+  // is the most reliable "cheap" tell, and a few percent of grain gives
+  // the surface a printed quality.
   return (
-    <div className="page-shell">
+    <div className="page-shell grain">
       <a href="#main-content" className="skip-link">Skip to content</a>
       <TopNav />
       <main id="main-content" className="page-shell__main">

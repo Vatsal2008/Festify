@@ -6,6 +6,7 @@
 @import './colors.css';
 @import './typography.css';
 @import './spacing.css';
+@import './effects.css';
 
 /* ── Base Reset ── */
 *, *::before, *::after {

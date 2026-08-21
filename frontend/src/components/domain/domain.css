@@ -226,3 +226,90 @@
 @media (prefers-reduced-motion: reduce) {
   .ticket-bundle, .ticket-bundle:hover { transition: none; transform: none; }
 }
+
+/* ── Card: category hue, lit depth ────────────────────────────────
+   The card reads its category hue from --cat, set inline by
+   EventCard. Everything below is hue-agnostic, so adding a category
+   is one entry in the hue map and nothing here changes. */
+.event-card {
+  border-radius: 16px;
+  transition: transform var(--dur-med) var(--ease-spring),
+              box-shadow var(--dur-med) var(--ease-out-soft);
+  will-change: transform;
+}
+.event-card:hover {
+  transform: translateY(-6px);
+  /* Tinted by the category, so the shadow looks like light from the
+     card rather than generic black haze under it. */
+  box-shadow: var(--shadow-cat);
+}
+.event-card:active { transform: translateY(-2px) scale(0.995); }
+
+/* Radius varies by nesting depth: tighter inside, softer outside. */
+.event-card__image-wrap { border-radius: 12px; overflow: hidden; }
+
+.event-card__cat {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 6px;
+  color: var(--color-ink);
+  background: var(--cat);
+  /* Square-ish rather than a pill: pill badges are the default
+     everywhere and read as template. */
+}
+
+/* The title fills toward the category hue on hover -- a small piece of
+   "this card is alive" that costs no layout. */
+.event-card__title {
+  text-wrap: balance;
+  transition: color var(--dur-fast) var(--ease-out-soft);
+}
+.event-card:hover .event-card__title { color: var(--cat); }
+
+/* Prices and counts use tabular figures so columns of numbers line up
+   instead of dancing as digits change. */
+.event-card__price,
+.hype-btn,
+.dash-metric__value,
+.gate-stat__value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Ticker strip ─────────────────────────────────────────────── */
+.ticker {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  border-block: 1px solid var(--color-hairline-light);
+  padding: 10px 0;
+  overflow: hidden;
+}
+.ticker__item {
+  display: inline-flex; align-items: center; gap: 10px; flex: none;
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0.85;
+}
+.ticker__dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cat, var(--color-accent));
+  flex: none;
+}
+
+/* Card body fills the grid cell so the footer pins to the bottom.
+   Equal-height cards with content of different lengths were leaving
+   large voids mid-card and putting the action row at a different
+   height in every column -- the row now forms a clean line across. */
+.event-card { display: flex; flex-direction: column; }
+.event-card__body { display: flex; flex-direction: column; flex: 1; }
+.event-card__footer { margin-top: auto; }
+.event-card__title {
+  /* Cap at two lines so a long title cannot push the whole row taller
+     than its neighbours. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

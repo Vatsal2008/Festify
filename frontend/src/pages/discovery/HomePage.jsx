@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventCard } from '@/components/domain';
+import { EventCard, hueFor } from '@/components/domain';
 import { Tag, RevealGrid, QueryBoundary } from '@/components/primitives';
 import { eventsApi } from '@/lib/api/endpoints';
 import { queryKeys } from '@/constants/queryKeys';
@@ -117,6 +117,8 @@ export default function HomePage() {
               <Tag
                 key={cat}
                 isActive={activeCategory === cat}
+                className="cat-chip"
+                style={{ '--cat': cat === 'All' ? 'var(--color-accent)' : hueFor(cat) }}
                 onClick={() => {
                   setActiveCategory(cat);
                   if (cat !== 'All') navigate(`/search?category=${cat}`);
@@ -132,7 +134,7 @@ export default function HomePage() {
       {/* ── Trending ── */}
       <CanvasBand>
         <div className="home-section-header">
-          <h2 className="type-display-md">Trending Now</h2>
+          <h2 className="type-display-md">Trending now</h2>
           <a href="/search?sort=trending" className="home-section-header__link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             See all <ArrowRightIcon size={14} />
           </a>

@@ -11,7 +11,10 @@
      face: verify codes, timestamps, "LIVE" tags, prices.
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Space+Mono:wght@400;700&display=swap');
+/* The font request lives in index.html as a <link>. An @import here
+   could not begin downloading until this stylesheet was itself
+   fetched and parsed, which serialised it behind the CSS and
+   pushed back first paint. */
 
 :root {
   /* ── Font Families ── */
