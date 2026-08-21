@@ -74,8 +74,21 @@ def list_org_groups(limit: int = Query(100, le=500)):
 
 @router.get("/support-tickets")
 def list_all_support_tickets(current_user: dict = Depends(get_current_user)):
+    """Everything waiting on a support decision, from both sources.
+
+    This read only support_tickets, while theft reports are written to
+    ticket_theft_reports by a separate flow. Nothing joined the two, so
+    a filed theft report was stored correctly and then appeared nowhere
+    an admin looks -- the queue showed an empty table while real reports
+    sat unattended.
+
+    Both are normalised into one shape with a `source` discriminator
+    rather than returned as two lists, because the admin's question is
+    "what needs attention", not "which table is it in".
+    """
     require_super_admin(current_user)
     supabase = get_supabase()
+
     tickets = (
         supabase.table("support_tickets")
         .select("*")
@@ -83,8 +96,18 @@ def list_all_support_tickets(current_user: dict = Depends(get_current_user)):
         .execute()
         .data
     )
+    thefts = (
+        supabase.table("ticket_theft_reports")
+        .select("*")
+        .order("created_at", desc=True)
+        .execute()
+        .data
+    )
 
-    user_ids = list({t["raised_by"] for t in tickets if t.get("raised_by")})
+    user_ids = list(
+        {t["raised_by"] for t in tickets if t.get("raised_by")}
+        | {r["reported_by"] for r in thefts if r.get("reported_by")}
+    )
     users_by_id = {}
     if user_ids:
         users = (
@@ -95,7 +118,64 @@ def list_all_support_tickets(current_user: dict = Depends(get_current_user)):
         )
         users_by_id = {u["id"]: u for u in users.data}
 
-    return [{**t, "raised_by_user": users_by_id.get(t.get("raised_by"))} for t in tickets]
+    # Theft reports carry the ticket and event an admin needs to judge
+    # them; without those the row is an id and a timestamp.
+    ticket_ids = [r["ticket_id"] for r in thefts if r.get("ticket_id")]
+    tickets_by_id, events_by_id = {}, {}
+    if ticket_ids:
+        tk = supabase.table("tickets").select("*").in_("id", ticket_ids).execute()
+        tickets_by_id = {t["id"]: t for t in tk.data}
+        event_ids = list({t["event_id"] for t in tk.data if t.get("event_id")})
+        if event_ids:
+            ev = (
+                supabase.table("events")
+                .select("id, title, starts_at, venue")
+                .in_("id", event_ids)
+                .execute()
+            )
+            events_by_id = {e["id"]: e for e in ev.data}
+
+    items = [
+        {
+            **t,
+            "source": "support_ticket",
+            "kind": t.get("category") or "Support request",
+            "raised_by_user": users_by_id.get(t.get("raised_by")),
+        }
+        for t in tickets
+    ]
+
+    for r in thefts:
+        tk = tickets_by_id.get(r.get("ticket_id")) or {}
+        items.append({
+            **r,
+            "source": "theft_report",
+            "kind": "Stolen ticket",
+            # Aliased to the support shape so one table renders both
+            # without branching on every field.
+            "raised_by": r.get("reported_by"),
+            "raised_by_user": users_by_id.get(r.get("reported_by")),
+            "subject": f"Stolen ticket · {(events_by_id.get(tk.get('event_id')) or {}).get('title', 'event')}",
+            "ticket": {
+                "id": tk.get("id"),
+                "status": tk.get("status"),
+                "booking_code": (tk.get("verify_code") or "")[:8].upper(),
+            },
+            "event": events_by_id.get(tk.get("event_id")),
+        })
+
+    # Pending first, then newest. An admin opens this page to find what
+    # is unresolved, not to read history.
+    items.sort(
+        key=lambda i: (
+            0 if (i.get("status") in ("open", "pending")) else 1,
+            i.get("created_at") or "",
+        ),
+        reverse=False,
+    )
+    items.sort(key=lambda i: i.get("created_at") or "", reverse=True)
+    items.sort(key=lambda i: 0 if i.get("status") in ("open", "pending") else 1)
+    return items
 
 
 @router.get("/audit-log")

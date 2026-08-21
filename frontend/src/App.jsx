@@ -45,7 +45,7 @@ const CollegeAdminEventsPage       = lazy(() => import('@/pages/admin/AdminPages
 const CollegeAdminAnalyticsPage    = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminAnalyticsPage })));
 const SuperAdminDashboardPage      = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminDashboardPage })));
 const SuperAdminOrganizersPage     = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminOrganizersPage })));
-const SuperAdminSupportPage        = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminSupportPage })));
+const SuperAdminSupportPage        = lazy(() => import('@/pages/admin/SuperAdminSupportPage'));
 const SuperAdminConfigPage         = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminConfigPage })));
 const SuperAdminAuditLogPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminAuditLogPage })));
 const SuperAdminTrendingPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminTrendingPage })));

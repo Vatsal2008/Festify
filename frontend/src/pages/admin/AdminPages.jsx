@@ -522,45 +522,6 @@ export function SuperAdminOrganizersPage() {
 }
 
 // ── Super Admin: Support Tickets ───────────────────────────────────
-export function SuperAdminSupportPage() {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const ticketsQuery = useQuery({ queryKey: queryKeys.superAdmin.support({}), queryFn: platformApi.allSupportTickets });
-  const resolveMutation = useMutation({
-    mutationFn: (id) => supportApi.resolve(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.superAdmin.support({}) }),
-  });
-  const tickets = ticketsQuery.data ?? [];
-
-  return (
-    <DashboardShell orgId={null} sidebarType="super-admin">
-      <div style={{ padding: 'var(--space-2xl)' }}>
-        <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Support Tickets</h1>
-        <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          <table className="admin-table">
-            <thead><tr><th>Type</th><th>Raised By</th><th>College</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {tickets.map(t => (
-                <tr key={t.id}>
-                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.type}</code></td>
-                  <td>{t.raised_by}</td>
-                  <td>{t.college || '—'}</td>
-                  <td><Badge variant={t.status === 'resolved' ? 'success' : 'warning'}>{t.status}</Badge></td>
-                  <td>
-                    {t.status === 'pending' && (
-                      <Button variant="primary" size="sm" onClick={() => resolveMutation.mutate(t.id, { onSuccess: () => toast.success('Ticket resolved'), onError: (e) => toast.error(apiError(e)) })}>Resolve</Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </DashboardShell>
-  );
-}
-
 // ── Super Admin: Platform Config ───────────────────────────────────
 // The API stores config as free-form key/value rows in scoring_config,
 // so this page edits the keys the platform actually reads today rather
