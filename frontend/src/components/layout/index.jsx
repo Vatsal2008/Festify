@@ -197,6 +197,7 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
     { path: '/super/applications',       label: 'Applications', icon: <UsersIcon size={18} /> },
     { path: '/super/college-admins',     label: 'Admin Access', icon: <UsersIcon size={18} /> },
     { path: '/super/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
+    { path: '/super/events',             label: 'Events',      icon: <CalendarIcon size={18} /> },
     { path: '/super/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
     { path: '/super/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },
     { path: '/super/config',             label: 'Config',      icon: <SettingsIcon size={18} /> },

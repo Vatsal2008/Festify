@@ -21,9 +21,12 @@
 }
 
 /* ── Variants ── */
+/* Cream on the accent measured 3.13:1 on the most-used control in
+   the app. The accent is a bright fill; the legible label on it is a
+   dark one. */
 .btn--primary {
   background-color: var(--color-accent);
-  color: var(--color-canvas);
+  color: var(--color-ink);
   border: 2px solid var(--color-ink);
   border-radius: var(--radius-none); /* squared — manga panel edge */
   padding: 12px 24px;

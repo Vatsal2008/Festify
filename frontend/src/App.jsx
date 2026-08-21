@@ -17,6 +17,8 @@ import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 import ProfilePage      from '@/pages/attendee/ProfilePage';
 import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
 import { WishlistPage, FollowingPage, MyReviewsPage } from '@/pages/attendee/OtherAttendeePages';
+import SuperAdminEventsPage from '@/pages/admin/SuperAdminEventsPage';
+import EventMediaPage from '@/pages/organizer/EventMediaPage';
 import NotificationsPage from '@/pages/attendee/NotificationsPage';
 import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
@@ -112,6 +114,7 @@ export default function App() {
         <Route path="/org/:orgId/events/new"                   element={<RequireAuth><EventBuilderPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><GateScannerPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/bulk-requests" element={<RequireAuth><BulkRequestsPage /></RequireAuth>} />
+        <Route path="/org/:orgId/events/:eventId/media"         element={<RequireAuth><EventMediaPage /></RequireAuth>} />
         <Route path="/org/:orgId/members"                      element={<RequireAuth><OrgMembersPage /></RequireAuth>} />
         <Route path="/org/:orgId/chat"                         element={<RequireAuth><OrgChatPage /></RequireAuth>} />
         <Route path="/org/:orgId/analytics"                    element={<RequireAuth><OrgAnalyticsPage /></RequireAuth>} />
@@ -134,6 +137,7 @@ export default function App() {
         <Route path="/super/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
         <Route path="/super/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
         <Route path="/super/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
+        <Route path="/super/events"             element={<SuperAdminGate><SuperAdminEventsPage /></SuperAdminGate>} />
         <Route path="/super/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
         <Route path="/super/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
         <Route path="/super/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />

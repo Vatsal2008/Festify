@@ -226,3 +226,138 @@
 @media (prefers-reduced-motion: reduce) {
   .ticket-bundle, .ticket-bundle:hover { transition: none; transform: none; }
 }
+
+/* ── Media manager ────────────────────────────────────────────────
+   The backend has supported event media since the media router landed;
+   there was no screen for it, so the feature was unreachable. */
+.mm { margin-top: var(--space-xl); }
+.mm__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); }
+.mm__placements { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-sm); }
+.mm__place {
+  padding: 6px 14px; border-radius: var(--radius-pill, 999px);
+  border: var(--border-hairline); background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(22, 16, 31, 0.72);
+}
+.mm__place--on { background: var(--color-accent); color: var(--color-ink); border-color: transparent; }
+.mm__place:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.mm__hint { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.66); margin-bottom: var(--space-lg); }
+
+.mm__drop {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--space-2xl); cursor: pointer;
+  border: 2px dashed var(--color-hairline); border-radius: var(--radius-lg);
+  background: var(--color-surface-sage); color: rgba(22, 16, 31, 0.72);
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.mm__drop--over, .mm__drop:hover { border-color: var(--color-accent); }
+.mm__drop:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.mm__drop-title { font-family: var(--font-body); font-size: var(--text-body-md); font-weight: 600; color: var(--color-ink); }
+.mm__drop-sub { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.66); }
+
+.mm__yt { margin-top: var(--space-lg); }
+.mm__yt-label { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(22, 16, 31, 0.7); margin-bottom: 6px; }
+.mm__yt-row { display: flex; gap: var(--space-md); }
+.mm__yt-row .input-field { flex: 1; }
+
+.mm__queue { list-style: none; margin: var(--space-lg) 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mm__q { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); font-family: var(--font-body); font-size: var(--text-body-sm); padding: 6px 10px; border-radius: var(--radius-sm); background: var(--color-surface-sage); }
+.mm__q-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm__q-wait { font-family: var(--font-mono); font-size: 11px; color: rgba(22, 16, 31, 0.66); }
+.mm__q-err { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-error-text); }
+.mm__q--failed { background: var(--color-error-bg); }
+
+.mm__reorder-hint { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.66); margin: var(--space-lg) 0 var(--space-md); }
+
+.mm__grid { display: grid; gap: var(--space-lg); margin-top: var(--space-lg); grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.mm__tile {
+  position: relative; margin: 0; aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md); overflow: hidden;
+  background: var(--color-surface-sage); border: var(--border-hairline);
+}
+.mm__tile--dragging { opacity: 0.5; }
+.mm__tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Dragging starts from the grip, not the tile: a drag surface covering
+   the whole card swallows every click on the controls underneath. */
+.mm__grip {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: none; border-radius: var(--radius-sm);
+  background: rgba(11, 7, 20, 0.72); color: #fff;
+  cursor: grab; font-size: 13px; line-height: 1;
+}
+.mm__grip:active { cursor: grabbing; }
+.mm__grip:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.mm__pos {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: var(--radius-sm);
+  background: rgba(11, 7, 20, 0.72); color: #fff;
+  font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums;
+}
+.mm__yt-flag {
+  position: absolute; bottom: 42px; left: 8px; z-index: 2;
+  padding: 2px 8px; border-radius: var(--radius-sm);
+  background: rgba(11, 7, 20, 0.78); color: #fff;
+  font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+}
+.mm__tile-bar {
+  position: absolute; inset: auto 0 0 0; z-index: 2;
+  display: flex; align-items: center; gap: 6px; padding: 6px;
+  background: linear-gradient(180deg, transparent, rgba(11, 7, 20, 0.85));
+}
+.mm__tile-bar select {
+  flex: 1; min-width: 0; padding: 4px 6px; border-radius: 6px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  background: rgba(11, 7, 20, 0.85); color: var(--color-canvas);
+  border: 1px solid rgba(251, 247, 240, 0.28);
+}
+.mm__tile-x {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  border: none; border-radius: 6px; cursor: pointer;
+  background: rgba(11, 7, 20, 0.85); color: var(--color-canvas);
+}
+.mm__empty { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.66); margin-top: var(--space-lg); }
+
+/* ── Public gallery ── */
+.gal { margin-top: var(--space-2xl); }
+.gal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg); }
+.gal__count { margin-left: 8px; opacity: 0.6; }
+.gal__nav { display: flex; gap: 6px; }
+.gal__nav button {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: var(--border-hairline); border-radius: var(--radius-sm);
+  background: none; cursor: pointer; color: var(--color-ink);
+}
+.gal__strip { display: flex; gap: var(--space-md); overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-sm); }
+.gal__item {
+  position: relative; flex: 0 0 220px; aspect-ratio: 4 / 3;
+  border: var(--border-hairline); border-radius: var(--radius-md);
+  overflow: hidden; padding: 0; cursor: pointer; background: var(--color-surface-sage);
+  scroll-snap-align: start;
+}
+.gal__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal__play {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 30px; color: #fff; background: rgba(11, 7, 20, 0.35);
+}
+.gal__lightbox {
+  position: fixed; inset: 0; z-index: var(--z-modal);
+  background: rgba(11, 7, 20, 0.92);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-lg); padding: var(--space-xl);
+}
+.gal__close {
+  position: absolute; top: var(--space-xl); right: var(--space-xl);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border: 1px solid rgba(251, 247, 240, 0.3); border-radius: var(--radius-sm);
+  background: none; color: var(--color-canvas); cursor: pointer;
+}
+/* A rigid 16:9 box so an embed cannot bleed past the viewport at any
+   width -- the failure the brief describes. */
+.gal__stage { width: min(1100px, 92vw); max-height: 82vh; display: grid; place-items: center; }
+.gal__stage img { max-width: 100%; max-height: 82vh; object-fit: contain; display: block; }
+.gal__frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-md); display: block; }
+.gal__pos { font-family: var(--font-mono); font-size: 12px; color: rgba(251, 247, 240, 0.75); }

@@ -69,10 +69,11 @@
 .toast--warning { border-left-color: var(--color-warning); }
 .toast--info    { border-left-color: var(--color-info); }
 .toast__icon { font-size: 18px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
-.toast--success .toast__icon { color: var(--color-success); }
+.toast--success .toast__icon { color: var(--color-success-text); }
 .toast--error   .toast__icon { color: var(--color-error); }
-.toast--warning .toast__icon { color: var(--color-warning); }
+.toast--warning .toast__icon { color: var(--color-warning-text); }
 .toast--info    .toast__icon { color: var(--color-info); }
 .toast__message { font-family: var(--font-body); font-size: var(--text-body-sm); color: var(--color-ink); flex: 1; line-height: var(--lh-body-sm); }
-.toast__close { background: none; border: none; cursor: pointer; color: rgba(22, 16, 31,0.5); font-size: 16px; padding: 0; flex-shrink: 0; }
+/* 0.5 alpha measured 3.48:1 on the toast ground. */
+.toast__close { background: none; border: none; cursor: pointer; color: rgba(22, 16, 31,0.68); font-size: 16px; padding: 0; flex-shrink: 0; }
 .toast__close:hover { color: var(--color-ink); }

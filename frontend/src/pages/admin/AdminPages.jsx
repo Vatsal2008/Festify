@@ -8,7 +8,7 @@ import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
 import { useToast } from '@/store/uiStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { platformApi, adminApi, supportApi, eventsApi } from '@/lib/api/endpoints';
+import { platformApi, adminApi, supportApi, eventsApi, collegeAdminApi, mediaMaintenanceApi } from '@/lib/api/endpoints';
 import { apiError } from '@/lib/api/client';
 import { queryKeys } from '@/constants/queryKeys';
 import { ZapIcon, PlusIcon, BarChartIcon } from '@/components/icons/Icons';
@@ -94,7 +94,7 @@ export function CollegeAdminApplicationsPage() {
     <tr key={app.id}>
       <td>
         <strong>{app.applicant?.full_name || 'Unknown applicant'}</strong><br />
-        <span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{app.applicant?.email}</span>
+        <span style={{ color: 'rgba(22, 16, 31,0.68)', fontSize: 12 }}>{app.applicant?.email}</span>
       </td>
       <td>{app.college?.name || <span style={{ opacity: 0.5 }}>No college</span>}</td>
       <td>{app.routed_to === 'college_admin' ? 'College admin' : 'Festify team'}</td>
@@ -192,182 +192,300 @@ export function CollegeAdminApplicationsPage() {
 export function CollegeAdminEventsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ admin: true }), queryFn: () => eventsApi.list({}) });
-  const events = eventsQuery.data ?? [];
+  const qc = useQueryClient();
+  const [collegeId, setCollegeId] = useState(null);
 
-  const approve = (id) => {
-    toast.info('Publishing from the admin panel is not wired to the API yet.');
-    toast.success('Event approved — now live!');
-  };
-  const reject = (id) => {
-    toast.info('Unpublishing from the admin panel is not wired to the API yet.');
-    toast.warning('Event rejected — returned to organizer');
+  // This called the *public* events endpoint and showed its first five
+  // rows, so it listed other colleges' events and hid the college's own
+  // drafts -- backwards for a moderation screen. Its Approve and Reject
+  // buttons printed a toast and changed nothing.
+  const scopeQuery = useQuery({
+    queryKey: queryKeys.collegeAdmin.scope(),
+    queryFn: collegeAdminApi.scope,
+    staleTime: 5 * 60000,
+  });
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.collegeAdmin.events(collegeId),
+    queryFn: () => collegeAdminApi.events(collegeId),
+  });
+
+  const colleges = scopeQuery.data?.colleges ?? [];
+  const events = eventsQuery.data?.events ?? [];
+  const active = collegeId ?? eventsQuery.data?.college_id ?? null;
+
+  const moderate = useMutation({
+    mutationFn: ({ id, to }) => collegeAdminApi.setEventState(id, to),
+    onSuccess: (updated, { to }) => {
+      qc.invalidateQueries({ queryKey: ['college-admin'] });
+      qc.invalidateQueries({ queryKey: ['events'] });
+      toast.success(
+        to === 'on_sale' ? `${updated.title} is published and on sale.`
+          : to === 'draft' ? `${updated.title} is back to draft and hidden from discovery.`
+          : `${updated.title} is cancelled.`
+      );
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const fmt = (v) => {
+    if (!v) return '\u2014';
+    try { return new Date(v).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch { return '\u2014'; }
   };
 
   return (
     <DashboardShell orgId={null} sidebarType="college-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)' }}>
-          <h1 className="type-display-md">College Events</h1>
-          <Button variant="primary" onClick={() => navigate('/admin/create-event')}><PlusIcon size={16} /> Create Event</Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)', gap: 'var(--space-lg)', flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="type-display-md">College Events</h1>
+            <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.65)', marginTop: 4 }}>
+              Every event run under this college, drafts included.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+            {colleges.length > 1 && (
+              <select
+                className="input-field ca__picker"
+                value={active ?? ''}
+                onChange={(e) => setCollegeId(e.target.value)}
+                aria-label="Choose a college"
+              >
+                {colleges.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <Button variant="primary" onClick={() => navigate('/admin/create-event')}>
+              <PlusIcon size={16} /> Create Event
+            </Button>
+          </div>
         </div>
-        <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          <table className="admin-table">
-            <thead><tr><th>Event</th><th>Organizer</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {events.slice(0, 5).map(e => (
-                <tr key={e.id}>
-                  <td><strong>{e.title}</strong><br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{e.venue}</span></td>
-                  <td>{e.organizer?.name ?? '—'}</td>
-                  <td>{(e.capacity ?? 0).toLocaleString()}</td>
-                  <td><EventStateChip state={e.state} /></td>
-                  <td>
-                    {e.state === 'pending' ? (
-                      <div className="admin-actions">
-                        <Button variant="primary" size="sm" onClick={() => approve(e.id)}>Approve</Button>
-                        <Button variant="danger"  size="sm" onClick={() => reject(e.id)}>Reject</Button>
-                      </div>
-                    ) : (
-                      <Button variant="secondary" size="sm" onClick={() => navigate(`/events/${e.id}`)}>View</Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+        {scopeQuery.isSuccess && colleges.length === 0 && (
+          <div className="empty-state">
+            <h2 className="empty-state__title">No college assigned</h2>
+            <p className="empty-state__sub">
+              This account does not administer a college yet. A super admin can grant that from Admin Access.
+            </p>
+          </div>
+        )}
+
+        {eventsQuery.isError && (
+          <div className="empty-state" role="alert">
+            <h2 className="empty-state__title">Couldn&apos;t load events</h2>
+            <p className="empty-state__sub">{apiError(eventsQuery.error)}</p>
+            <Button variant="primary" onClick={() => eventsQuery.refetch()}>Try again</Button>
+          </div>
+        )}
+
+        {eventsQuery.isSuccess && events.length === 0 && colleges.length > 0 && (
+          <div className="empty-state">
+            <h2 className="empty-state__title">No events yet</h2>
+            <p className="empty-state__sub">Events created by this college&apos;s clubs appear here automatically.</p>
+          </div>
+        )}
+
+        {events.length > 0 && (
+          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+            <table className="admin-table">
+              <thead>
+                <tr><th>Event</th><th>Organizer</th><th>Starts</th><th>Sold</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {events.map(e => {
+                  const isDraft = e.state === 'draft';
+                  const isDead = e.state === 'cancelled' || e.state === 'completed';
+                  const busy = moderate.isPending && moderate.variables?.id === e.id;
+                  return (
+                    <tr key={e.id}>
+                      <td>
+                        <strong>{e.title}</strong><br/>
+                        <span style={{ color: 'rgba(22, 16, 31,0.68)', fontSize: 12 }}>{e.venue || 'No venue set'}</span>
+                      </td>
+                      <td>{e.organizer?.name ?? '\u2014'}</td>
+                      <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{fmt(e.start_date)}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        {e.tickets_sold}{e.capacity ? ` / ${e.capacity}` : ''}
+                      </td>
+                      <td><EventStateChip state={e.state} /></td>
+                      <td>
+                        <div className="admin-actions">
+                          {isDraft && (
+                            <Button variant="primary" size="sm" isLoading={busy}
+                              onClick={() => moderate.mutate({ id: e.id, to: 'on_sale' })}>Publish</Button>
+                          )}
+                          {!isDraft && !isDead && (
+                            <Button variant="secondary" size="sm" isLoading={busy}
+                              onClick={() => moderate.mutate({ id: e.id, to: 'draft' })}>Unpublish</Button>
+                          )}
+                          {!isDead && (
+                            <Button variant="danger" size="sm" isLoading={busy}
+                              onClick={() => moderate.mutate({ id: e.id, to: 'cancelled' })}>Cancel</Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => navigate(`/events/${e.id}`)}>View</Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </DashboardShell>
   );
 }
 
-// ── College Admin: Interactive Analytics ──────────────────────────
+// -- College Admin: Analytics --------------------------------------
 export function CollegeAdminAnalyticsPage() {
   const toast = useToast();
-  const [timeRange, setTimeRange] = useState('YTD');
+  const [collegeId, setCollegeId] = useState(null);
+  // A window that actually changes the query. The old control offered
+  // 7d / 30d / YTD / All and re-rendered the same fixed array whichever
+  // was chosen.
+  const [months, setMonths] = useState(8);
 
-  const monthlyCollegeData = [
-    { month: 'Jan', revenue: 320, tickets: 980 },
-    { month: 'Feb', revenue: 450, tickets: 1420 },
-    { month: 'Mar', revenue: 390, tickets: 1100 },
-    { month: 'Apr', revenue: 620, tickets: 1890 },
-    { month: 'May', revenue: 840, tickets: 2540 },
-    { month: 'Jun', revenue: 510, tickets: 1600 },
-    { month: 'Jul', revenue: 780, tickets: 2310 },
-    { month: 'Aug', revenue: 910, tickets: 2840 },
-  ];
+  const scopeQuery = useQuery({
+    queryKey: queryKeys.collegeAdmin.scope(),
+    queryFn: collegeAdminApi.scope,
+    staleTime: 5 * 60000,
+  });
+  const statsQuery = useQuery({
+    queryKey: queryKeys.collegeAdmin.analytics(collegeId, months),
+    queryFn: () => collegeAdminApi.analytics(collegeId, months),
+  });
 
-  const maxRev = Math.max(...monthlyCollegeData.map(m => m.revenue));
+  const colleges = scopeQuery.data?.colleges ?? [];
+  const data = statsQuery.data;
+  const active = collegeId ?? data?.college_id ?? null;
+  const monthly = data?.monthly ?? [];
+  const maxRev = Math.max(1, ...monthly.map(m => m.revenue));
+  const hasRevenue = monthly.some(m => m.revenue > 0);
+  const money = (n) => `\u20b9${Number(n || 0).toLocaleString('en-IN')}`;
 
-  const handleExportCSV = () => {
-    toast.success('Campus Analytics report downloaded successfully!');
+  // A real file, built from the figures on screen. This used to raise a
+  // toast saying the report had downloaded, while producing nothing.
+  const exportCsv = () => {
+    if (!data) return;
+    const rows = [
+      ['Festify college analytics'], ['College', data.college_name],
+      ['Generated', new Date().toISOString()], [],
+      ['Metric', 'Value'], ...data.metrics.map(m => [m.label, m.value]), [],
+      ['Month', 'Revenue (INR)', 'Tickets'], ...monthly.map(m => [m.month, m.revenue, m.tickets]), [],
+      [`Category share (by ${data.category_basis})`, 'Count', 'Percent'],
+      ...data.categories.map(c => [c.name, c.count, `${c.pct}%`]),
+    ];
+    const csv = rows.map(r => r.map(cell => {
+      const v = String(cell ?? '');
+      return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    }).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `festify-${data.college_name.toLowerCase().replace(/\s+/g, '-')}-analytics.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast.success('Report saved.');
   };
 
   return (
     <DashboardShell orgId={null} sidebarType="college-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)', flexWrap: 'wrap', gap: 'var(--space-lg)' }}>
           <div>
             <h1 className="type-display-md">College Analytics &amp; Reports</h1>
             <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.65)', marginTop: 4 }}>
-              BITS Pilani — Campus revenue, registration metrics, and club performance
+              {data?.college_name ?? 'Loading'} - revenue, ticket sales and what its clubs run.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
-            <div style={{ display: 'flex', border: 'var(--border-hairline)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              {['7d', '30d', 'YTD', 'All'].map(range => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  style={{
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: timeRange === range ? 'var(--color-ink)' : 'transparent',
-                    color: timeRange === range ? 'var(--color-canvas)' : 'var(--color-ink)',
-                  }}
-                >
-                  {range.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <Button variant="primary" size="sm" onClick={handleExportCSV}>
-              Export CSV
-            </Button>
+          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center', flexWrap: 'wrap' }}>
+            {colleges.length > 1 && (
+              <select className="input-field ca__picker" value={active ?? ''}
+                onChange={(e) => setCollegeId(e.target.value)} aria-label="Choose a college">
+                {colleges.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <select className="input-field ca__picker" value={months}
+              onChange={(e) => setMonths(Number(e.target.value))} aria-label="How far back to report">
+              {[3, 6, 8, 12, 24].map(m => <option key={m} value={m}>Last {m} months</option>)}
+            </select>
+            <Button variant="primary" size="sm" onClick={exportCsv} isDisabled={!data}>Export CSV</Button>
           </div>
         </div>
 
-        {/* Metrics Overview */}
-        <div style={{ background: 'var(--color-ink)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
-          <div className="dash-metrics">
-            {[
-              { value: '12', label: 'Active Clubs / Orgs' },
-              { value: '28', label: 'Events Hosted' },
-              { value: '18,400', label: 'Tickets Sold' },
-              { value: '₹48.2L', label: 'Gross Revenue' },
-            ].map(m => (
-              <div key={m.label} className="dash-metric">
-                <p className="dash-metric__value">{m.value}</p>
-                <p className="dash-metric__label">{m.label}</p>
+        {statsQuery.isError && (
+          <div className="empty-state" role="alert">
+            <h2 className="empty-state__title">Couldn&apos;t load analytics</h2>
+            <p className="empty-state__sub">{apiError(statsQuery.error)}</p>
+            <Button variant="primary" onClick={() => statsQuery.refetch()}>Try again</Button>
+          </div>
+        )}
+
+        {data && (
+          <>
+            {/* Was 12 clubs, 28 events, 18,400 tickets and Rs 48.2 lakh,
+                none of it read from anything. */}
+            <div style={{ background: 'var(--color-ink)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
+              <div className="dash-metrics">
+                {data.metrics.map(m => (
+                  <div key={m.key} className="dash-metric">
+                    <p className="dash-metric__value">
+                      {m.format === 'currency' ? money(m.value) : Number(m.value).toLocaleString('en-IN')}
+                    </p>
+                    <p className="dash-metric__label">{m.label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Chart + Distribution Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-2xl)', alignItems: 'start' }}>
-          {/* Revenue Chart */}
-          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-canvas)' }}>
-            <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-2xl)' }}>Campus Event Revenue (₹ in Thousands)</h2>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-lg)', height: 220, paddingTop: 'var(--space-xl)', borderBottom: '2px solid var(--color-hairline)' }}>
-              {monthlyCollegeData.map(item => {
-                const heightPct = (item.revenue / maxRev) * 100;
-                return (
-                  <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.7)' }}>₹{item.revenue}k</span>
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: 36,
-                        height: `${heightPct}%`,
-                        background: 'linear-gradient(180deg, var(--color-accent) 0%, var(--color-ink) 100%)',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 0.4s ease',
-                      }}
-                    />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: 'var(--color-ink)', marginTop: 4 }}>{item.month}</span>
-                  </div>
-                );
-              })}
             </div>
-          </div>
 
-          {/* Department / Category Breakdown */}
-          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-surface-sage)' }}>
-            <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Club Distribution</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-              {[
-                { name: 'Cultural Societies', pct: 40, color: '#6C4DFF' },
-                { name: 'Tech & Hackathons', pct: 35, color: '#FF7A29' },
-                { name: 'Sports Council', pct: 15, color: '#16101F' },
-                { name: 'Music & Arts', pct: 10, color: '#FF3D8A' },
-              ].map(cat => (
-                <div key={cat.name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span className="type-body-sm" style={{ fontWeight: 600 }}>{cat.name}</span>
-                    <span className="type-label-mono">{cat.pct}%</span>
+            <div className="ca__grid">
+              <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-canvas)' }}>
+                <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-2xl)' }}>Revenue by month</h2>
+                {hasRevenue ? (
+                  <div className="ca__chart">
+                    {monthly.map(m => (
+                      <div key={m.key} className="ca__bar-col">
+                        <span className="ca__bar-val">{m.revenue ? money(m.revenue) : ''}</span>
+                        <div className="ca__bar" style={{ height: `${(m.revenue / maxRev) * 100}%` }}
+                          title={`${m.month}: ${money(m.revenue)}, ${m.tickets} ticket(s)`} />
+                        <span className="ca__bar-label">{m.month}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{ width: '100%', height: 8, background: 'rgba(22, 16, 31,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color }} />
+                ) : (
+                  <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.62)' }}>
+                    No tickets have sold in this window, so there is nothing to chart yet.
+                  </p>
+                )}
+              </div>
+
+              <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-surface-sage)' }}>
+                <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>
+                  Category share{data.category_basis === 'events' ? ' (by events)' : ''}
+                </h2>
+                {/* Named honestly: with no sales the split is of events
+                    listed, not tickets sold. */}
+                {data.categories.length === 0 ? (
+                  <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.62)' }}>No events yet.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+                    {data.categories.map(cat => (
+                      <div key={cat.name}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span className="type-body-sm" style={{ fontWeight: 600 }}>{cat.name}</span>
+                          <span className="type-label-mono">{cat.pct}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: 8, background: 'rgba(22, 16, 31,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${cat.pct}%`, height: '100%', background: 'var(--color-accent)' }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </DashboardShell>
   );
@@ -376,6 +494,11 @@ export function CollegeAdminAnalyticsPage() {
 // ── Super Admin: Dashboard ─────────────────────────────────────────
 export function SuperAdminDashboardPage() {
   const auditQuery = useQuery({ queryKey: queryKeys.superAdmin.auditLog({}), queryFn: platformApi.auditLog });
+  const statsQuery = useQuery({
+    queryKey: queryKeys.superAdmin.stats(14),
+    queryFn: () => platformApi.stats(14),
+    staleTime: 60_000,
+  });
   return (
     <DashboardShell orgId={null} sidebarType="super-admin">
       <div style={{ padding: 'var(--space-2xl)' }}>
@@ -384,9 +507,25 @@ export function SuperAdminDashboardPage() {
         </h1>
         <div style={{ background: 'var(--color-ink)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
           <div className="sa-metrics">
-            {[{ value: '23', label: 'Active Orgs' }, { value: '4', label: 'College Admins' }, { value: '3', label: 'Pending Support' }, { value: '₹2.4Cr', label: 'Platform Revenue' }].map(m => (
-              <div key={m.label} className="dash-metric"><p className="dash-metric__value">{m.value}</p><p className="dash-metric__label">{m.label}</p></div>
+            {/* These were hard-coded -- 23 organisers, Rs 2.4Cr revenue --
+                and had never been connected to anything. A fabricated
+                metric is worse than a missing one: it looks like a
+                measurement, so it gets believed and acted on. */}
+            {(statsQuery.data?.metrics ?? []).map(m => (
+              <div key={m.key} className="dash-metric">
+                <p className="dash-metric__value">
+                  {m.format === 'currency'
+                    ? `₹${Number(m.value || 0).toLocaleString('en-IN')}`
+                    : Number(m.value || 0).toLocaleString('en-IN')}
+                </p>
+                <p className="dash-metric__label">{m.label}</p>
+              </div>
             ))}
+            {statsQuery.isError && (
+              <p className="dash-metric__label" style={{ gridColumn: '1 / -1' }}>
+                Platform figures are unavailable right now.
+              </p>
+            )}
           </div>
         </div>
         <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Recent Audit Events</h2>
@@ -623,6 +762,8 @@ export function SuperAdminConfigPage() {
               </div>
             );
           })}
+          <StorageSweepPanel />
+
           <div style={{ paddingTop: 'var(--space-xl)', borderTop: 'var(--border-hairline)' }}>
             <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.6)' }}>
               Prime Pass pricing, level thresholds and ban durations are still marked open in the system design, so they are not editable here yet.
@@ -631,6 +772,75 @@ export function SuperAdminConfigPage() {
         </div>
       </div>
     </DashboardShell>
+  );
+}
+
+// -- Storage sweep ------------------------------------------------
+// Deleting media marks the row and leaves the file, so a mistake stays
+// recoverable. Nothing reclaimed those files afterwards, which made
+// every deletion a permanent storage charge for something no longer
+// reachable. Preview and sweep are separate calls: anything that
+// deletes files should say what it will delete before it does.
+function StorageSweepPanel() {
+  const toast = useToast();
+  const [days, setDays] = useState(30);
+  const [result, setResult] = useState(null);
+
+  const previewQuery = useQuery({
+    queryKey: ['media', 'sweep-preview', days],
+    queryFn: () => mediaMaintenanceApi.preview(days),
+  });
+
+  const sweep = useMutation({
+    mutationFn: () => mediaMaintenanceApi.sweep(days),
+    onSuccess: (data) => {
+      setResult(data);
+      previewQuery.refetch();
+      toast.success(data.swept === 0 ? 'Nothing needed reclaiming.'
+        : `Reclaimed ${data.swept} file${data.swept === 1 ? '' : 's'}.`);
+      if (data.failed) toast.warning(`${data.failed} could not be deleted and will be retried.`);
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const count = previewQuery.data?.count ?? 0;
+  const kb = previewQuery.data?.bytes_kb ?? 0;
+
+  return (
+    <section style={{ marginTop: 'var(--space-2xl)', paddingTop: 'var(--space-xl)', borderTop: 'var(--border-hairline)' }}
+             aria-label="Storage maintenance">
+      <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Storage maintenance</h2>
+      <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.66)', marginBottom: 'var(--space-lg)', maxWidth: '56ch' }}>
+        Removed photos keep their file so a mistake can be undone. Once the undo window has passed the
+        file is only costing storage, and this deletes it for good.
+      </p>
+      <div style={{ display: 'flex', gap: 'var(--space-lg)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="type-label-mono">Keep removed files for</span>
+          <select className="input-field ca__picker" value={days}
+            onChange={(e) => { setDays(Number(e.target.value)); setResult(null); }}>
+            {[7, 30, 90, 365].map(d => <option key={d} value={d}>{d} days</option>)}
+          </select>
+        </label>
+        <p className="type-body-sm" style={{ flex: '1 1 200px', paddingBottom: 10 }} role="status">
+          {previewQuery.isLoading ? 'Checking...'
+            : count === 0 ? 'Nothing to reclaim.'
+            : `${count} file${count === 1 ? '' : 's'} older than ${days} days${kb ? `, about ${Math.round(kb / 1024)}MB` : ''}.`}
+        </p>
+        <Button variant="danger" isDisabled={count === 0 || previewQuery.isLoading}
+          isLoading={sweep.isPending} onClick={() => sweep.mutate()}>
+          Delete permanently
+        </Button>
+      </div>
+      {result && (
+        <p className="type-body-sm" style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-md) var(--space-lg)',
+          borderLeft: '3px solid var(--color-success)', background: 'var(--color-success-bg)', color: 'rgba(22, 16, 31,0.8)' }}>
+          Reclaimed {result.swept}. {result.failed > 0
+            ? `${result.failed} could not be deleted; their records were kept so the next run tries again.`
+            : 'Nothing was left behind.'}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -643,14 +853,14 @@ export function SuperAdminAuditLogPage() {
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Audit Log</h1>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Metadata</th><th>Timestamp</th></tr></thead>
+            <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Changed</th><th>Timestamp</th></tr></thead>
             <tbody>
               {(auditQuery.data ?? []).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
                   <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{log.target}</td>
-                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.65)' }}>{JSON.stringify(log.metadata)}</code></td>
+                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.65)' }}>{log.summary || '—'}</code></td>
                   <td style={{ color: 'rgba(22, 16, 31,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
