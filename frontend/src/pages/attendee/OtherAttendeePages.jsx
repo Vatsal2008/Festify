@@ -1,4 +1,4 @@
-// pages/attendee/OtherAttendeePages.jsx — Wishlist and Notifications
+// pages/attendee/OtherAttendeePages.jsx — Wishlist
 // (Prime Pass moved to its own file once it gained a real purchase flow.)
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -51,33 +51,6 @@ export function WishlistPage() {
             </Button>
           </div>
         )}
-      </CanvasBand>
-    </PageShell>
-  );
-}
-
-// ── NotificationsPage ─────────────────────────────────────────────
-export function NotificationsPage() {
-  const navigate = useNavigate();
-
-  // The notification subsystem (Firebase push, the delivery pipeline and
-  // its storage) has not been built on the API yet, so there is nothing
-  // real to list. Showing an honest empty state beats rendering
-  // fabricated notifications that no action of the user's produced.
-  return (
-    <PageShell>
-      <TealBand variant="compact">
-        <h1 className="type-display-md" style={{ color: 'var(--color-canvas)' }}>Notifications</h1>
-      </TealBand>
-      <CanvasBand variant="compact">
-        <div className="empty-state">
-          <BellIcon size={64} style={{ color: 'var(--color-ink)' }} />
-          <h2 className="empty-state__title">Notifications aren&apos;t switched on yet</h2>
-          <p className="empty-state__sub">
-            Ticket confirmations, wishlist alerts and organizer updates will land here once notifications go live.
-          </p>
-          <Button variant="primary" onClick={() => navigate('/')}>Browse events</Button>
-        </div>
       </CanvasBand>
     </PageShell>
   );

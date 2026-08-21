@@ -419,3 +419,76 @@
   color: rgba(22, 16, 31, 0.5);
 }
 .tier-remove:hover { color: var(--color-error); }
+
+/* ── Notification feed ────────────────────────────────────────────── */
+.notif-list { display: flex; flex-direction: column; gap: var(--space-md); }
+.notif {
+  position: relative;
+  display: flex; gap: var(--space-lg); align-items: flex-start;
+  width: 100%; text-align: left; font: inherit; color: inherit;
+  padding: var(--space-lg);
+  background: var(--color-canvas);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+.notif:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+}
+/* Unread carries a tinted ground and an accent edge, so the eye finds
+   them without having to read every row. */
+.notif--unread { background: var(--color-surface-sage); border-left: 3px solid var(--color-accent); }
+.notif__icon {
+  flex: none; display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: var(--radius-md);
+  background: var(--color-surface-sage); color: var(--color-ink);
+}
+.notif--unread .notif__icon { background: var(--color-canvas); }
+.notif__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.notif__top { display: flex; justify-content: space-between; gap: var(--space-md); align-items: baseline; }
+.notif__title { font-size: 15px; font-weight: 600; line-height: 1.35; }
+.notif__time { flex: none; font-family: var(--font-mono); font-size: 11px; opacity: 0.5; }
+.notif__text { font-size: 13.5px; color: rgba(22,16,31,0.7); line-height: 1.55; }
+.notif__tags { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.notif__channel { font-family: var(--font-mono); font-size: 10.5px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.05em; }
+.notif__dot {
+  position: absolute; top: 14px; right: 14px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.notif-settings {
+  overflow: hidden;
+  border: var(--border-hairline); border-radius: var(--radius-lg);
+  padding: var(--space-xl); margin-bottom: var(--space-xl);
+  background: var(--color-surface-sage);
+}
+.notif-pref {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-lg);
+  padding: var(--space-md) 0; border-bottom: var(--border-hairline);
+}
+.notif-pref:last-of-type { border-bottom: 0; }
+.notif-pref__name { font-weight: 600; font-size: 14px; }
+.notif-pref__type { font-family: var(--font-mono); font-size: 11px; opacity: 0.55; text-transform: capitalize; }
+.notif-pref__toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+
+/* Bell badge */
+.top-nav__notif-btn { position: relative; }
+.top-nav__notif-badge {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 17px; height: 17px; padding: 0 4px;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  background: var(--color-accent); color: var(--color-ink);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  border: 2px solid var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif, .notif:hover { transition: none; transform: none; }
+}

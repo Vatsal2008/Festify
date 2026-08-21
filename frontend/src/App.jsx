@@ -16,7 +16,8 @@ import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 // ── Attendee ───────────────────────────────────────────────────────
 import ProfilePage      from '@/pages/attendee/ProfilePage';
 import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
-import { WishlistPage, NotificationsPage } from '@/pages/attendee/OtherAttendeePages';
+import { WishlistPage } from '@/pages/attendee/OtherAttendeePages';
+import NotificationsPage from '@/pages/attendee/NotificationsPage';
 import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
 // ── Organizer ──────────────────────────────────────────────────────

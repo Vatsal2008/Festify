@@ -15,6 +15,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from app.core.razorpay_client import get_razorpay
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
+from app.services.notifications import notify
 
 router = APIRouter(prefix="/prime-pass", tags=["prime-pass"])
 
@@ -155,6 +156,24 @@ def _activate(supabase, row: dict, payment_id: str) -> dict:
     supabase.table("users").update({"customer_level": "prime"}).eq(
         "id", row["user_id"]
     ).execute()
+
+    expires = (updated.get("expires_at") or "")[:10]
+    notify(
+        user_id=row["user_id"],
+        type_key="prime_pass_active",
+        title="Prime Pass is active",
+        body=f"Your {plan['label'].lower()} pass runs until {expires}.",
+        link="/me/prime-pass",
+        email_subject="Your Festify Prime Pass is active",
+        email_body="\n".join([
+            f"Your {plan['label']} Prime Pass is now active.",
+            "",
+            f"Valid until: {expires}",
+            "",
+            "You now get early access before general sale, a dedicated ticket",
+            "pool on every event, and the Prime badge on your profile and reviews.",
+        ]),
+    )
     return updated
 
 

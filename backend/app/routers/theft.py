@@ -23,6 +23,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from app.authz import is_college_admin, is_super_admin, require_super_admin
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
+from app.services.notifications import notify
 
 router = APIRouter(prefix="/theft-reports", tags=["theft"])
 logger = logging.getLogger(__name__)
@@ -281,6 +282,24 @@ def approve_report(
 
     logger.info("Theft report %s approved; ticket %s revoked, %s issued",
                 report_id, old["id"], replacement["id"])
+
+    new_code = replacement["verify_code"][:8].upper()
+    notify(
+        user_id=old["owner_id"],
+        type_key="ticket_reissued",
+        title="Your ticket has been replaced",
+        body=f"New booking code: {new_code}. The old code no longer works.",
+        link="/me/tickets",
+        email_subject="Your Festify ticket has been reissued",
+        email_body="\n".join([
+            "Your theft report was approved and your ticket has been replaced.",
+            "",
+            f"New booking code: {new_code}",
+            "",
+            "The previous code and QR are now dead and will be refused at the",
+            "gate. Open the app to see your new ticket.",
+        ]),
+    )
     return {
         **updated,
         "replacement": {
@@ -308,6 +327,25 @@ def reject_report(
     # Release the freeze: a rejected report means the ticket was never
     # compromised, so it goes back to being usable.
     supabase.table("tickets").update({"status": "issued"}).eq("id", report["ticket_id"]).execute()
+
+    note = (body or {}).get("note")
+    lines = [
+        "Your theft report was reviewed and not approved.",
+        "",
+        "Your original ticket is active again and will work at the gate.",
+    ]
+    if note:
+        lines += ["", f"Note from the reviewer: {note}"]
+
+    notify(
+        user_id=report["reported_by"],
+        type_key="theft_report_decision",
+        title="Theft report not approved",
+        body="Your original ticket is active again and can be used at the gate.",
+        link="/me/tickets",
+        email_subject="About your Festify theft report",
+        email_body="\n".join(lines),
+    )
 
     return (
         supabase.table("ticket_theft_reports")

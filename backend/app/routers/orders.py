@@ -7,6 +7,7 @@ from app.core.razorpay_client import get_razorpay
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
 from app.schemas import OrderCreate, PaymentVerifyRequest
+from app.services.notifications import notify
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -203,8 +204,49 @@ def _issue_tickets_for_order(supabase, order: dict, razorpay_payment_id: str) ->
     )
 
     _record_simulated_payout(supabase, order)
+    _notify_purchase(supabase, order, tickets_inserted.data)
 
     return {"order": updated_order, "tickets": tickets_inserted.data}
+
+
+def _notify_purchase(supabase, order: dict, tickets: list) -> None:
+    """Confirmation is mandatory under §10 and must never fail the sale.
+
+    notify() swallows its own errors, so a mail outage cannot undo a
+    paid order -- the tickets exist either way.
+    """
+    event = supabase.table("events").select("title, venue").eq("id", order["event_id"]).execute()
+    title = event.data[0]["title"] if event.data else "your event"
+    venue = event.data[0].get("venue") if event.data else None
+
+    codes = ", ".join((t.get("verify_code") or "")[:8].upper() for t in tickets)
+    count = len(tickets)
+    plural = "s" if count != 1 else ""
+
+    lines = [
+        "Your payment is confirmed.",
+        "",
+        f"Event: {title}",
+    ]
+    if venue:
+        lines.append(f"Venue: {venue}")
+    lines += [
+        f"Tickets: {count}",
+        f"Booking code{plural}: {codes}",
+        "",
+        "Your QR code is released by the organizer shortly before doors open.",
+        "Open the app at the gate to show it.",
+    ]
+
+    notify(
+        user_id=order["buyer_id"],
+        type_key="purchase_confirmation",
+        title=f"{count} ticket{plural} confirmed for {title}",
+        body=f"Booking code{plural}: {codes}",
+        link="/me/tickets",
+        email_subject=f"Your ticket{plural} for {title}",
+        email_body="\n".join(lines),
+    )
 
 
 def _record_simulated_payout(supabase, order: dict) -> None:

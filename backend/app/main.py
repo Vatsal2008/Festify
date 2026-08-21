@@ -18,6 +18,7 @@ from app.routers import (
     health,
     hype_reviews,
     media,
+    notifications,
     org_groups,
     orders,
     organizer_admin,
@@ -119,6 +120,7 @@ app.include_router(gate.router)
 app.include_router(prime_pass.router)
 app.include_router(super_auth.router)
 app.include_router(theft.router)
+app.include_router(notifications.router)
 app.include_router(waitlist.router)
 app.include_router(scoring.router)
 app.include_router(organizer_interactions.router)

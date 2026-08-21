@@ -1,7 +1,9 @@
 // components/layout/index.jsx — All layout components with Floating Capsule TopNav & Floating Bell Icon
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { notificationsApi } from '@/lib/api/endpoints';
 import { useUIStore } from '@/store/uiStore';
 import {
   BellIcon, HomeIcon, SearchIcon, TicketIcon, UserIcon,
@@ -39,6 +41,18 @@ export function TopNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const orgId = user?.org_memberships?.[0]?.org_id;
+
+  // A bell with no count is decoration. Polled rather than invalidated,
+  // because notifications are created by server-side events the client
+  // never observes.
+  const unreadQuery = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: notificationsApi.unreadCount,
+    enabled: isAuthenticated,
+    refetchInterval: 60_000,
+    retry: false,
+  });
+  const unread = unreadQuery.data?.unread_count ?? 0;
 
   const [hidden, setHidden] = useState(false);
 
@@ -110,10 +124,15 @@ export function TopNav() {
             <button
               className="top-nav__notif-btn"
               onClick={() => navigate('/me/notifications')}
-              aria-label="Notifications"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
               title="Notifications"
             >
               <BellIcon size={18} />
+              {unread > 0 && (
+                <span className="top-nav__notif-badge" aria-hidden="true">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
             </button>
           )}
         </div>

@@ -56,6 +56,17 @@ export const meApi = {
   following: () => api.get('/users/me/following').then(r => r.data),
 };
 
+// ── notifications ─────────────────────────────────────────────────
+export const notificationsApi = {
+  list: (unreadOnly = false) =>
+    api.get('/notifications', { params: { unread_only: unreadOnly } }).then(r => r.data),
+  unreadCount: () => api.get('/notifications/unread-count').then(r => r.data),
+  markRead: (id) => api.post(`/notifications/${id}/read`).then(r => r.data),
+  markAllRead: () => api.post('/notifications/read-all').then(r => r.data),
+  preferences: () => api.get('/notification-preferences').then(r => r.data),
+  setPreference: (body) => api.put('/notification-preferences', body).then(r => r.data),
+};
+
 // ── theft reports ─────────────────────────────────────────────────
 export const theftApi = {
   file: (ticketId, reason) => api.post('/theft-reports', { ticket_id: ticketId, reason }).then(r => r.data),

@@ -8,6 +8,7 @@ from app.authz import require_college_admin, require_super_admin
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
 from app.schemas import OrgBanCreate, OrgFlagCreate, OrganizerApplicationCreate
+from app.services.notifications import notify
 
 router = APIRouter(tags=["organizer-admin"])
 logger = logging.getLogger(__name__)
@@ -169,7 +170,47 @@ def _decide_application(application_id: str, current_user: dict, decision: str) 
     if decision == "approved":
         org = _provision_org(supabase, application, current_user["id"])
 
+    _notify_decision(application, decision, org)
     return {**updated.data[0], "org_group": org}
+
+
+def _notify_decision(application: dict, decision: str, org: dict | None) -> None:
+    applicant_id = application.get("applicant_id")
+    if not applicant_id:
+        return
+
+    if decision == "approved":
+        name = (org or {}).get("name") or "your organization"
+        notify(
+            user_id=applicant_id,
+            type_key="organizer_application",
+            title="You are now a Festify organizer",
+            body=f"{name} is ready. Publish your first event from the dashboard.",
+            link=f"/org/{(org or {}).get('id', '')}/dashboard",
+            email_subject="Your Festify organizer application was approved",
+            email_body="\n".join([
+                "Your application to become an organizer has been approved.",
+                "",
+                f"Your organization: {name}",
+                "",
+                "Sign in and open the organizer dashboard to create your first",
+                "event, add team members, and manage the gate on event day.",
+            ]),
+        )
+    else:
+        notify(
+            user_id=applicant_id,
+            type_key="organizer_application",
+            title="Organizer application declined",
+            body="You can apply again from your profile.",
+            link="/organizer-application",
+            email_subject="About your Festify organizer application",
+            email_body="\n".join([
+                "Your application to become an organizer was not approved this time.",
+                "",
+                "You can apply again from your profile page.",
+            ]),
+        )
 
 
 def _provision_org(supabase, application: dict, approver_id: str) -> dict | None:
