@@ -41,6 +41,36 @@ def _parse(ts: str | None):
         return None
 
 
+def _urgency(starts_at) -> tuple[str, str]:
+    """How much time is left to actually act on a report.
+
+    The final hour is not a cut-off. Someone whose ticket is stolen on
+    the way to the venue is exactly who needs to report it, and refusing
+    them because they are inside an arbitrary window helps nobody. What
+    the window really means is that a reissue may not reach them before
+    the doors open -- so the report is accepted, flagged for the top of
+    the reviewer's queue, and the person is told plainly rather than
+    being turned away.
+    """
+    if not starts_at:
+        return "normal", ""
+
+    remaining = starts_at - datetime.now(timezone.utc)
+
+    if remaining.total_seconds() <= 0:
+        return "started", (
+            "This event has already started. A replacement ticket is unlikely to reach "
+            "you in time, but the report is logged and the stolen code is under review."
+        )
+    if remaining <= REPORT_CUTOFF:
+        mins = max(1, int(remaining.total_seconds() // 60))
+        return "urgent", (
+            f"The event starts in about {mins} minutes. This report goes to the top of the "
+            "queue, but we may not be able to reissue your ticket before doors open."
+        )
+    return "normal", ""
+
+
 @router.post("")
 def file_report(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
     ticket_id = (body or {}).get("ticket_id")
@@ -70,12 +100,7 @@ def file_report(body: dict = Body(...), current_user: dict = Depends(get_current
 
     events = supabase.table("events").select("*").eq("id", ticket["event_id"]).execute()
     event = events.data[0] if events.data else {}
-    starts_at = _parse(event.get("starts_at"))
-    if starts_at and datetime.now(timezone.utc) > starts_at - REPORT_CUTOFF:
-        raise HTTPException(
-            status_code=409,
-            detail="Theft reports must be raised at least 1 hour before the event starts.",
-        )
+    urgency, urgency_note = _urgency(_parse(event.get("starts_at")))
 
     # The limit is per customer per ticket, not per ticket. Counting all
     # reports on the ticket would let one person's two reports block a
@@ -132,6 +157,8 @@ def file_report(body: dict = Body(...), current_user: dict = Depends(get_current
     return {
         **inserted,
         "routed_to_label": "your college admin" if routed_to == "college_admin" else "the Festify team",
+        "urgency": urgency,
+        "urgency_note": urgency_note,
     }
 
 
@@ -160,6 +187,8 @@ def _decorate(supabase, rows: list) -> list:
     out = []
     for r in rows:
         t = tickets.get(r.get("ticket_id")) or {}
+        event = events.get(t.get("event_id"))
+        urgency, note = _urgency(_parse((event or {}).get("starts_at")))
         out.append({
             **r,
             "reporter": users.get(r.get("reported_by")),
@@ -169,8 +198,20 @@ def _decorate(supabase, rows: list) -> list:
                 "booking_code": (t.get("verify_code") or "")[:8].upper(),
                 "price_paid": t.get("price_paid"),
             },
-            "event": events.get(t.get("event_id")),
+            "event": event,
+            "urgency": urgency,
+            "urgency_note": note,
         })
+
+    # Soonest event first among pending work: a report is worth acting on
+    # in proportion to how little time is left to act. Newest-first would
+    # bury the one case that still has a chance of being resolved.
+    order = {"urgent": 0, "normal": 1, "started": 2}
+    out.sort(key=lambda r: (
+        0 if r.get("status") == "pending" else 1,
+        order.get(r.get("urgency"), 1),
+        (r.get("event") or {}).get("starts_at") or "9999",
+    ))
     return out
 
 

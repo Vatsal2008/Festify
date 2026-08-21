@@ -139,7 +139,13 @@ export function TicketDetailPage() {
     onSuccess: (report) => {
       setShowTheftModal(false);
       qc.invalidateQueries({ queryKey: queryKeys.tickets.wallet(user?.id) });
-      toast.success(`Report filed with ${report.routed_to_label}. Your ticket is frozen until it is reviewed.`);
+      if (report.urgency_note) {
+        // The last hour is a warning, not a refusal -- say what it means
+        // rather than implying the report failed.
+        toast.info(report.urgency_note);
+      } else {
+        toast.success(`Report filed with ${report.routed_to_label}. Your ticket is frozen until it is reviewed.`);
+      }
     },
     onError: (e) => { setShowTheftModal(false); toast.error(apiError(e)); },
   });
