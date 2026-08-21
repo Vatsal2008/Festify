@@ -42,6 +42,8 @@ export const eventsApi = {
     // overwrite it and break the upload.
     return api.post(`/events/${id}/media`, form, { headers: { 'Content-Type': undefined } }).then(r => r.data);
   },
+  attachYoutube: (id, url, placement = 'hero_video', altText = '') =>
+    api.post(`/events/${id}/media/youtube`, { url, placement, alt_text: altText }).then(r => r.data),
   updateMedia: (id, mediaId, body) => api.patch(`/events/${id}/media/${mediaId}`, body).then(r => r.data),
   reorderMedia: (id, ids) => api.post(`/events/${id}/media/reorder`, { ids }).then(r => r.data),
   deleteMedia: (id, mediaId) => api.delete(`/events/${id}/media/${mediaId}`).then(r => r.data),

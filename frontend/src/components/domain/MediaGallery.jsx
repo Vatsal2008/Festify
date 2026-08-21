@@ -16,7 +16,12 @@ function MediaFrame({ item, active, onClick }) {
       aria-label={item.alt_text || `Open ${item.kind}`}
       type="button"
     >
-      {item.kind === 'video' ? (
+      {item.kind === 'youtube' ? (
+        <>
+          <img src={item.thumbnail} alt={item.alt_text || 'Video thumbnail'} loading="lazy" />
+          <span className="gal__play" aria-hidden="true">▶</span>
+        </>
+      ) : item.kind === 'video' ? (
         <>
           {/* muted + playsInline so it can autoplay as a preview; a
               gallery thumbnail that demands a click to show anything is
@@ -116,7 +121,16 @@ export default function MediaGallery({ media = [], title = 'Gallery' }) {
               transition={{ type: 'spring', stiffness: 280, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {items[open].kind === 'video' ? (
+              {items[open].kind === 'youtube' ? (
+                <iframe
+                  className="gal__frame"
+                  src={items[open].watch_embed_url + '&autoplay=1'}
+                  title={items[open].alt_text || 'Event video'}
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                  frameBorder="0"
+                />
+              ) : items[open].kind === 'video' ? (
                 <video src={items[open].url} controls autoPlay playsInline />
               ) : (
                 <img src={items[open].url} alt={items[open].alt_text || ''} />

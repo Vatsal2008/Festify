@@ -223,13 +223,25 @@ export default function EventDetailPage() {
                   })`,
                 }}
               />
-              {mediaQuery.data?.hero_video?.url && (
-                <video
+              {/* Videos are referenced from YouTube rather than hosted:
+                  object storage bills every byte served, and a looping
+                  hero is the heaviest request a page can make. The embed
+                  is muted and chrome-suppressed so it reads as
+                  background rather than as an embedded player. */}
+              {mediaQuery.data?.hero_video?.embed_url && (
+                <iframe
                   className="event-hero__video"
-                  src={mediaQuery.data.hero_video.url}
-                  autoPlay loop muted playsInline
+                  src={mediaQuery.data.hero_video.embed_url}
+                  title=""
                   aria-hidden="true"
+                  tabIndex={-1}
+                  allow="autoplay; encrypted-media"
+                  frameBorder="0"
                 />
+              )}
+              {mediaQuery.data?.hero_video?.kind === 'video' && mediaQuery.data.hero_video.url && (
+                <video className="event-hero__video" src={mediaQuery.data.hero_video.url}
+                       autoPlay loop muted playsInline aria-hidden="true" />
               )}
               <div className="event-hero__scrim" aria-hidden="true" />
 

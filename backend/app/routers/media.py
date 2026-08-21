@@ -11,6 +11,7 @@ metadata the client needs to lay the asset out without measuring it.
 """
 import logging
 import mimetypes
+import re
 import secrets
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -53,7 +54,47 @@ def _public_url(supabase, path: str) -> str:
     return supabase.storage.from_(BUCKET).get_public_url(path)
 
 
+# Every URL form YouTube hands out. Accepting only one means an
+# organiser who copied from the share sheet, the address bar or a Short
+# gets a rejection for a link that is perfectly valid.
+YOUTUBE_PATTERNS = [
+    re.compile(r"(?:youtube\.com/watch\?(?:.*&)?v=)([A-Za-z0-9_-]{11})"),
+    re.compile(r"(?:youtu\.be/)([A-Za-z0-9_-]{11})"),
+    re.compile(r"(?:youtube\.com/embed/)([A-Za-z0-9_-]{11})"),
+    re.compile(r"(?:youtube\.com/shorts/)([A-Za-z0-9_-]{11})"),
+    re.compile(r"(?:youtube\.com/live/)([A-Za-z0-9_-]{11})"),
+    re.compile(r"^([A-Za-z0-9_-]{11})$"),          # a bare id
+]
+
+
+def parse_youtube_id(value: str) -> str | None:
+    value = (value or "").strip()
+    for pattern in YOUTUBE_PATTERNS:
+        m = pattern.search(value)
+        if m:
+            return m.group(1)
+    return None
+
+
 def _serialize(supabase, row: dict) -> dict:
+    if row.get("kind") == "youtube":
+        vid = row.get("external_id")
+        return {
+            **row,
+            "youtube_id": vid,
+            "url": f"https://www.youtube.com/watch?v={vid}",
+            # Params tuned for a silent background loop: muted so it may
+            # autoplay at all, playlist set to itself because that is the
+            # only way the embed loops, and chrome suppressed as far as
+            # the player allows.
+            "embed_url": (
+                f"https://www.youtube-nocookie.com/embed/{vid}"
+                f"?autoplay=1&mute=1&loop=1&playlist={vid}&controls=0"
+                f"&modestbranding=1&rel=0&playsinline=1&disablekb=1"
+            ),
+            "watch_embed_url": f"https://www.youtube-nocookie.com/embed/{vid}?rel=0&playsinline=1",
+            "thumbnail": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+        }
     return {**row, "url": _public_url(supabase, row["storage_path"])}
 
 
@@ -83,7 +124,15 @@ async def upload_media(
     if content_type in IMAGE_TYPES:
         kind, limit = "image", MAX_IMAGE_MB
     elif content_type in VIDEO_TYPES:
-        kind, limit = "video", MAX_VIDEO_MB
+        # Video files are not stored here. Object storage bills egress,
+        # and an autoplaying hero loop is the most bandwidth-hungry
+        # thing a page can do -- a few thousand views of one clip
+        # consumes a month's free allowance. YouTube's bandwidth is
+        # unmetered, so videos are linked rather than hosted.
+        raise HTTPException(
+            status_code=415,
+            detail="Video files are not uploaded directly. Paste a YouTube link instead — it costs no bandwidth and plays anywhere.",
+        )
     else:
         raise HTTPException(
             status_code=415,
@@ -101,8 +150,11 @@ async def upload_media(
     # hero_video is a video slot and ticket_bg/cover are stills; putting
     # a 40MB video behind a ticket would make the wallet unusable on
     # mobile data.
-    if placement == "hero_video" and kind != "video":
-        raise HTTPException(status_code=422, detail="The hero video slot needs a video file.")
+    if placement == "hero_video":
+        raise HTTPException(
+            status_code=422,
+            detail="The hero video slot takes a YouTube link, not a file.",
+        )
     if placement in ("cover", "ticket_bg") and kind != "image":
         raise HTTPException(status_code=422, detail=f"The {placement.replace('_', ' ')} slot needs an image.")
 
@@ -156,6 +208,74 @@ async def upload_media(
         .execute()
         .data[0]
     )
+    return _serialize(supabase, row)
+
+
+@router.post("/{event_id}/media/youtube")
+def attach_youtube(event_id: str, body: dict, current_user: dict = Depends(get_current_user)):
+    """Attach a YouTube video by link.
+
+    Videos are referenced rather than hosted: object storage bills for
+    every byte served, and a looping hero video is the heaviest thing a
+    page can request. YouTube absorbs that bandwidth for nothing.
+    """
+    supabase = get_supabase()
+    _require_manager_for_event(supabase, event_id, current_user["id"])
+
+    placement = (body or {}).get("placement", "hero_video")
+    if placement not in PLACEMENTS:
+        raise HTTPException(status_code=422, detail=f"placement must be one of {', '.join(PLACEMENTS)}")
+    if placement in ("cover", "ticket_bg"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"The {placement.replace('_', ' ')} slot needs a still image, not a video.",
+        )
+
+    video_id = parse_youtube_id((body or {}).get("url", ""))
+    if not video_id:
+        raise HTTPException(
+            status_code=422,
+            detail="That does not look like a YouTube link. Paste the address from the browser or the Share button.",
+        )
+
+    if placement in SINGLE_SLOT:
+        supabase.table("event_media").update({"status": "removed"}).eq("event_id", event_id).eq(
+            "placement", placement
+        ).eq("status", "active").execute()
+
+    existing = (
+        supabase.table("event_media")
+        .select("sort_order")
+        .eq("event_id", event_id)
+        .eq("placement", placement)
+        .eq("status", "active")
+        .order("sort_order", desc=True)
+        .limit(1)
+        .execute()
+    )
+    next_order = ((existing.data[0]["sort_order"] if existing.data else -1) or 0) + 1
+
+    row = (
+        supabase.table("event_media")
+        .insert({
+            "event_id": event_id,
+            "external_id": video_id,
+            "kind": "youtube",
+            "placement": placement,
+            "sort_order": next_order,
+            "alt_text": ((body or {}).get("alt_text") or "").strip()[:200] or None,
+            "source": "youtube",
+            "uploaded_by": current_user["id"],
+        })
+        .execute()
+        .data[0]
+    )
+
+    # Kept in step with the legacy column so anything still reading
+    # events.youtube_video_id sees the same video.
+    if placement == "hero_video":
+        supabase.table("events").update({"youtube_video_id": video_id}).eq("id", event_id).execute()
+
     return _serialize(supabase, row)
 
 

@@ -19,10 +19,10 @@ import { CameraIcon, XIcon, CheckIcon, AlertTriangleIcon } from '@/components/ic
 import './domain.css';
 
 const PLACEMENTS = [
-  { id: 'gallery',    label: 'Gallery',            hint: 'Shown as a strip on the event page. Add as many as you like.' },
+  { id: 'gallery',    label: 'Gallery',            hint: 'Shown as a strip on the event page. Photos, or YouTube links.', youtube: true },
   { id: 'cover',      label: 'Cover',              hint: 'The card image in listings and search.' },
   { id: 'detail_bg',  label: 'Event page banner',  hint: 'Behind the title on the event page.' },
-  { id: 'hero_video', label: 'Hero video',         hint: 'Plays behind the event page title. Video only.' },
+  { id: 'hero_video', label: 'Hero video',         hint: 'Plays behind the event page title. Paste a YouTube link — videos are not uploaded, so they cost no bandwidth.', youtube: true },
   { id: 'ticket_bg',  label: 'Ticket background',  hint: 'Behind the QR code in the attendee wallet.' },
 ];
 
@@ -33,6 +33,7 @@ export default function MediaManager({ eventId }) {
   const [placement, setPlacement] = useState('gallery');
   const [queue, setQueue] = useState([]);      // [{name, status, error}]
   const [dragOver, setDragOver] = useState(false);
+  const [ytUrl, setYtUrl] = useState('');
 
   const mediaQuery = useQuery({
     queryKey: ['events', eventId, 'media'],
@@ -61,6 +62,15 @@ export default function MediaManager({ eventId }) {
     refresh();
     setTimeout(() => setQueue([]), 4000);
   }, [eventId, placement]);
+
+  // Videos are linked, not uploaded. Object storage charges for every
+  // byte served and a looping hero is the heaviest request a page can
+  // make; YouTube absorbs that for nothing.
+  const attachYt = useMutation({
+    mutationFn: () => eventsApi.attachYoutube(eventId, ytUrl, placement),
+    onSuccess: () => { setYtUrl(''); refresh(); toast.success('Video attached.'); },
+    onError: (e) => toast.error(apiError(e)),
+  });
 
   const remove = useMutation({
     mutationFn: (mediaId) => eventsApi.deleteMedia(eventId, mediaId),
@@ -113,16 +123,43 @@ export default function MediaManager({ eventId }) {
       >
         <CameraIcon size={26} />
         <p className="mm__drop-title">Drop files here, or click to choose</p>
-        <p className="mm__drop-sub">JPEG, PNG, WebP up to 8MB · MP4, WebM up to 40MB</p>
+        <p className="mm__drop-sub">JPEG, PNG, WebP or AVIF, up to 8MB</p>
         <input
           ref={inputRef}
           type="file"
           multiple={placement === 'gallery'}
-          accept="image/*,video/mp4,video/webm"
+          accept="image/*"
           hidden
           onChange={(e) => { upload(e.target.files); e.target.value = ''; }}
         />
       </div>
+
+      {current?.youtube && (
+        <form
+          className="mm__yt"
+          onSubmit={(e) => { e.preventDefault(); if (ytUrl.trim()) attachYt.mutate(); }}
+        >
+          <label className="mm__yt-label" htmlFor="yt-url">Or paste a YouTube link</label>
+          <div className="mm__yt-row">
+            <input
+              id="yt-url"
+              type="url"
+              className="input-field"
+              placeholder="https://youtube.com/watch?v=…"
+              value={ytUrl}
+              onChange={(e) => setYtUrl(e.target.value)}
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              isDisabled={!ytUrl.trim()}
+              isLoading={attachYt.isPending}
+            >
+              Attach
+            </Button>
+          </div>
+        </form>
+      )}
 
       <AnimatePresence>
         {queue.length > 0 && (
@@ -146,9 +183,12 @@ export default function MediaManager({ eventId }) {
         <div className="mm__grid">
           {items.map((m) => (
             <motion.figure key={m.id} className="mm__tile" layout initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
-              {m.kind === 'video'
-                ? <video src={m.url} muted playsInline preload="metadata" />
-                : <img src={m.url} alt={m.alt_text || ''} loading="lazy" />}
+              {m.kind === 'youtube'
+                ? <img src={m.thumbnail} alt={m.alt_text || 'Video thumbnail'} loading="lazy" />
+                : m.kind === 'video'
+                  ? <video src={m.url} muted playsInline preload="metadata" />
+                  : <img src={m.url} alt={m.alt_text || ''} loading="lazy" />}
+              {m.kind === 'youtube' && <span className="mm__yt-flag">YouTube</span>}
               <figcaption className="mm__tile-bar">
                 <select
                   value={m.placement}
