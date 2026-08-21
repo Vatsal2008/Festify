@@ -516,7 +516,7 @@ export function OrganizerCard({ org, onFollow }) {
         <div className="org-card__info">
           <h3 className="org-card__name">{org.name}</h3>
           <p className="org-card__rank" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckIcon size={14} /> #{org.score_rank} Organizer · {TIER_LABELS[org.trust_tier]}
+            <CheckIcon size={12} /> {TIER_LABELS[org.trust_tier] ?? 'New'} organizer
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={handleFollow}>
@@ -551,7 +551,7 @@ export function EarlyAccessBanner({ event }) {
             <p className="early-access-banner__desc">
               {isPrimeWindow
                 ? 'Tickets available to Prime members first. General sale opens after Prime window.'
-                : 'Tickets available to everyone. Grab yours now!'}
+                : 'Tickets are open to everyone.'}
             </p>
           </div>
           <Badge variant="canvas">{event.state === 'early_access' ? 'Prime Window' : 'On Sale Now'}</Badge>

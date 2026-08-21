@@ -576,3 +576,92 @@
 @media (prefers-reduced-motion: reduce) {
   .notif, .notif:hover { transition: none; transform: none; }
 }
+
+/* ── Event detail hero ────────────────────────────────────────────
+   The cover photo carries this page. Before, cover_image was null on
+   every event and the ternary behind it produced an empty string, so
+   the top of the page was a flat dark rectangle with a large void
+   under the title. */
+.event-hero { position: relative; }
+
+/* A hairline of the category hue along the bottom edge, tying the page
+   to the same colour language the card used. */
+.event-hero::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--cat);
+}
+
+.event-hero__back {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(11, 7, 20, 0.5);
+  border: 1px solid rgba(251, 247, 240, 0.2);
+  backdrop-filter: blur(8px);
+  color: rgba(251, 247, 240, 0.85);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: var(--space-xl);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background var(--dur-fast) var(--ease-out-soft),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.event-hero__back:hover {
+  background: rgba(11, 7, 20, 0.75);
+  color: var(--color-canvas);
+  transform: translateX(-2px);
+}
+
+.event-hero__cat {
+  display: inline-flex; align-items: center;
+  background: var(--cat);
+  color: var(--color-ink);
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+}
+
+/* The hero was padding a fixed block whether or not it had content
+   under the meta row, leaving dead space. Let it size to its content
+   with a floor. */
+.event-detail-hero { position: relative; z-index: 2; }
+.event-detail-hero__title {
+  text-wrap: balance;
+  margin-bottom: var(--space-lg);
+}
+.event-detail-hero__meta { font-variant-numeric: tabular-nums; }
+
+/* State chip in the detail hero sits directly on the cover photo. The
+   plate is not decoration -- without it the state read as a faint
+   smudge over a busy image, on the one page where whether tickets are
+   on sale is the most important fact present. */
+.event-detail-hero .event-state-chip,
+.event-detail-hero .badge {
+  background: rgba(11, 7, 20, 0.82);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 247, 240, 0.22);
+  border-radius: 6px;
+  padding: 4px 11px;
+}
+/* The category chip is already a solid hue plate and must keep it. */
+.event-detail-hero .event-hero__cat {
+  background: var(--cat);
+  border: none;
+  backdrop-filter: none;
+}
+
+/* Meta text sits on photography, so it carries a shadow rather than
+   relying on the scrim alone. */
+.event-detail-hero__meta-item {
+  text-shadow: 0 1px 8px rgba(11, 7, 20, 0.85);
+}
+.event-detail-hero__title {
+  text-shadow: 0 2px 24px rgba(11, 7, 20, 0.6);
+}

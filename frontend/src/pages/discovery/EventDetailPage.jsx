@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner } from '@/components/domain';
+import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner, hueFor } from '@/components/domain';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
 import {
   CalendarIcon, MapPinIcon, UsersIcon, TicketIcon, ZapIcon, HeartIcon,
-  StarIcon, CheckIcon
+  StarIcon, CheckIcon, ArrowLeftIcon
 } from '@/components/icons/Icons';
 import { format } from 'date-fns';
 import '@/pages/pages.css';
@@ -166,18 +166,27 @@ export default function EventDetailPage() {
           <>
             <TealBand
               variant="hero"
+              className="event-hero"
               style={{
-                backgroundImage: `linear-gradient(180deg, rgba(22,16,31,0.55) 0%, rgba(11,7,20,0.92) 100%)${ev.cover_image ? `, url(${ev.cover_image})` : ''}`,
+                '--cat': hueFor(ev.category),
+                // Three stops rather than two: a lighter top lets the
+                // image read, a hue-tinted middle ties the page to the
+                // category, and a near-opaque base carries white text.
+                backgroundImage: `linear-gradient(180deg, rgba(11,7,20,0.35) 0%, rgba(11,7,20,0.78) 62%, rgba(11,7,20,0.97) 100%), url(${ev.cover_image || `https://picsum.photos/seed/${ev.id}/1600/900`})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 marginTop: 'calc(-1 * (var(--nav-height) + 32px))',
-                paddingTop: 'calc(var(--nav-height) + 88px)',
+                paddingTop: 'calc(var(--nav-height) + 72px)',
               }}
             >
               <div className="event-detail-hero">
+                {/* Every page needs a way back; this one was a dead end. */}
+                <button className="event-hero__back" onClick={() => navigate(-1)}>
+                  <ArrowLeftIcon size={14} /> Back
+                </button>
                 <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', marginBottom: 'var(--space-lg)' }}>
                   <EventStateChip state={ev.state} />
-                  <Badge variant="canvas">{ev.category}</Badge>
+                  <span className="event-hero__cat">{ev.category}</span>
                   {ev.organizer?.trust_tier === 'trusted' && (
                     <Badge variant="accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <StarIcon size={12} filled /> Trusted Organizer
@@ -201,7 +210,7 @@ export default function EventDetailPage() {
                   )}
                   {ev.capacity != null && (
                     <span className="event-detail-hero__meta-item">
-                      <TicketIcon size={16} /> {(ev.capacity ?? 0).toLocaleString()} capacity
+                      <TicketIcon size={16} /> Capacity {(ev.capacity ?? 0).toLocaleString()}
                     </span>
                   )}
                 </div>
