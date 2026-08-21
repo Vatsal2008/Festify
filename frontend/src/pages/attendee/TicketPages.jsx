@@ -11,7 +11,7 @@ import Modal from '@/components/primitives/Modal';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
 import { useAuth } from '@/lib/auth/AuthContext';
 import api, { apiError } from '@/lib/api/client';
-import { supportApi, ordersApi } from '@/lib/api/endpoints';
+import { theftApi, ordersApi } from '@/lib/api/endpoints';
 import { queryKeys } from '@/constants/queryKeys';
 import { useToast } from '@/store/uiStore';
 import { TicketIcon, AlertTriangleIcon, ArrowLeftIcon } from '@/components/icons/Icons';
@@ -33,6 +33,10 @@ export default function TicketWalletPage() {
     queryKey: queryKeys.tickets.wallet(user?.id),
     queryFn: fetchMyTickets,
     enabled: !!user,
+    // The gate changes this data from another device, so nothing local
+    // can invalidate it. Poll while the wallet is open.
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   // A redirect-based payment (netbanking) can land the user back here
@@ -109,6 +113,7 @@ export default function TicketWalletPage() {
 
 export function TicketDetailPage() {
   const { id } = useParams();
+  const qc = useQueryClient();
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
@@ -121,15 +126,20 @@ export function TicketDetailPage() {
     queryKey: queryKeys.tickets.wallet(user?.id),
     queryFn: fetchMyTickets,
     enabled: !!user,
+    // This is the screen held up at the gate: the moment it is scanned
+    // it must stop looking valid, so poll tightly while it is open.
+    staleTime: 0,
+    refetchInterval: 5_000,
   });
 
   const ticket = (ticketsQuery.data ?? []).find(t => t.id === id);
 
   const theftMutation = useMutation({
-    mutationFn: () => supportApi.reportTheft(id),
+    mutationFn: () => theftApi.file(id),
     onSuccess: (report) => {
       setShowTheftModal(false);
-      toast.success(`Theft report #${report.report_number} filed. Support will follow up.`);
+      qc.invalidateQueries({ queryKey: queryKeys.tickets.wallet(user?.id) });
+      toast.success(`Report filed with ${report.routed_to_label}. Your ticket is frozen until it is reviewed.`);
     },
     onError: (e) => { setShowTheftModal(false); toast.error(apiError(e)); },
   });

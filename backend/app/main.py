@@ -28,6 +28,7 @@ from app.routers import (
     super_auth,
     support,
     team_size_overrides,
+    theft,
     tickets,
     user_groups,
     waitlist,
@@ -117,6 +118,7 @@ app.include_router(wishlist.router)
 app.include_router(gate.router)
 app.include_router(prime_pass.router)
 app.include_router(super_auth.router)
+app.include_router(theft.router)
 app.include_router(waitlist.router)
 app.include_router(scoring.router)
 app.include_router(organizer_interactions.router)

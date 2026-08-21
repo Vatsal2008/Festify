@@ -169,8 +169,18 @@ def scan_ticket(body: TicketScanRequest, current_user: dict = Depends(get_curren
             detail="The gate is closed. Open it from the event's gate controls before scanning.",
         )
 
-    if ticket["status"] == "expired":
-        raise HTTPException(status_code=400, detail="Ticket is expired")
+    # Every state that must not open the gate, with the reason the
+    # person at the door needs. Checking only "expired" meant a ticket
+    # revoked after a theft report still admitted whoever held the old
+    # QR -- which defeats the entire point of reissuing it.
+    BLOCKED = {
+        "expired": "This ticket has expired.",
+        "cancelled": "This ticket was cancelled.",
+        "revoked": "This ticket was revoked and replaced after a theft report. Ask for the current ticket.",
+        "theft_reported": "This ticket is frozen while a theft report is reviewed.",
+    }
+    if ticket["status"] in BLOCKED:
+        raise HTTPException(status_code=409, detail=BLOCKED[ticket["status"]])
 
     already_scanned_today = (
         supabase.table("ticket_scans")

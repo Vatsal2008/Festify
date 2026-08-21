@@ -114,6 +114,11 @@ export function EventBuilderPage() {
 
   const update = (field, val) => setForm(f => ({ ...f, [field]: val }));
 
+  // Capacity is the pool every tier draws from, not a separate number.
+  const totalCapacity = Number(form.capacity) || 0;
+  const allocated = form.tiers.reduce((sum, t) => sum + (Number(t.quantity) || 0), 0);
+  const remaining = totalCapacity - allocated;
+
   // This used to raise a success toast and navigate away without calling
   // the API at all, so every event "published" here was never created --
   // it appeared in no dashboard, no listing, and no database.
@@ -121,6 +126,9 @@ export function EventBuilderPage() {
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error('Give the event a title.');
       if (!form.start_date) throw new Error('Set a start date.');
+      if (totalCapacity && allocated > totalCapacity) {
+        throw new Error(`Tiers allocate ${allocated} tickets but capacity is ${totalCapacity}.`);
+      }
 
       const event = await eventsApi.create({
         org_group_id: orgId,
@@ -155,9 +163,9 @@ export function EventBuilderPage() {
       toast.success(`"${event.title}" is live.`);
       navigate(`/org/${orgId}/events`);
     },
-    onError: (e) => toast.error(e?.message?.includes('Give the event') || e?.message?.includes('Set a start')
-      ? e.message
-      : apiError(e)),
+    // Locally-thrown validation messages are already user-facing;
+    // apiError would replace them with a generic string.
+    onError: (e) => toast.error(e?.response ? apiError(e) : (e?.message || apiError(e))),
   });
 
   return (
@@ -242,7 +250,35 @@ export function EventBuilderPage() {
         {/* Step 3: Tickets */}
         {step === 3 && (
           <div className="builder-form">
-            <h2 className="type-label-mono">Ticket Tiers</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 'var(--space-md)' }}>
+              <h2 className="type-label-mono">Ticket Tiers</h2>
+              {/* Tiers divide the event capacity, they do not add to it.
+                  Without showing the remainder an organizer has to do the
+                  arithmetic in their head and only finds out they
+                  over-allocated when tickets oversell. */}
+              <div className="tier-budget" aria-live="polite">
+                <span className={allocated > totalCapacity ? 'tier-budget__over' : ''}>
+                  {allocated.toLocaleString()} of {totalCapacity.toLocaleString()} allocated
+                </span>
+                <strong className={remaining < 0 ? 'tier-budget__over' : ''}>
+                  {remaining >= 0 ? `${remaining.toLocaleString()} left` : `${Math.abs(remaining).toLocaleString()} over`}
+                </strong>
+              </div>
+            </div>
+
+            <div className="tier-budget__bar" aria-hidden="true">
+              <div
+                className={`tier-budget__fill ${remaining < 0 ? 'tier-budget__fill--over' : ''}`}
+                style={{ width: `${Math.min(100, totalCapacity ? (allocated / totalCapacity) * 100 : 0)}%` }}
+              />
+            </div>
+
+            {remaining < 0 && (
+              <p className="tier-budget__warn">
+                <AlertTriangleIcon size={15} /> These tiers allocate more tickets than the event capacity of {totalCapacity.toLocaleString()}.
+              </p>
+            )}
+
             {form.tiers.map((tier, i) => (
               <div key={i} style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-md)', padding: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
                 <div className="builder-form__row">
@@ -270,9 +306,19 @@ export function EventBuilderPage() {
                     <input type="number" className="input-field" value={tier.quantity} onChange={e => { const t = [...form.tiers]; t[i].quantity = Number(e.target.value); update('tiers', t); }} />
                   </div>
                 </div>
+                {form.tiers.length > 1 && (
+                  <button
+                    type="button"
+                    className="tier-remove"
+                    onClick={() => update('tiers', form.tiers.filter((_, j) => j !== i))}
+                    aria-label={`Remove ${tier.name || 'tier'}`}
+                  >
+                    <XIcon size={13} /> Remove tier
+                  </button>
+                )}
               </div>
             ))}
-            <Button variant="ghost" size="sm" onClick={() => update('tiers', [...form.tiers, { name: 'VIP', type: 'vip', price: 999, quantity: 50 }])}>
+            <Button variant="ghost" size="sm" onClick={() => update('tiers', [...form.tiers, { name: 'VIP', type: 'vip', price: 999, quantity: Math.max(0, remaining) }])}>
               <PlusIcon size={14} /> Add Tier
             </Button>
           </div>

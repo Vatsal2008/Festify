@@ -16,7 +16,12 @@ const queryClient = new QueryClient({
       retry: 1,
       retryDelay: 2000,
       staleTime: 30_000,
-      refetchOnWindowFocus: false,
+      // Refetch when the tab regains focus. Turning this off meant a
+      // ticket scanned at the gate kept showing as valid on the holder's
+      // phone until the 30s staleTime lapsed -- and switching back to
+      // the app, the exact moment they want the truth, refreshed
+      // nothing.
+      refetchOnWindowFocus: true,
     },
   },
 });

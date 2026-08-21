@@ -382,3 +382,40 @@
 @media (prefers-reduced-motion: reduce) {
   .scanner-laser { display: none; }
 }
+
+/* ── Tier capacity budget ─────────────────────────────────────────
+   Tiers divide the event capacity rather than adding to it. Showing
+   the remainder as it is spent means the organizer never has to do the
+   arithmetic, and cannot discover an over-allocation only when tickets
+   oversell. */
+.tier-budget {
+  display: flex; align-items: baseline; gap: var(--space-md);
+  font-family: var(--font-mono); font-size: 12px;
+  color: rgba(22, 16, 31, 0.6);
+}
+.tier-budget strong { font-size: 13px; color: var(--color-ink); }
+.tier-budget__over { color: var(--color-error); }
+.tier-budget__bar {
+  height: 6px; border-radius: 999px;
+  background: var(--color-surface-sage);
+  overflow: hidden; margin: 2px 0 var(--space-md);
+}
+.tier-budget__fill {
+  height: 100%; background: var(--color-accent);
+  transition: width var(--duration-fast) var(--ease-out);
+}
+.tier-budget__fill--over { background: var(--color-error); }
+.tier-budget__warn {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: var(--color-error);
+  margin: 0 0 var(--space-md);
+}
+.tier-remove {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 0;
+  font-family: var(--font-mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(22, 16, 31, 0.5);
+}
+.tier-remove:hover { color: var(--color-error); }

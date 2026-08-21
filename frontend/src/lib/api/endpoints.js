@@ -56,6 +56,15 @@ export const meApi = {
   following: () => api.get('/users/me/following').then(r => r.data),
 };
 
+// ── theft reports ─────────────────────────────────────────────────
+export const theftApi = {
+  file: (ticketId, reason) => api.post('/theft-reports', { ticket_id: ticketId, reason }).then(r => r.data),
+  mine: () => api.get('/theft-reports/mine').then(r => r.data),
+  queue: (status = 'pending') => api.get('/theft-reports', { params: { status } }).then(r => r.data),
+  approve: (id, note) => api.post(`/theft-reports/${id}/approve`, { note }).then(r => r.data),
+  reject: (id, note) => api.post(`/theft-reports/${id}/reject`, { note }).then(r => r.data),
+};
+
 // ── prime pass ────────────────────────────────────────────────────
 export const primePassApi = {
   plans: () => api.get('/prime-pass/plans').then(r => r.data),

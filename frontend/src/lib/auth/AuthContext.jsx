@@ -42,13 +42,45 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState(null);
 
   // Restore the session on mount from a stored token.
+  //
+  // The token is discarded only when the server actually rejects it.
+  // Clearing on *any* failure meant a 502, a timeout or a dropped
+  // connection destroyed a perfectly valid session -- so while the API
+  // was down, every refresh silently signed the user out and there was
+  // no way back in until it recovered.
   useEffect(() => {
     if (!tokenStore.get()) return;
     let cancelled = false;
-    authApi.me()
-      .then((me) => { if (!cancelled) setUser(me); })
-      .catch(() => { tokenStore.clear(); })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
+
+    const restore = async (attempt = 0) => {
+      try {
+        const me = await authApi.me();
+        if (!cancelled) { setUser(me); setIsLoading(false); }
+      } catch (err) {
+        const status = err?.response?.status;
+        const rejected = status === 401 || status === 403;
+
+        if (rejected) {
+          tokenStore.clear();
+          if (!cancelled) { setUser(null); setIsLoading(false); }
+          return;
+        }
+
+        // Unreachable or erroring server. A cold start can take ~30s, so
+        // give it two more tries before giving up -- and keep the token
+        // either way, since nothing has said it is invalid.
+        if (attempt < 2 && !cancelled) {
+          setTimeout(() => restore(attempt + 1), (attempt + 1) * 2500);
+          return;
+        }
+        if (!cancelled) {
+          setAuthError('Could not reach the server. Your session is still saved — refresh once it is back.');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    restore();
     return () => { cancelled = true; };
   }, []);
 
