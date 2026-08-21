@@ -10,6 +10,7 @@ import { PageShell, TealBand, CanvasBand } from '@/components/layout';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
+import { NotificationListSkeleton } from '@/components/primitives/Skeleton';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
 import { notificationsApi } from '@/lib/api/endpoints';
@@ -81,18 +82,54 @@ export default function NotificationsPage() {
     enabled: isAuthenticated && showSettings,
   });
 
+  // Marking read is a certainty from the user's point of view -- they
+  // tapped it, they have read it. Waiting for a round trip before the
+  // dot clears makes the interface feel like it is asking permission.
+  // Applied immediately and rolled back only if the server disagrees.
   const markRead = useMutation({
     mutationFn: (id) => notificationsApi.markRead(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['notifications'] });
+      const prev = qc.getQueriesData({ queryKey: ['notifications'] });
+      const now = new Date().toISOString();
+      qc.setQueriesData({ queryKey: ['notifications'] }, (old) => {
+        if (!old?.notifications) return old;
+        return {
+          ...old,
+          notifications: old.notifications.map(n => n.id === id ? { ...n, read_at: n.read_at ?? now } : n),
+          unread_count: Math.max(0, (old.unread_count ?? 0) - 1),
+        };
+      });
+      return { prev };
+    },
+    // Restore the exact snapshot rather than refetching: a refetch would
+    // leave the wrong state on screen for the length of the request.
+    onError: (_e, _id, ctx) => ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v)),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
   const markAll = useMutation({
     mutationFn: notificationsApi.markAllRead,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('All caught up.');
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] });
+      const prev = qc.getQueriesData({ queryKey: ['notifications'] });
+      const now = new Date().toISOString();
+      qc.setQueriesData({ queryKey: ['notifications'] }, (old) => {
+        if (!old?.notifications) return old;
+        return {
+          ...old,
+          notifications: old.notifications.map(n => ({ ...n, read_at: n.read_at ?? now })),
+          unread_count: 0,
+        };
+      });
+      return { prev };
     },
-    onError: (e) => toast.error(apiError(e)),
+    onError: (e, _v, ctx) => {
+      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
+      toast.error(apiError(e));
+    },
+    onSuccess: () => toast.success('All caught up.'),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
   const setPref = useMutation({
@@ -178,6 +215,7 @@ export default function NotificationsPage() {
           emptyTitle="Nothing yet"
           emptySub="Ticket confirmations, organizer updates and reminders land here."
           loadingLabel="Loading notifications"
+          skeleton={<NotificationListSkeleton count={4} />}
         >
           {() => (
             <div className="notif-list">

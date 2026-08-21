@@ -1,0 +1,93 @@
+/* components/primitives/skeleton.css
+   Placeholder geometry. Every box here matches the padding, gap and
+   aspect ratio of the component it stands in for -- that correspondence
+   is the entire point, since a placeholder that is the wrong size
+   causes exactly the shift it was meant to prevent. */
+
+.sk {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-ink) 7%, transparent) 25%,
+    color-mix(in srgb, var(--color-ink) 12%, transparent) 37%,
+    color-mix(in srgb, var(--color-ink) 7%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: sk-sweep 1.4s ease-in-out infinite;
+}
+
+/* A sweep rather than a pulse. Pulsing opacity makes the whole block
+   throb, which draws attention to the absence; a directional sweep
+   reads as "loading left to right" and matches how the content will
+   fill in. */
+@keyframes sk-sweep {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+/* On the ink band the same treatment inverts. */
+.teal-band .sk,
+.card--teal .sk {
+  background: linear-gradient(
+    90deg,
+    rgba(251, 247, 240, 0.06) 25%,
+    rgba(251, 247, 240, 0.13) 37%,
+    rgba(251, 247, 240, 0.06) 63%
+  );
+  background-size: 400% 100%;
+}
+
+/* ── Card placeholder ─────────────────────────────────────────────
+   Mirrors .event-card: same padding, same radius, same 16:9 cover, so
+   the swap to real content moves nothing. */
+.sk-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  border-radius: 16px;
+  background: var(--color-canvas);
+  box-shadow: var(--raise);
+}
+.sk-card__cover {
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+}
+.sk-card__body { display: flex; flex-direction: column; flex: 1; }
+.sk-card__meta { display: flex; gap: var(--space-md); margin-top: 10px; flex-wrap: wrap; }
+.sk-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: var(--space-md);
+}
+
+/* ── Ticket placeholder ── */
+.sk-ticket {
+  display: flex;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--raise);
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Notification placeholder ── */
+.sk-notif {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: flex-start;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+  box-shadow: var(--raise);
+}
+
+/* Motion here is decorative; the geometry is what does the work, so
+   stopping the sweep costs nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; }
+}

@@ -122,7 +122,21 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   // about it -- the wishlist page stayed empty and a refresh undid it.
   const hypeMutation = useMutation({
     mutationFn: () => eventsApi.toggleHype(event.id),
-    onError: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['events'] });
+      const prev = qc.getQueriesData({ queryKey: ['events'] });
+      qc.setQueriesData({ queryKey: ['events'] }, (old) => {
+        const rows = Array.isArray(old) ? old : old?.events;
+        if (!Array.isArray(rows)) return old;
+        const next = rows.map(e => e.id === event.id
+          ? { ...e, is_hyped: !e.is_hyped, hype_count: (e.hype_count ?? 0) + (e.is_hyped ? -1 : 1) }
+          : e);
+        return Array.isArray(old) ? next : { ...old, events: next };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
       setIsHyped(event.is_hyped);
       setHyped(event.hype_count);
       toast.error('Could not update hype. Try again.');
@@ -132,7 +146,22 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
 
   const wishlistMutation = useMutation({
     mutationFn: () => eventsApi.toggleWishlist(event.id),
-    onError: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['events'] });
+      const prev = qc.getQueriesData({ queryKey: ['events'] });
+      // Write through to every cached list holding this event, so the
+      // optimistic state survives navigating away and back rather than
+      // living only in this component.
+      qc.setQueriesData({ queryKey: ['events'] }, (old) => {
+        const rows = Array.isArray(old) ? old : old?.events;
+        if (!Array.isArray(rows)) return old;
+        const next = rows.map(e => e.id === event.id ? { ...e, is_wishlisted: !e.is_wishlisted } : e);
+        return Array.isArray(old) ? next : { ...old, events: next };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
       setWishlisted(event.is_wishlisted);
       toast.error('Could not update your wishlist. Try again.');
     },

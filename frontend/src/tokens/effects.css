@@ -330,3 +330,38 @@ textarea {
     transform: none;
   }
 }
+
+/* ── Field focus ──────────────────────────────────────────
+   Inputs carried `outline: none` with nothing put back, so a
+   keyboard user tabbing through a form had no idea which
+   field they were in. The default ring is replaced rather
+   than removed: a tinted double ring that reads on both the
+   canvas and the ink band, plus a border shift so the
+   affordance does not depend on colour alone. */
+:where(input, select, textarea):focus-visible,
+.input-field:focus-visible,
+.select-field:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 0 0 4px color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+/* Fields on the ink band need the ring to read against dark. */
+.teal-band :where(input, textarea, select):focus-visible,
+.home-hero__search input:focus-visible,
+.super-login__input:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 0 0 4px color-mix(in srgb, var(--color-accent) 34%, transparent);
+}
+
+/* Search compound: the input and its button are one control, so the
+   ring belongs around the pair rather than splitting it. */
+.home-hero__search:focus-within {
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 12px 40px rgba(0, 0, 0, 0.4);
+}

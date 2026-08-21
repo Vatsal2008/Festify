@@ -9,6 +9,7 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
+import { TicketListSkeleton } from '@/components/primitives/Skeleton';
 import { useAuth } from '@/lib/auth/AuthContext';
 import api, { apiError } from '@/lib/api/client';
 import { theftApi, ordersApi } from '@/lib/api/endpoints';
@@ -91,6 +92,7 @@ export default function TicketWalletPage() {
           emptyTitle={`No ${activeTab.toLowerCase()} tickets`}
           emptySub="Buy tickets to events and they'll show up here."
           loadingLabel="Loading your tickets"
+          skeleton={<TicketListSkeleton count={3} />}
         >
           {() => (
             <div className="tickets-list" role="tabpanel">

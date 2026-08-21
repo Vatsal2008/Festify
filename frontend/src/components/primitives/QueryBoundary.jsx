@@ -14,6 +14,11 @@ export default function QueryBoundary({
   emptySub = 'Check back soon.',
   loadingLabel = 'Loading',
   minHeight = 280,
+  // A placeholder shaped like the content that is coming. Passing one
+  // is strongly preferred to the spinner fallback: a spinner reserves
+  // no space, so the page jumps by the full height of the result the
+  // moment it lands, and it communicates nothing about what is loading.
+  skeleton = null,
 }) {
   // isPending is true for a *disabled* query too, and stays true
   // forever because nothing will ever fetch. Testing it alone renders a
@@ -21,8 +26,13 @@ export default function QueryBoundary({
   // panel as a blank dark screen. A spinner is only right while a
   // request is genuinely in flight.
   if (query.isLoading || (query.isPending && query.isFetching)) {
+    if (skeleton) return skeleton;
     return (
-      <div style={{ minHeight, display: 'grid', placeItems: 'center', gap: 'var(--space-lg)' }}>
+      <div
+        style={{ minHeight, display: 'grid', placeItems: 'center', gap: 'var(--space-lg)' }}
+        role="status"
+        aria-live="polite"
+      >
         <Spinner size="lg" />
         <span className="type-label-mono" style={{ opacity: 0.6 }}>{loadingLabel}</span>
       </div>
@@ -31,7 +41,7 @@ export default function QueryBoundary({
 
   if (query.isError) {
     return (
-      <div className="empty-state" style={{ minHeight }} role="alert">
+      <div className="empty-state" style={{ minHeight }} role="alert" aria-live="assertive">
         <h2 className="empty-state__title">Couldn&apos;t load this</h2>
         <p className="empty-state__sub">{apiError(query.error)}</p>
         <Button variant="primary" onClick={() => query.refetch()}>Try again</Button>

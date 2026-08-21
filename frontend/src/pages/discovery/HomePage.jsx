@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
 import { EventCard, hueFor } from '@/components/domain';
 import { Tag, RevealGrid, QueryBoundary } from '@/components/primitives';
+import { EventGridSkeleton } from '@/components/primitives/Skeleton';
 import { eventsApi } from '@/lib/api/endpoints';
 import { queryKeys } from '@/constants/queryKeys';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -25,6 +26,7 @@ function EventSection({ query, pick, emptySub, variant }) {
       emptyTitle="No events yet"
       emptySub={emptySub}
       loadingLabel="Loading events"
+      skeleton={<EventGridSkeleton count={6} />}
     >
       {(data) => (
         <RevealGrid className="events-grid">

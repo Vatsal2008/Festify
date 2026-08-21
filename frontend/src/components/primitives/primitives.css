@@ -20,7 +20,7 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
 .input-field, .select-field, .textarea-field {
   font-family: var(--font-body); font-size: var(--text-body-md); color: var(--color-ink);
   background: var(--color-canvas); border: var(--border-hairline); border-radius: var(--radius-md);
-  padding: 14px 16px; height: 48px; width: 100%; outline: none;
+  padding: 14px 16px; height: 48px; width: 100%; outline: none; /* replaced by the :focus-visible ring below */
   transition: border-color var(--duration-fast) var(--ease-out);
   letter-spacing: var(--ls-body-md);
 }
