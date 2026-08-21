@@ -1,11 +1,9 @@
 // pages/discovery/EventDetailPage.jsx
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner, hueFor } from '@/components/domain';
-import MediaGallery from '@/components/domain/MediaGallery';
+import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner } from '@/components/domain';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
@@ -19,7 +17,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
 import {
   CalendarIcon, MapPinIcon, UsersIcon, TicketIcon, ZapIcon, HeartIcon,
-  StarIcon, CheckIcon, ArrowLeftIcon
+  StarIcon, CheckIcon
 } from '@/components/icons/Icons';
 import { format } from 'date-fns';
 import '@/pages/pages.css';
@@ -40,33 +38,8 @@ export default function EventDetailPage() {
   const eventQuery = useQuery({
     queryKey: queryKeys.events.detail(id),
     queryFn: () => eventsApi.get(id),
-    // Seed from whatever the visitor was just looking at. Arriving from
-    // the grid, this event is already in a cached list response --
-    // title, cover, venue, price -- so gating the whole page behind a
-    // fresh fetch shows a spinner for data we already hold.
-    //
-    // This is also what makes the shared cover transition possible at
-    // all: the hero has to exist in the same frame the card unmounts,
-    // and it cannot if it is waiting on the network.
-    placeholderData: () => {
-      const lists = qc.getQueriesData({ queryKey: ['events'] });
-      for (const [, data] of lists) {
-        const rows = Array.isArray(data) ? data : data?.events;
-        const hit = Array.isArray(rows) ? rows.find((e) => e?.id === id) : null;
-        if (hit) return hit;
-      }
-      return undefined;
-    },
   });
   const event = eventQuery.data;
-
-  // Uploaded media for this event. Kept separate from the event query
-  // so a gallery upload does not invalidate the whole event payload.
-  const mediaQuery = useQuery({
-    queryKey: ['events', id, 'media'],
-    queryFn: () => eventsApi.media(id),
-    enabled: !!id,
-  });
 
   const reviewsQuery = useQuery({
     queryKey: queryKeys.events.reviews(id),
@@ -193,66 +166,18 @@ export default function EventDetailPage() {
           <>
             <TealBand
               variant="hero"
-              className="event-hero"
               style={{
-                '--cat': hueFor(ev.category),
-                backgroundColor: 'var(--color-ink-deep)',
-                // Three stops rather than two: a lighter top lets the
-                // image read, a hue-tinted middle ties the page to the
-                // category, and a near-opaque base carries white text.
-
+                backgroundImage: `linear-gradient(180deg, rgba(22,16,31,0.55) 0%, rgba(11,7,20,0.92) 100%)${ev.cover_image ? `, url(${ev.cover_image})` : ''}`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 marginTop: 'calc(-1 * (var(--nav-height) + 32px))',
-                paddingTop: 'calc(var(--nav-height) + 72px)',
+                paddingTop: 'calc(var(--nav-height) + 88px)',
               }}
             >
-              {/* Destination of the grid card's cover. Same layoutId,
-                  so Framer treats the two as one object and tweens the
-                  card's thumbnail into this full-bleed hero rather than
-                  cutting between two unrelated screens. */}
-              <motion.div
-                className="event-hero__cover"
-                layoutId={`cover-${ev.id}`}
-                transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.9 }}
-                aria-hidden="true"
-                style={{
-                  backgroundImage: `url(${
-                    mediaQuery.data?.detail_bg?.url
-                    || mediaQuery.data?.cover?.url
-                    || ev.cover_image
-                    || `https://picsum.photos/seed/${ev.id}/1600/900`
-                  })`,
-                }}
-              />
-              {/* Videos are referenced from YouTube rather than hosted:
-                  object storage bills every byte served, and a looping
-                  hero is the heaviest request a page can make. The embed
-                  is muted and chrome-suppressed so it reads as
-                  background rather than as an embedded player. */}
-              {mediaQuery.data?.hero_video?.embed_url && (
-                <iframe
-                  className="event-hero__video"
-                  src={mediaQuery.data.hero_video.embed_url}
-                  title=""
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  allow="autoplay; encrypted-media"
-                  frameBorder="0"
-                />
-              )}
-              {mediaQuery.data?.hero_video?.kind === 'video' && mediaQuery.data.hero_video.url && (
-                <video className="event-hero__video" src={mediaQuery.data.hero_video.url}
-                       autoPlay loop muted playsInline aria-hidden="true" />
-              )}
-              <div className="event-hero__scrim" aria-hidden="true" />
-
               <div className="event-detail-hero">
-                {/* Every page needs a way back; this one was a dead end. */}
-                <button className="event-hero__back" onClick={() => navigate(-1)}>
-                  <ArrowLeftIcon size={14} /> Back
-                </button>
                 <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', marginBottom: 'var(--space-lg)' }}>
                   <EventStateChip state={ev.state} />
-                  <span className="event-hero__cat">{ev.category}</span>
+                  <Badge variant="canvas">{ev.category}</Badge>
                   {ev.organizer?.trust_tier === 'trusted' && (
                     <Badge variant="accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <StarIcon size={12} filled /> Trusted Organizer
@@ -276,7 +201,7 @@ export default function EventDetailPage() {
                   )}
                   {ev.capacity != null && (
                     <span className="event-detail-hero__meta-item">
-                      <TicketIcon size={16} /> Capacity {(ev.capacity ?? 0).toLocaleString()}
+                      <TicketIcon size={16} /> {(ev.capacity ?? 0).toLocaleString()} capacity
                     </span>
                   )}
                 </div>
@@ -315,8 +240,6 @@ export default function EventDetailPage() {
                       {ev.description || 'No description provided.'}
                     </div>
                   </section>
-
-                  <MediaGallery media={mediaQuery.data?.gallery ?? []} title="Event gallery" />
 
                   <section aria-labelledby="reviews-heading" style={{ marginTop: 'var(--space-3xl)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>

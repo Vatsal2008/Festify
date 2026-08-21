@@ -1,35 +1,21 @@
-// components/primitives/Tag.jsx — category filter tags
+// components/primitives/Tag.jsx — Pill-radius category filter tags
 import './primitives.css';
 
-export default function Tag({
-  children,
-  isActive = false,
-  onClick,
-  className = '',
-  // Forwarded so callers can set per-tag custom properties such as
-  // --cat. Without this the category hue could not reach the tag and
-  // every filter chip rendered the same grey.
-  style,
-  ...rest
-}) {
-  const cls = `tag ${isActive ? 'tag--active' : ''} ${className}`.trim();
-
+export default function Tag({ children, isActive = false, onClick, className = '' }) {
   if (onClick) {
     return (
       <button
         type="button"
-        className={cls}
+        className={`tag ${isActive ? 'tag--active' : ''} ${className}`}
         onClick={onClick}
         aria-pressed={isActive}
-        style={style}
-        {...rest}
       >
         {children}
       </button>
     );
   }
   return (
-    <span className={cls} style={style} {...rest}>
+    <span className={`tag ${isActive ? 'tag--active' : ''} ${className}`}>
       {children}
     </span>
   );

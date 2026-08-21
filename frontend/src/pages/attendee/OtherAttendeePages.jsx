@@ -7,7 +7,6 @@ import { EventCard, PrimePassBadge } from '@/components/domain';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
-import { EventGridSkeleton } from '@/components/primitives/Skeleton';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
 import { meApi } from '@/lib/api/endpoints';
@@ -37,7 +36,6 @@ export function WishlistPage() {
           emptyTitle="Your wishlist is empty"
           emptySub="Hit the heart icon on any event to save it here."
           loadingLabel="Loading your wishlist"
-          skeleton={<EventGridSkeleton count={3} />}
         >
           {(events) => (
             <div className="wishlist-grid">

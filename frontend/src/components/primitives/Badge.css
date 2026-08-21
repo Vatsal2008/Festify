@@ -22,10 +22,10 @@
 .badge--default  { background: var(--color-surface-cool); color: var(--color-ink); }
 .badge--teal     { background: var(--color-ink); color: var(--color-canvas); }
 .badge--accent   { background: var(--color-accent); color: var(--color-ink); }
-.badge--success  { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid var(--color-success); }
-.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning-text); border: 1px solid var(--color-warning); }
-.badge--error    { background: var(--color-error-bg);   color: var(--color-error-text);   border: 1px solid var(--color-error); }
-.badge--info     { background: var(--color-info-bg);    color: var(--color-info-text);    border: 1px solid var(--color-info); }
+.badge--success  { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success); }
+.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); }
+.badge--error    { background: var(--color-error-bg);   color: var(--color-error);   border: 1px solid var(--color-error); }
+.badge--info     { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid var(--color-info); }
 .badge--canvas   { background: transparent; color: var(--color-canvas); border: 1px solid var(--color-canvas); }
 
 /* Prime is the platform's highest-status badge — gets the full impact
@@ -40,16 +40,16 @@
 }
 
 /* Event State badges */
-.badge--state-draft        { background: rgba(138,127,158,0.15); color: var(--state-draft-text); }
-.badge--state-pending      { background: var(--color-warning-bg); color: var(--state-pending-text); }
+.badge--state-draft        { background: rgba(138,127,158,0.15); color: var(--state-draft); }
+.badge--state-pending      { background: var(--color-warning-bg); color: var(--state-pending); }
 .badge--state-live         { background: rgba(212,255,61,0.15); color: var(--color-ink); border: 1px solid var(--state-live); }
 .badge--state-early-access { background: rgba(255, 61, 138,0.2); color: var(--color-ink); }
-.badge--state-on-sale      { background: rgba(108, 77, 255,0.1); color: var(--state-on-sale-text); }
-.badge--state-sold-out     { background: var(--color-error-bg); color: var(--state-sold-out-text); }
-.badge--state-ongoing      { background: rgba(255,61,138,0.12); color: var(--state-ongoing-text); }
-.badge--state-completed    { background: rgba(138,127,158,0.15); color: var(--state-completed-text); }
-.badge--state-postponed    { background: var(--color-warning-bg); color: var(--state-postponed-text); }
-.badge--state-cancelled    { background: var(--color-error-bg); color: var(--state-cancelled-text); }
+.badge--state-on-sale      { background: rgba(108, 77, 255,0.1); color: var(--state-on-sale); }
+.badge--state-sold-out     { background: var(--color-error-bg); color: var(--state-sold-out); }
+.badge--state-ongoing      { background: rgba(255,61,138,0.12); color: var(--state-ongoing); }
+.badge--state-completed    { background: rgba(138,127,158,0.15); color: var(--state-completed); }
+.badge--state-postponed    { background: var(--color-warning-bg); color: var(--state-postponed); }
+.badge--state-cancelled    { background: var(--color-error-bg); color: var(--state-cancelled); }
 
 /* "Live" gets the anime urgency treatment — small pulse, it's the one
    badge that means "happening right now, act fast" */
@@ -60,31 +60,3 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(212,255,61,0.5); }
   50%      { box-shadow: 0 0 0 4px rgba(212,255,61,0); }
 }
-
-
-/* On a dark plate the darkened text would disappear, so contexts that
-   place a badge over photography or the ink band flip it back to the
-   bright value. */
-.event-card__chips .badge--success,
-.event-detail-hero .badge--success { color: var(--color-success); }
-.event-card__chips .badge--warning,
-.event-detail-hero .badge--warning { color: var(--color-warning); }
-.event-card__chips .badge--error,
-.event-detail-hero .badge--error   { color: var(--color-error); }
-.event-card__chips .badge--info,
-.event-detail-hero .badge--info    { color: var(--color-info); }
-
-/* State chips over photography or the ink band take the on-dark rung.
-   The default values are tuned for canvas and measured 2.64:1 here. */
-.event-card__chips .badge--state-on-sale,
-.event-detail-hero .badge--state-on-sale      { color: var(--state-on-sale-ondark, var(--state-on-sale)); }
-.event-card__chips .badge--state-early-access,
-.event-detail-hero .badge--state-early-access { color: var(--state-early-access-ondark, var(--state-early-access)); }
-.event-card__chips .badge--state-ongoing,
-.event-detail-hero .badge--state-ongoing      { color: var(--state-ongoing-ondark, var(--state-ongoing)); }
-.event-card__chips .badge--state-sold-out,
-.event-detail-hero .badge--state-sold-out     { color: var(--state-sold-out-ondark, var(--state-sold-out)); }
-.event-card__chips .badge--state-draft,
-.event-detail-hero .badge--state-draft        { color: var(--state-draft-ondark, var(--state-draft)); }
-.event-card__chips .badge--state-completed,
-.event-detail-hero .badge--state-completed    { color: var(--state-completed-ondark, var(--state-completed)); }

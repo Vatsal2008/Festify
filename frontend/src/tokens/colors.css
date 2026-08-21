@@ -1,218 +1,65 @@
 /* =========================================================
-   Festify — Chromatic system
-   ---------------------------------------------------------
-   Every surface sits on hue 280. That single decision is what
-   stops light cards reading as foreign objects dropped onto
-   dark sections: previously the canvas was hue 85 (warm
-   cream) while the ink was hue 300 (violet), so the two ends
-   of the scale belonged to different colour families and no
-   amount of spacing could make them look related.
-
-   Stated in OKLCH because its L channel is perceptual: two
-   colours written at the same L look equally bright. In hex
-   they do not, which is how a status label ended up at
-   1.97:1 while looking correct in the editor.
-
-   sRGB fallbacks are declared first for the ~7% without
-   OKLCH support.
+   Festify Design System — Color Tokens
+   "Fest at night" — a warm-black canvas lit by three stage
+   colors (violet / pink / orange), with acid lime reserved
+   strictly for live-right-now urgency. Flat color blocking,
+   not gradients — this is poster/flyer color, not app-glow.
    ========================================================= */
 
 :root {
-  /* ── Fallbacks (sRGB) ── */
-  --color-ink:            #14111C;
-  --color-ink-deep:       #0C0A12;
-  --color-canvas:         #F7F6FA;
-  --color-surface-sage:   #EFEDF5;
-  --color-surface-cool:   #E9E7F2;
-  --color-primary:        #6C4DFF;
-  --color-accent:         #FF3D8A;
-  --color-link-blue:      #6C4DFF;
-  --color-hairline:       #E2DFEC;
-  --color-hairline-light: #2A2438;
+  /* ── Structural ── */
+  --color-ink:            #16101F;   /* warm-black text + dark band bg — "the venue at night" */
+  --color-ink-deep:       #0B0714;   /* darkest depth stop — backstage */
+  --color-canvas:         #FBF7F0;   /* warm paper off-white — main light surface */
+  --color-surface-sage:   #F1EAFB;   /* soft lavender-tinted card surface */
+  --color-surface-cool:   #EEEAFA;   /* cool lavender-gray card surface */
+  --color-primary:        #6C4DFF;   /* electric violet — the main-stage brand color */
+  --color-accent:         #FF3D8A;   /* hype pink — the single loudest CTA/highlight per section */
+  --color-link-blue:      #6C4DFF;   /* inline links — violet, not browser-default blue */
+  --color-hairline:       #E4DCF2;   /* 1px card borders on canvas (light) sections */
+  --color-hairline-light: #2E2140;   /* 1px card borders on ink (dark) sections */
 
-  --color-electric:  #6C4DFF;
-  --color-hype:      #FF3D8A;
-  --color-flare:     #FF7A29;
-  --color-live:      #B6F03C;
+  /* ── Stage lights (named accents — flat color blocks, use deliberately) ── */
+  --color-electric:  #6C4DFF;   /* violet — primary / structural brand */
+  --color-hype:      #FF3D8A;   /* pink — Prime, hype, reviews, social heat */
+  --color-flare:     #FF7A29;   /* orange — price, CTAs, warmth */
+  --color-live:      #D4FF3D;   /* acid lime — reserved ONLY for "live now" / scarcity */
 
+  /* ── Status / Semantic ── */
   --color-success:        #2ECC71;
   --color-warning:        #FF7A29;
-  --color-error:          #E23D52;
+  --color-error:          #FF3D5A;
   --color-info:           #6C4DFF;
-  --color-success-text:   #15803D;
-  --color-warning-text:   #B45309;
-  --color-error-text:     #B91C1C;
-  --color-info-text:      #4338CA;
   --color-success-bg:     rgba(46, 204, 113, 0.1);
   --color-warning-bg:     rgba(255, 122, 41, 0.1);
-  --color-error-bg:       rgba(226, 61, 82, 0.1);
+  --color-error-bg:       rgba(255, 61, 90, 0.1);
   --color-info-bg:        rgba(108, 77, 255, 0.1);
 
+  /* ── Event State ── */
   --state-draft:          #8A7F9E;
   --state-pending:        #FF7A29;
-  --state-live:           #B6F03C;
+  --state-live:           #D4FF3D;
   --state-early-access:   #FF3D8A;
   --state-on-sale:        #6C4DFF;
-  --state-sold-out:       #E23D52;
+  --state-sold-out:       #FF3D5A;
   --state-ongoing:        #FF3D8A;
   --state-completed:      #8A7F9E;
   --state-postponed:      #FF7A29;
-  --state-cancelled:      #E23D52;
+  --state-cancelled:      #FF3D5A;
 
-  --state-draft-text:        #5B5470;
-  --state-pending-text:      #B45309;
-  --state-on-sale-text:      #4338CA;
-  --state-sold-out-text:     #B91C1C;
-  --state-ongoing-text:      #A81B4A;
-  --state-early-access-text: #A81B4A;
-  --state-completed-text:    #5B5470;
-  --state-postponed-text:    #B45309;
-  --state-cancelled-text:    #B91C1C;
-
+  /* ── Customer Level ── */
   --level-bronze:         #CD7F32;
   --level-silver:         #A8A9AD;
   --level-gold:           #FFD700;
   --level-platinum:       #B4C0CC;
-  --level-prime:          #B6F03C;
+  --level-prime:          #D4FF3D;   /* acid lime — highest earned tier, deliberately scarce */
 
-  --color-overlay:        rgba(12, 10, 18, 0.72);
-  --color-overlay-light:  rgba(20, 17, 28, 0.2);
+  /* ── Overlay ── */
+  --color-overlay:        rgba(11, 7, 20, 0.7);
+  --color-overlay-light:  rgba(22, 16, 31, 0.2);
 
+  /* ── Glow (used sparingly — live badges, primary CTA hover) ── */
   --glow-electric: 0 0 0 1px rgba(108, 77, 255, 0.4), 0 8px 24px rgba(108, 77, 255, 0.35);
   --glow-hype:     0 0 0 1px rgba(255, 61, 138, 0.4), 0 8px 24px rgba(255, 61, 138, 0.35);
-  --glow-live:     0 0 12px rgba(182, 240, 60, 0.6);
-}
-
-@supports (color: oklch(50% 0.1 180)) {
-  :root {
-    /* ── The axis ────────────────────────────────────────
-       One hue for every neutral surface, light and dark. */
-    --hue-base: 280;
-
-    /* ── Chromatic elevation ─────────────────────────────
-       Four dark tiers. Chroma climbs with lightness so a
-       raised surface reads as *lit* rather than merely
-       lighter -- light picks up colour as it lands. */
-    --surface-0: oklch(0.12 0.03 var(--hue-base));   /* void: page floor      */
-    --surface-1: oklch(0.16 0.04 var(--hue-base));   /* layer: card ground    */
-    --surface-2: oklch(0.20 0.05 var(--hue-base));   /* elevated: popovers    */
-    --surface-3: oklch(0.24 0.06 var(--hue-base));   /* interactive: hover    */
-
-    /* Glass variant of tier 1. Kept separate rather than
-       baked into --surface-1 because a translucent value is
-       useless anywhere there is nothing behind it to show. */
-    --surface-1-glass: oklch(0.16 0.04 var(--hue-base) / 0.7);
-
-    /* ── Light tiers, same axis ──────────────────────────
-       The counterpart scale. These are cool near-whites on
-       hue 280, not cream: sharing the axis is the whole
-       reason the light and dark halves now look like one
-       system. */
-    --light-0: oklch(0.975 0.006 var(--hue-base));   /* page ground   */
-    --light-1: oklch(0.955 0.010 var(--hue-base));   /* card ground   */
-    --light-2: oklch(0.930 0.014 var(--hue-base));   /* raised        */
-    --light-3: oklch(0.900 0.018 var(--hue-base));   /* interactive   */
-
-    --color-ink:            var(--surface-1);
-    --color-ink-deep:       var(--surface-0);
-    --color-canvas:         var(--light-0);
-    --color-surface-sage:   var(--light-1);
-    --color-surface-cool:   var(--light-2);
-
-    --color-hairline:       oklch(0.90 0.014 var(--hue-base));
-    --color-hairline-light: oklch(0.28 0.05 var(--hue-base));
-
-    /* ── Category grading ────────────────────────────────
-       One hue per category, carrying badges, card edge and
-       hover glow. Colour identifies rather than decorates,
-       which is what lets the palette be this loud without
-       becoming noise. */
-    --hue-hackathon: oklch(0.78 0.18 200);   /* electric cyan   */
-    --hue-cultural:  oklch(0.72 0.22 35);    /* sunset coral    */
-    --hue-music:     oklch(0.68 0.26 330);   /* neon magenta    */
-    --hue-sports:    oklch(0.80 0.22 140);   /* emerald lime    */
-    --hue-talk:      oklch(0.74 0.20 290);   /* radiant violet  */
-    --hue-comedy:    oklch(0.74 0.20 290);   /* violet, per spec pairing */
-    --hue-workshop:  oklch(0.76 0.15 220);   /* steel cyan      */
-    --hue-party:     oklch(0.70 0.24 350);   /* hot rose        */
-    --hue-theatre:   oklch(0.72 0.19 310);   /* orchid          */
-    /* Deliberately dull, so an unclassified event looks
-       unclassified instead of borrowing an identity. */
-    --hue-default:   oklch(0.70 0.02 var(--hue-base));
-
-    --color-primary:        oklch(0.58 0.24 285);
-    --color-accent:         oklch(0.65 0.23 000);
-    --color-link-blue:      oklch(0.58 0.24 285);
-
-    --color-electric:  oklch(0.58 0.24 285);
-    --color-hype:      oklch(0.65 0.23 000);
-    --color-flare:     oklch(0.72 0.17 48);
-    --color-live:      var(--hue-sports);
-
-    /* Status: a bright rung for fills and glows, a dark rung
-       for text on light surfaces. Pairing them is what was
-       missing when a label measured 1.97:1. */
-    --color-success:        oklch(0.72 0.17 152);
-    --color-warning:        oklch(0.72 0.17 48);
-    --color-error:          oklch(0.55 0.21 15);
-    --color-info:           oklch(0.58 0.24 285);
-    --color-success-text:   oklch(0.42 0.14 152);
-    --color-warning-text:   oklch(0.42 0.13 48);
-    --color-error-text:     oklch(0.42 0.19 15);
-    --color-info-text:      oklch(0.42 0.21 285);
-
-    --color-muted:      oklch(0.42 0.015 var(--hue-base));
-    --color-muted-soft: oklch(0.50 0.015 var(--hue-base));
-
-    --state-draft:          oklch(0.62 0.03 var(--hue-base));
-    --state-pending:        oklch(0.72 0.17 48);
-    --state-live:           var(--hue-sports);
-    --state-early-access:   oklch(0.65 0.23 000);
-    --state-on-sale:        oklch(0.58 0.24 285);
-    --state-sold-out:       oklch(0.55 0.21 15);
-    --state-ongoing:        oklch(0.65 0.23 000);
-    --state-completed:      oklch(0.62 0.03 var(--hue-base));
-    --state-postponed:      oklch(0.72 0.17 48);
-    --state-cancelled:      oklch(0.55 0.21 15);
-
-    /* The dark rung for every state, for text sitting on that state's
-       own pale tint. The bright rungs above are fills; used as text on
-       a light chip they measured as low as 3.6:1, under the 4.5:1 that
-       chip-sized text needs. Same hue and chroma family, dropped to the
-       lightness that carries on a near-white ground. */
-    --state-draft-text:        oklch(0.42 0.03 var(--hue-base));
-    --state-pending-text:      oklch(0.42 0.13 48);
-    --state-on-sale-text:      oklch(0.42 0.21 285);
-    --state-sold-out-text:     oklch(0.42 0.19 15);
-    --state-ongoing-text:      oklch(0.42 0.20 000);
-    --state-early-access-text: oklch(0.42 0.20 000);
-    --state-completed-text:    oklch(0.42 0.03 var(--hue-base));
-    --state-postponed-text:    oklch(0.42 0.13 48);
-    --state-cancelled-text:    oklch(0.42 0.19 15);
-
-    /* Chips sitting on a near-ink plate over photography.
-       The deep accents are tuned for canvas text and land
-       around 2.6:1 there, so dark contexts get their own
-       rung -- the ladder doing its job. */
-    --state-on-sale-ondark:      oklch(0.78 0.16 285);
-    --state-early-access-ondark: oklch(0.78 0.17 000);
-    --state-ongoing-ondark:      oklch(0.78 0.17 000);
-    --state-sold-out-ondark:     oklch(0.76 0.17 15);
-    --state-draft-ondark:        oklch(0.78 0.03 var(--hue-base));
-    --state-completed-ondark:    oklch(0.78 0.03 var(--hue-base));
-
-    --level-bronze:         oklch(0.60 0.11 55);
-    --level-silver:         oklch(0.70 0.01 var(--hue-base));
-    --level-gold:           oklch(0.82 0.16 92);
-    --level-platinum:       oklch(0.78 0.02 240);
-    --level-prime:          var(--hue-sports);
-
-    --color-overlay:        oklch(0.12 0.03 var(--hue-base) / 0.75);
-    --color-overlay-light:  oklch(0.16 0.04 var(--hue-base) / 0.2);
-
-    /* Glows carry the hue of what emits them. */
-    --glow-electric: 0 0 0 1px oklch(0.58 0.24 285 / 0.4), 0 8px 24px oklch(0.58 0.24 285 / 0.35);
-    --glow-hype:     0 0 0 1px oklch(0.65 0.23 000 / 0.4), 0 8px 24px oklch(0.65 0.23 000 / 0.35);
-    --glow-live:     0 0 12px oklch(0.80 0.22 140 / 0.6);
-  }
+  --glow-live:     0 0 12px rgba(212, 255, 61, 0.6);
 }

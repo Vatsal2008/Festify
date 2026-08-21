@@ -8,11 +8,11 @@
   color: var(--color-ink); background: var(--color-surface-cool);
   border: 1.5px solid var(--color-ink);
   border-radius: var(--radius-pill); padding: 4px 14px; white-space: nowrap;
-  cursor: default; transition: transform var(--duration-fast) var(--ease-out-expo), background-color var(--duration-fast) var(--ease-out-expo), color var(--duration-fast) var(--ease-out-expo), border-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo);
+  cursor: default; transition: all var(--duration-fast) var(--ease-spring);
 }
 button.tag { cursor: pointer; }
 button.tag:hover { background: var(--color-surface-sage); transform: translateY(-1px); box-shadow: 2px 2px 0 var(--color-ink); }
-.tag--active { background: var(--color-accent); color: var(--color-ink); border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink); }
+.tag--active { background: var(--color-accent); color: var(--color-canvas); border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink); }
 
 /* ── Input ── */
 .input-wrapper { display: flex; flex-direction: column; gap: var(--space-sm); width: 100%; }
@@ -20,7 +20,7 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
 .input-field, .select-field, .textarea-field {
   font-family: var(--font-body); font-size: var(--text-body-md); color: var(--color-ink);
   background: var(--color-canvas); border: var(--border-hairline); border-radius: var(--radius-md);
-  padding: 14px 16px; height: 48px; width: 100%; outline: none; /* replaced by the :focus-visible ring below */
+  padding: 14px 16px; height: 48px; width: 100%; outline: none;
   transition: border-color var(--duration-fast) var(--ease-out);
   letter-spacing: var(--ls-body-md);
 }
@@ -115,54 +115,3 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
 .divider--canvas { border-top-color: rgba(251, 247, 240,0.2); }
 .divider--sm { margin: var(--space-lg) 0; }
 .divider--lg { margin: var(--space-3xl) 0; }
-
-/* ── Category chips ───────────────────────────────────────────────
-   Each chip carries its category's hue. Colour is doing identifying
-   work rather than decoration, which is what lets the palette be
-   loud without becoming noise. Unselected chips show the hue only as
-   a border and a dot; selecting one floods it. */
-.cat-chip {
-  position: relative;
-  border: 1.5px solid color-mix(in srgb, var(--cat) 55%, transparent);
-  background: color-mix(in srgb, var(--cat) 12%, transparent);
-  color: var(--color-canvas);
-  border-radius: 8px;              /* squarer than a pill — pills read as template */
-  padding: 7px 14px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  transition: background var(--dur-fast) var(--ease-out-soft),
-              transform var(--dur-fast) var(--ease-out-expo),
-              border-color var(--dur-fast) var(--ease-out-soft),
-              color var(--dur-fast) var(--ease-out-soft);
-}
-.cat-chip:hover {
-  background: color-mix(in srgb, var(--cat) 26%, transparent);
-  border-color: var(--cat);
-  transform: translateY(-2px);
-}
-.cat-chip:active { transform: translateY(0) scale(0.97); }
-
-/* Selected: the hue takes over. Text flips to ink because every hue in
-   the set is light enough that canvas-on-hue would fail contrast. */
-.cat-chip.tag--active {
-  background: var(--cat);
-  border-color: var(--cat);
-  color: var(--color-ink);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--cat) 40%, transparent);
-}
-
-/* The active chip's fill is a single travelling element shared across
-   chips via layoutId, so the chip itself no longer paints a background
-   when active -- two fills would fight and the travel would be hidden
-   behind a static one. */
-.cat-chip { position: relative; isolation: isolate; overflow: hidden; }
-.cat-chip__label { position: relative; z-index: 1; }
-.cat-chip__fill {
-  position: absolute; inset: 0; z-index: 0;
-  border-radius: inherit;
-  background: var(--cat);
-}
-.cat-chip.tag--active { background: transparent; }

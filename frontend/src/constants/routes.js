@@ -52,7 +52,6 @@ export const ROUTES = {
   SUPER_ADMIN_COLLEGE_ADMINS:'/super/college-admins',
   SUPER_ADMIN_CONFIG:        '/super/config',
   SUPER_ADMIN_SUPPORT:       '/super/support-tickets',
-  SUPER_ADMIN_EVENTS:        '/super/events',
   SUPER_ADMIN_TRENDING:      '/super/trending-curation',
   SUPER_ADMIN_AUDIT:         '/super/audit-log',
 

@@ -72,51 +72,6 @@
   padding-top: calc(var(--nav-height) + 32px); /* Sidebar content starts below navbar */
   transition: transform var(--duration-normal) var(--ease-out);
 }
-/* ── Super admin rail ──────────────────────────────────────────────
-   Real glass, not a blur filter on its own. The refraction at a glass
-   edge is what sells it: a bright inner hairline along the lit edges
-   and a dark one along the shadowed edge, over a translucent tier-1
-   surface. Blur alone just reads as a muddy panel.
-
-   Scoped to the super admin because it marks a different kind of
-   authority from the organiser rail; applying it everywhere would spend
-   the distinction for nothing. */
-.dashboard-shell__sidebar--super-admin {
-  background: var(--surface-1-glass, rgba(22, 17, 30, 0.72));
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-right: 1px solid color-mix(in oklab, var(--light-0, #F7F6FA) 10%, transparent);
-  box-shadow:
-    inset 1px 0 0 color-mix(in oklab, var(--light-0, #F7F6FA) 7%, transparent),
-    inset -1px 0 0 color-mix(in oklab, var(--surface-0, #0C0A12) 60%, transparent),
-    12px 0 40px -24px color-mix(in oklab, var(--surface-0, #0C0A12) 90%, transparent);
-}
-
-/* A faint wash of the accent down the rail, so the panel is not a flat
-   sheet of grey glass. Sits behind the nav items and takes no pointer
-   events of its own. */
-.dashboard-shell__sidebar--super-admin::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(120% 42% at 0% 0%,
-      color-mix(in oklab, var(--color-accent, #FF3D8A) 12%, transparent), transparent 70%),
-    radial-gradient(90% 40% at 0% 100%,
-      color-mix(in oklab, var(--color-primary, #6C4DFF) 12%, transparent), transparent 72%);
-}
-.dashboard-shell__sidebar--super-admin > * { position: relative; }
-
-/* Without backdrop-filter the translucent ground would show the page
-   through unblurred, which looks like a rendering fault rather than a
-   material. Those browsers get the solid surface instead. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dashboard-shell__sidebar--super-admin {
-    background: var(--surface-1, #16111E);
-  }
-}
-
 .dashboard-shell__content {
   flex: 1;
   margin-left: var(--sidebar-width);
@@ -205,7 +160,7 @@
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 9999px;
-  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  transition: all var(--duration-fast) var(--ease-out);
   white-space: nowrap;
 }
 .top-nav__link:hover {

@@ -1,12 +1,10 @@
 // pages/discovery/HomePage.jsx
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventCard, hueFor } from '@/components/domain';
+import { EventCard } from '@/components/domain';
 import { Tag, RevealGrid, QueryBoundary } from '@/components/primitives';
-import { EventGridSkeleton } from '@/components/primitives/Skeleton';
 import { eventsApi } from '@/lib/api/endpoints';
 import { queryKeys } from '@/constants/queryKeys';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -19,22 +17,18 @@ const CATEGORIES = [
 ];
 
 /** A home section backed by a slice of the shared events query. */
-function EventSection({ query, pick, emptySub, variant, category = 'All' }) {
-  const byCategory = (rows) =>
-    category === 'All' ? rows : rows.filter((e) => e.category === category);
-
+function EventSection({ query, pick, emptySub, variant }) {
   return (
     <QueryBoundary
       query={query}
-      isEmpty={(data) => !pick(byCategory(data ?? [])).length}
+      isEmpty={(data) => !pick(data ?? []).length}
       emptyTitle="No events yet"
       emptySub={emptySub}
       loadingLabel="Loading events"
-      skeleton={<EventGridSkeleton count={6} />}
     >
       {(data) => (
         <RevealGrid className="events-grid">
-          {pick(byCategory(data)).map(evt => <EventCard key={evt.id} event={evt} variant={variant} />)}
+          {pick(data).map(evt => <EventCard key={evt.id} event={evt} variant={variant} />)}
         </RevealGrid>
       )}
     </QueryBoundary>
@@ -89,25 +83,19 @@ export default function HomePage() {
           <source src="/media/hero-stage-loop.mp4" type="video/mp4" />
         </video>
         <div className="home-hero-scrim" aria-hidden="true" />
-        <div className="home-hero-glow" aria-hidden="true" />
 
-        {/* Two columns of unequal weight rather than one centred stack.
-            A dead-centre hero is the most recognisable generated layout
-            there is; an off-axis split gives the eye somewhere to enter
-            and somewhere to travel. */}
         <div className="home-hero">
-          <div className="home-hero__lead">
-            <span className="home-hero__live">
-              <span className="home-hero__live-dot" aria-hidden="true" />
-              {liveCount > 0 ? `${liveCount} fests on sale right now` : 'Fresh fests every week'}
-            </span>
+          <span className="home-hero__live">
+            <span className="home-hero__live-dot" aria-hidden="true" />
+            {liveCount > 0 ? `${liveCount} fests on sale right now` : 'Fresh fests every week'}
+          </span>
 
-            <h1 className="home-hero__title">
-              Your next fest <em>starts here.</em>
-            </h1>
-            <p className="home-hero__sub">
-              Every cultural night, tech fest, DJ set and hackathon worth showing up for — across every college in India, in one place.
-            </p>
+          <h1 className="home-hero__title">
+            Your next fest <em>starts here.</em>
+          </h1>
+          <p className="home-hero__sub">
+            Every cultural night, tech fest, DJ set, and hackathon worth showing up for — across every college in India, in one place.
+          </p>
 
           <form className="home-hero__search" onSubmit={handleSearch} role="search">
             <label htmlFor="hero-search" className="visually-hidden">Search events</label>
@@ -125,62 +113,31 @@ export default function HomePage() {
           </form>
 
           <div className="home-hero__cats" role="list" aria-label="Event categories">
-            {CATEGORIES.slice(0, 9).map(cat => (
+            {CATEGORIES.slice(0, 8).map(cat => (
               <Tag
                 key={cat}
                 isActive={activeCategory === cat}
-                className="cat-chip"
-                style={{ '--cat': cat === 'All' ? 'var(--color-accent)' : hueFor(cat) }}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  if (cat !== 'All') navigate(`/search?category=${cat}`);
+                }}
               >
-                {activeCategory === cat && (
-                  <motion.span
-                    className="cat-chip__fill"
-                    layoutId="activeFilter"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.7 }}
-                  />
-                )}
-                <span className="cat-chip__label">{cat}</span>
+                {cat}
               </Tag>
             ))}
-            </div>
           </div>
-
-          {/* Real figures read from the loaded events. A hero that
-              invents its own numbers is worse than one with none. */}
-          <aside className="hud" aria-label="At a glance">
-            <div className="hud__stat">
-              <span className="hud__pip" aria-hidden="true" />
-              <span className="hud__num">{events.length || '—'}</span>
-              <span className="hud__label">fests listed</span>
-            </div>
-            <div className="hud__stat">
-              <span className="hud__pip hud__pip--sports" aria-hidden="true" />
-              <span className="hud__num">
-                {new Set(events.map(e => e.venue?.split(',').pop()?.trim()).filter(Boolean)).size || '—'}
-              </span>
-              <span className="hud__label">cities</span>
-            </div>
-            <div className="hud__stat">
-              <span className="hud__pip hud__pip--talk" aria-hidden="true" />
-              <span className="hud__num">
-                {new Set(events.map(e => e.organizer?.name).filter(Boolean)).size || '—'}
-              </span>
-              <span className="hud__label">organisers</span>
-            </div>
-          </aside>
         </div>
       </TealBand>
 
       {/* ── Trending ── */}
       <CanvasBand>
         <div className="home-section-header">
-          <h2 className="type-display-md">Trending now</h2>
+          <h2 className="type-display-md">Trending Now</h2>
           <a href="/search?sort=trending" className="home-section-header__link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <EventSection category={activeCategory}
+        <EventSection
           query={eventsQuery}
           pick={(d) => d.slice(0, 6)}
           emptySub="Nothing is live yet — the first fests are on their way."
@@ -197,7 +154,7 @@ export default function HomePage() {
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <EventSection category={activeCategory}
+        <EventSection
           query={eventsQuery}
           pick={(d) => [...d].sort((a, b) => b.hype_count - a.hype_count).slice(0, 3)}
           emptySub="No one has hyped an event yet. Be first."
@@ -212,7 +169,7 @@ export default function HomePage() {
               <GraduationCapIcon size={24} /> At Your College
             </h2>
           </div>
-          <EventSection category={activeCategory}
+          <EventSection
             query={eventsQuery}
             variant="featured"
             pick={(d) => d.filter(e => e.college_id && e.college_id === user?.college_id).slice(0, 3)}
@@ -229,7 +186,7 @@ export default function HomePage() {
             See all <ArrowRightIcon size={14} />
           </a>
         </div>
-        <EventSection category={activeCategory}
+        <EventSection
           query={eventsQuery}
           pick={(d) => [...d].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)).slice(0, 6)}
           emptySub="No upcoming events scheduled yet."

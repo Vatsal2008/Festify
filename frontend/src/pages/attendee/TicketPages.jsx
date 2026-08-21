@@ -9,7 +9,6 @@ import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
-import { TicketListSkeleton } from '@/components/primitives/Skeleton';
 import { useAuth } from '@/lib/auth/AuthContext';
 import api, { apiError } from '@/lib/api/client';
 import { theftApi, ordersApi } from '@/lib/api/endpoints';
@@ -92,7 +91,6 @@ export default function TicketWalletPage() {
           emptyTitle={`No ${activeTab.toLowerCase()} tickets`}
           emptySub="Buy tickets to events and they'll show up here."
           loadingLabel="Loading your tickets"
-          skeleton={<TicketListSkeleton count={3} />}
         >
           {() => (
             <div className="tickets-list" role="tabpanel">
@@ -175,46 +173,34 @@ export function TicketDetailPage() {
             </TealBand>
 
             <CanvasBand>
-              {/* Shaped as an actual pass: a body carrying the details and
-                  a stub carrying the code, divided by a perforation. The
-                  two halves were previously just two columns of a grid,
-                  which is the same information with none of the meaning --
-                  the stub is the half a gate keeps, and the tear line is
-                  what says so. */}
-              <div className={`pass pass--${ticket.status}`}>
-                <div className="pass__body">
-                  <p className="pass__eyebrow">Admit one</p>
-                  <h2 className="pass__event">{ticket.event?.title ?? 'Ticket'}</h2>
-
-                  <dl className="pass__rows">
-                    <div className="pass__row">
-                      <dt>Event date</dt>
-                      <dd>{fmt(ticket.event?.start_date)}</dd>
-                    </div>
-                    <div className="pass__row">
-                      <dt>Venue</dt>
-                      <dd>{ticket.event?.venue ?? '—'}</dd>
-                    </div>
-                    <div className="pass__row">
-                      <dt>Admits</dt>
-                      <dd>{ticket.tier?.name ?? 'Standard'}</dd>
-                    </div>
-                    <div className="pass__row">
-                      <dt>Paid</dt>
-                      <dd>{ticket.price_paid === 0 ? 'Free' : `₹${ticket.price_paid}`}</dd>
-                    </div>
-                    <div className="pass__row">
-                      <dt>Status</dt>
-                      <dd>
-                        <Badge variant={ticket.status === 'issued' ? 'success' : ticket.status === 'used' ? 'default' : 'error'}>
-                          {ticket.status === 'issued' ? 'valid' : ticket.status}
-                        </Badge>
-                      </dd>
-                    </div>
-                  </dl>
+              <div className="ticket-detail-layout">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
+                  <div>
+                    <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Event Date</p>
+                    <p className="type-body-md">{fmt(ticket.event?.start_date)}</p>
+                  </div>
+                  <div>
+                    <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Venue</p>
+                    <p className="type-body-md">{ticket.event?.venue ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Booking Code</p>
+                    <code style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.1em', display: 'block', padding: 'var(--space-lg)', background: 'var(--color-surface-sage)', border: 'var(--border-hairline)' }}>{ticket.booking_code}</code>
+                  </div>
+                  <div>
+                    <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Status</p>
+                    <Badge variant={ticket.status === 'issued' ? 'success' : ticket.status === 'used' ? 'default' : 'error'}>
+                      {ticket.status === 'issued' ? 'valid' : ticket.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="type-label-mono" style={{ marginBottom: 'var(--space-sm)' }}>Paid</p>
+                    <p className="type-body-md">{ticket.price_paid === 0 ? 'Free' : `₹${ticket.price_paid}`}</p>
+                  </div>
 
                   {ticket.status === 'issued' && (
-                    <div className="pass__actions">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', borderTop: 'var(--border-hairline)', paddingTop: 'var(--space-xl)' }}>
+                      <p className="type-label-mono">Actions</p>
                       <Button variant="danger" size="sm" onClick={() => setShowTheftModal(true)}>
                         Report stolen ticket
                       </Button>
@@ -222,23 +208,9 @@ export function TicketDetailPage() {
                   )}
                 </div>
 
-                {/* The organiser's ticket art sits behind the code. It is
-                    decoration, so it stays well under the QR's contrast --
-                    a scanner needs the code to be the highest-contrast
-                    thing in frame. */}
-                <div
-                  className={`pass__stub ${ticket.event?.ticket_bg ? 'pass__stub--art' : ''}`}
-                  style={ticket.event?.ticket_bg
-                    ? { backgroundImage: `url(${ticket.event.ticket_bg})` }
-                    : undefined}
-                >
-                  <div className="pass__stub-inner">
-                    <p className="pass__stub-label">Scan at the gate</p>
-                    {/* QRDisplay prints the booking code itself, in both
-                        the released and not-yet-released states, so the
-                        stub must not repeat it. */}
-                    <QRDisplay ticket={ticket} />
-                  </div>
+                <div>
+                  <p className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Your QR Code</p>
+                  <QRDisplay ticket={ticket} />
                 </div>
               </div>
             </CanvasBand>
@@ -256,41 +228,10 @@ export function TicketDetailPage() {
                 </>
               }
             >
-              {/* The old copy said a support case would open and left the
-                  consequences unstated. Filing freezes the ticket
-                  immediately, which means the QR on this screen stops
-                  working at the gate whether or not the report is later
-                  approved. Someone about to travel to a venue needs to
-                  know that before they tap, not after. */}
-              <div className="theft-modal">
-                <div className="theft-modal__lead">
-                  <AlertTriangleIcon size={20} className="theft-modal__icon" />
-                  <p className="type-body-md">
-                    Filing this report freezes the ticket straight away. Here is what
-                    that means.
-                  </p>
-                </div>
-
-                <ol className="theft-modal__steps">
-                  <li>
-                    <strong>This QR stops working now.</strong> It will be turned away
-                    at the gate from the moment you file, so whoever holds a copy
-                    cannot use it either.
-                  </li>
-                  <li>
-                    <strong>A reviewer checks the report.</strong> It goes to the
-                    organiser, or to Festify support if they are unavailable.
-                  </li>
-                  <li>
-                    <strong>If it is approved, you get a replacement code.</strong> It
-                    appears in your wallet and the old one stays dead. If it is
-                    rejected, your original ticket is switched back on.
-                  </li>
-                </ol>
-
-                <p className="theft-modal__note">
-                  Reports filed close to the start time may not be reviewed before the
-                  doors open. Repeat reports on the same ticket are recorded.
+              <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'flex-start' }}>
+                <AlertTriangleIcon size={20} style={{ flexShrink: 0, marginTop: 2, color: 'var(--color-warning)' }} />
+                <p className="type-body-md">
+                  This opens a support case for this ticket. Only report a ticket you believe has been shared or stolen — repeat reports on the same ticket are tracked.
                 </p>
               </div>
             </Modal>

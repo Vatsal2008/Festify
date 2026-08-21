@@ -1,6 +1,5 @@
 // App.jsx — Complete router tree for Festify
-import { useEffect, lazy, Suspense } from 'react';
-import { LayoutGroup } from 'framer-motion';
+import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Spinner } from '@/components/primitives/Primitives';
@@ -8,65 +7,36 @@ import ToastContainer from '@/components/primitives/ToastContainer';
 
 // ── Discovery ──────────────────────────────────────────────────────
 import HomePage        from '@/pages/discovery/HomePage';
+import EventDetailPage from '@/pages/discovery/EventDetailPage';
 import SearchPage      from '@/pages/discovery/SearchPage';
-
-// Lazy, like every other route. This was briefly a static import to
-// make the shared cover transition work -- the destination chunk has to
-// already be loaded for the two elements to coexist -- but that pulls
-// the whole detail page into the initial bundle and makes
-// prefetchEventDetail below a no-op, which is the opposite of the point.
-// The hover prefetch is what warms the chunk; a click without a prior
-// hover simply falls back to a normal Suspense load.
-const EventDetailPage = lazy(() => import('@/pages/discovery/EventDetailPage'));
 
 // ── Auth ───────────────────────────────────────────────────────────
 import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 
-// Everything past discovery is code-split. A visitor landing on the
-// homepage was downloading the organizer dashboard, both admin panels
-// and the QR scanner (which pulls in jsQR) before seeing a single
-// event -- most of it for surfaces they will never open.
-//
 // ── Attendee ───────────────────────────────────────────────────────
-const ProfilePage        = lazy(() => import('@/pages/attendee/ProfilePage'));
-const TicketWalletPage   = lazy(() => import('@/pages/attendee/TicketPages'));
-const TicketDetailPage   = lazy(() => import('@/pages/attendee/TicketPages').then(m => ({ default: m.TicketDetailPage })));
-const WishlistPage       = lazy(() => import('@/pages/attendee/OtherAttendeePages').then(m => ({ default: m.WishlistPage })));
-const NotificationsPage  = lazy(() => import('@/pages/attendee/NotificationsPage'));
-const PrimePassPage      = lazy(() => import('@/pages/attendee/PrimePassPage'));
+import ProfilePage      from '@/pages/attendee/ProfilePage';
+import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
+import { WishlistPage } from '@/pages/attendee/OtherAttendeePages';
+import NotificationsPage from '@/pages/attendee/NotificationsPage';
+import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
 // ── Organizer ──────────────────────────────────────────────────────
-const OrganizerApplicationPage = lazy(() => import('@/pages/organizer/OrganizerApplicationPage'));
-const GateScannerPage    = lazy(() => import('@/pages/organizer/GateScannerPage'));
-const EventMediaPage     = lazy(() => import('@/pages/organizer/EventMediaPage'));
-const OrgDashboardPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgDashboardPage })));
-const EventBuilderPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.EventBuilderPage })));
-const BulkRequestsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.BulkRequestsPage })));
-const OrgMembersPage     = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgMembersPage })));
-const OrgChatPage        = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgChatPage })));
-const OrgEventsPage      = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgEventsPage })));
-const OrgAnalyticsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgAnalyticsPage })));
+import OrganizerApplicationPage from '@/pages/organizer/OrganizerApplicationPage';
+import GateScannerPage from '@/pages/organizer/GateScannerPage';
+import { OrgDashboardPage, EventBuilderPage, BulkRequestsPage, OrgMembersPage, OrgChatPage, OrgEventsPage, OrgAnalyticsPage } from '@/pages/organizer/OrgPages';
 
 // ── Admin ──────────────────────────────────────────────────────────
-const CollegeAdminApplicationsPage = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminApplicationsPage })));
-const CollegeAdminEventsPage       = lazy(() => import('@/pages/admin/CollegeAdminPages').then(m => ({ default: m.CollegeAdminEventsPage })));
-const CollegeAdminAnalyticsPage    = lazy(() => import('@/pages/admin/CollegeAdminPages').then(m => ({ default: m.CollegeAdminAnalyticsPage })));
-const SuperAdminDashboardPage      = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminDashboardPage })));
-const SuperAdminOrganizersPage     = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminOrganizersPage })));
-const SuperAdminSupportPage        = lazy(() => import('@/pages/admin/SuperAdminSupportPage'));
-const SuperAdminEventsPage         = lazy(() => import('@/pages/admin/SuperAdminEventsPage'));
-const SuperAdminConfigPage         = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminConfigPage })));
-const SuperAdminAuditLogPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminAuditLogPage })));
-const SuperAdminTrendingPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminTrendingPage })));
-const AdminManagementPage          = lazy(() => import('@/pages/admin/AdminManagementPage'));
-const SuperAdminGate               = lazy(() => import('@/pages/admin/SuperAdminGate'));
-const SuperLoginPage               = lazy(() => import('@/pages/admin/SuperLoginPage'));
-
+import {
+  CollegeAdminApplicationsPage,
+  CollegeAdminEventsPage, CollegeAdminAnalyticsPage,
+  SuperAdminDashboardPage, SuperAdminOrganizersPage,
+  SuperAdminSupportPage, SuperAdminConfigPage, SuperAdminAuditLogPage,
+  SuperAdminTrendingPage
+} from '@/pages/admin/AdminPages';
+import AdminManagementPage from '@/pages/admin/AdminManagementPage';
+import SuperAdminGate from '@/pages/admin/SuperAdminGate';
+import SuperLoginPage from '@/pages/admin/SuperLoginPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
-
-// Warms the detail-route chunk before it is needed. Exported so the
-// card can call it on hover; the module cache makes repeat calls free.
-export const prefetchEventDetail = () => import('@/pages/discovery/EventDetailPage');
 
 // ── Scroll to Top on Navigation ───────────────────────────────────
 function ScrollToTop() {
@@ -115,11 +85,6 @@ export default function App() {
     <>
       <ScrollToTop />
       <ErrorBoundary>
-      {/* Shared-element transitions between the grid and a detail page
-          need both elements under one LayoutGroup; they are in
-          different routes, so the group has to wrap the router. */}
-      <LayoutGroup>
-      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* ── Public ── */}
         <Route path="/"          element={<HomePage />} />
@@ -142,7 +107,6 @@ export default function App() {
         <Route path="/org/:orgId/events"                       element={<RequireAuth><OrgEventsPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/new"                   element={<RequireAuth><EventBuilderPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><GateScannerPage /></RequireAuth>} />
-        <Route path="/org/:orgId/events/:eventId/media"        element={<RequireAuth><EventMediaPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/bulk-requests" element={<RequireAuth><BulkRequestsPage /></RequireAuth>} />
         <Route path="/org/:orgId/members"                      element={<RequireAuth><OrgMembersPage /></RequireAuth>} />
         <Route path="/org/:orgId/chat"                         element={<RequireAuth><OrgChatPage /></RequireAuth>} />
@@ -166,7 +130,6 @@ export default function App() {
         <Route path="/super/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
         <Route path="/super/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
         <Route path="/super/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
-        <Route path="/super/events"             element={<SuperAdminGate><SuperAdminEventsPage /></SuperAdminGate>} />
         <Route path="/super/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
         <Route path="/super/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
         <Route path="/super/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />
@@ -174,8 +137,6 @@ export default function App() {
         {/* ── 404 ── */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      </Suspense>
-      </LayoutGroup>
       </ErrorBoundary>
 
       {/* Global toast container */}

@@ -20,18 +20,9 @@ import {
 import { format } from 'date-fns';
 import './domain.css';
 
-// How long the hype button waits before telling the server. Long enough
-// to swallow a burst of taps, short enough that a single tap still feels
-// immediate to anyone watching the network rather than the button.
-const HYPE_DEBOUNCE_MS = 400;
-
 // ── Helpers ──────────────────────────────────────────────────────
 function formatPrice(tiers) {
-  // Array.isArray, not a truthy length check. A string has a length too,
-  // so anything other than an array walked straight past the old guard
-  // and died on .map -- which took the whole page down with it, since a
-  // throw here happens during render.
-  if (!Array.isArray(tiers) || !tiers.length) return 'Free';
+  if (!tiers || !tiers.length) return 'Free';
   const prices = tiers.map(t => t.price).filter(p => p !== null);
   if (!prices.length) return 'Free';
   const min = Math.min(...prices);
@@ -56,19 +47,6 @@ function timeAgo(dt) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
-
-const CATEGORY_HUE = {
-  Hackathon: 'var(--hue-hackathon)',
-  Cultural:  'var(--hue-cultural)',
-  Music:     'var(--hue-music)',
-  Sports:    'var(--hue-sports)',
-  Talk:      'var(--hue-talk)',
-  Workshop:  'var(--hue-workshop)',
-  Party:     'var(--hue-party)',
-  Comedy:    'var(--hue-comedy)',
-  Theatre:   'var(--hue-theatre)',
-};
-export const hueFor = (category) => CATEGORY_HUE[category] || 'var(--hue-default)';
 
 export function CategoryIcon({ category, size = 16, className = '' }) {
   switch (category) {
@@ -97,29 +75,13 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   const [hypeCount, setHyped] = useState(event.hype_count);
   const [isWishlisted, setWishlisted] = useState(event.is_wishlisted);
   const [animating, setAnimating] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
 
   const cardVariant = variant === 'featured' ? 'teal' : 'default';
-  const cardClass = `event-card spotlight ${variant === 'list' ? 'event-card--list' : ''}`;
-
-  // Pointer position drives the spotlight border. Written as CSS custom
-  // properties rather than React state so moving the mouse never
-  // triggers a re-render.
-  // Warm the detail chunk on first hover. Without this the shared
-  // cover transition cannot run at all: the route is code-split, so
-  // clicking unmounts the card and shows a Suspense fallback while the
-  // destination downloads, and the two elements never coexist.
-  const warm = () => { import('@/pages/discovery/EventDetailPage'); };
-
-  const trackPointer = (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
-  };
+  const cardClass = `event-card ${variant === 'list' ? 'event-card--list' : ''}`;
 
   // The event prop is replaced whenever a list refetches, so local state
   // has to follow it -- otherwise a card keeps showing the optimistic
@@ -132,21 +94,7 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   // about it -- the wishlist page stayed empty and a refresh undid it.
   const hypeMutation = useMutation({
     mutationFn: () => eventsApi.toggleHype(event.id),
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ['events'] });
-      const prev = qc.getQueriesData({ queryKey: ['events'] });
-      qc.setQueriesData({ queryKey: ['events'] }, (old) => {
-        const rows = Array.isArray(old) ? old : old?.events;
-        if (!Array.isArray(rows)) return old;
-        const next = rows.map(e => e.id === event.id
-          ? { ...e, is_hyped: !e.is_hyped, hype_count: (e.hype_count ?? 0) + (e.is_hyped ? -1 : 1) }
-          : e);
-        return Array.isArray(old) ? next : { ...old, events: next };
-      });
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
+    onError: () => {
       setIsHyped(event.is_hyped);
       setHyped(event.hype_count);
       toast.error('Could not update hype. Try again.');
@@ -156,22 +104,7 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
 
   const wishlistMutation = useMutation({
     mutationFn: () => eventsApi.toggleWishlist(event.id),
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ['events'] });
-      const prev = qc.getQueriesData({ queryKey: ['events'] });
-      // Write through to every cached list holding this event, so the
-      // optimistic state survives navigating away and back rather than
-      // living only in this component.
-      qc.setQueriesData({ queryKey: ['events'] }, (old) => {
-        const rows = Array.isArray(old) ? old : old?.events;
-        if (!Array.isArray(rows)) return old;
-        const next = rows.map(e => e.id === event.id ? { ...e, is_wishlisted: !e.is_wishlisted } : e);
-        return Array.isArray(old) ? next : { ...old, events: next };
-      });
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
+    onError: () => {
       setWishlisted(event.is_wishlisted);
       toast.error('Could not update your wishlist. Try again.');
     },
@@ -184,35 +117,14 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
     },
   });
 
-  // Hype is a toggle on a button people tap repeatedly -- it is the one
-  // control on the card that invites drumming on it. Firing a request per
-  // tap sent a burst the server answered out of order, so the count
-  // settled on whichever reply happened to land last, and any failure in
-  // the burst produced one error toast per tap.
-  //
-  // The button still responds on every tap; only the request waits. Taps
-  // inside the window collapse into a single call, and if the taps cancel
-  // out -- an even number, ending where it started -- no request is sent
-  // at all, because there is nothing to tell the server.
-  const hypeTimer = useRef(null);
-  const serverHyped = useRef(event.is_hyped);
-  useEffect(() => { serverHyped.current = event.is_hyped; }, [event.is_hyped]);
-  useEffect(() => () => clearTimeout(hypeTimer.current), []);
-
   const handleHype = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) { navigate('/login'); return; }
-
-    const next = !isHyped;
     setAnimating(true);
-    setIsHyped(next);
+    setIsHyped(h => !h);
     setHyped(c => (isHyped ? c - 1 : c + 1));
     setTimeout(() => setAnimating(false), 300);
-
-    clearTimeout(hypeTimer.current);
-    hypeTimer.current = setTimeout(() => {
-      if (next !== serverHyped.current) hypeMutation.mutate();
-    }, HYPE_DEBOUNCE_MS);
+    hypeMutation.mutate();
   };
 
   const handleWishlist = (e) => {
@@ -225,43 +137,23 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   };
 
   return (
-    <Card
-      variant={cardVariant}
-      padding="sm"
-      onClick={() => navigate(buildRoute.eventDetail(event.id))}
-      ariaLabel={`View ${event.title}`}
-      className={cardClass}
-      style={{ '--cat': hueFor(event.category) }}
-      onPointerMove={trackPointer}
-      onPointerEnter={warm}
-      onFocus={warm}
-    >
+    <Card variant={cardVariant} padding="sm" onClick={() => navigate(buildRoute.eventDetail(event.id))} ariaLabel={`View ${event.title}`} className={cardClass}>
       {/* Image */}
-      <motion.div className="event-card__image-wrap" layoutId={`cover-${event.id}`}>
+      <div className="event-card__image-wrap">
         <img
-          src={event.cover_image || `https://picsum.photos/seed/${event.id}/800/600`}
+          src={event.cover_image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85'}
           alt={event.title}
-          className={`event-card__image ${imgLoaded ? 'is-loaded' : ''}`}
+          className="event-card__image"
           loading="lazy"
-          decoding="async"
-          // Explicit intrinsic size so the browser reserves the box
-          // before the bytes arrive; without it the card grows as each
-          // image lands and the grid reflows under the cursor.
-          width={800}
-          height={450}
-          onLoad={() => setImgLoaded(true)}
           onError={(e) => {
-            e.currentTarget.src = `https://picsum.photos/seed/${event.id}-alt/800/600`;
-            setImgLoaded(true);
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85';
           }}
         />
         <div className="event-card__chips">
           <EventStateChip state={event.state} />
-          <span className="event-card__cat">
-            <CategoryIcon category={event.category} size={12} /> {event.category}
-          </span>
+          <Badge variant="teal">{event.category}</Badge>
         </div>
-      </motion.div>
+      </div>
 
       {/* Body */}
       <div className="event-card__body">
@@ -592,7 +484,7 @@ export function OrganizerCard({ org, onFollow }) {
         <div className="org-card__info">
           <h3 className="org-card__name">{org.name}</h3>
           <p className="org-card__rank" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckIcon size={12} /> {TIER_LABELS[org.trust_tier] ?? 'New'} organizer
+            <CheckIcon size={14} /> #{org.score_rank} Organizer · {TIER_LABELS[org.trust_tier]}
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={handleFollow}>
@@ -627,7 +519,7 @@ export function EarlyAccessBanner({ event }) {
             <p className="early-access-banner__desc">
               {isPrimeWindow
                 ? 'Tickets available to Prime members first. General sale opens after Prime window.'
-                : 'Tickets are open to everyone.'}
+                : 'Tickets available to everyone. Grab yours now!'}
             </p>
           </div>
           <Badge variant="canvas">{event.state === 'early_access' ? 'Prime Window' : 'On Sale Now'}</Badge>
