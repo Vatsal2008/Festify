@@ -8,8 +8,16 @@ import ToastContainer from '@/components/primitives/ToastContainer';
 
 // ── Discovery ──────────────────────────────────────────────────────
 import HomePage        from '@/pages/discovery/HomePage';
-import EventDetailPage from '@/pages/discovery/EventDetailPage';
 import SearchPage      from '@/pages/discovery/SearchPage';
+
+// Lazy, like every other route. This was briefly a static import to
+// make the shared cover transition work -- the destination chunk has to
+// already be loaded for the two elements to coexist -- but that pulls
+// the whole detail page into the initial bundle and makes
+// prefetchEventDetail below a no-op, which is the opposite of the point.
+// The hover prefetch is what warms the chunk; a click without a prior
+// hover simply falls back to a normal Suspense load.
+const EventDetailPage = lazy(() => import('@/pages/discovery/EventDetailPage'));
 
 // ── Auth ───────────────────────────────────────────────────────────
 import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
@@ -41,11 +49,12 @@ const OrgAnalyticsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(
 
 // ── Admin ──────────────────────────────────────────────────────────
 const CollegeAdminApplicationsPage = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminApplicationsPage })));
-const CollegeAdminEventsPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminEventsPage })));
-const CollegeAdminAnalyticsPage    = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.CollegeAdminAnalyticsPage })));
+const CollegeAdminEventsPage       = lazy(() => import('@/pages/admin/CollegeAdminPages').then(m => ({ default: m.CollegeAdminEventsPage })));
+const CollegeAdminAnalyticsPage    = lazy(() => import('@/pages/admin/CollegeAdminPages').then(m => ({ default: m.CollegeAdminAnalyticsPage })));
 const SuperAdminDashboardPage      = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminDashboardPage })));
 const SuperAdminOrganizersPage     = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminOrganizersPage })));
 const SuperAdminSupportPage        = lazy(() => import('@/pages/admin/SuperAdminSupportPage'));
+const SuperAdminEventsPage         = lazy(() => import('@/pages/admin/SuperAdminEventsPage'));
 const SuperAdminConfigPage         = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminConfigPage })));
 const SuperAdminAuditLogPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminAuditLogPage })));
 const SuperAdminTrendingPage       = lazy(() => import('@/pages/admin/AdminPages').then(m => ({ default: m.SuperAdminTrendingPage })));
@@ -157,6 +166,7 @@ export default function App() {
         <Route path="/super/applications"       element={<SuperAdminGate><CollegeAdminApplicationsPage /></SuperAdminGate>} />
         <Route path="/super/organizers"         element={<SuperAdminGate><SuperAdminOrganizersPage /></SuperAdminGate>} />
         <Route path="/super/support-tickets"    element={<SuperAdminGate><SuperAdminSupportPage /></SuperAdminGate>} />
+        <Route path="/super/events"             element={<SuperAdminGate><SuperAdminEventsPage /></SuperAdminGate>} />
         <Route path="/super/config"             element={<SuperAdminGate><SuperAdminConfigPage /></SuperAdminGate>} />
         <Route path="/super/audit-log"          element={<SuperAdminGate><SuperAdminAuditLogPage /></SuperAdminGate>} />
         <Route path="/super/trending-curation"  element={<SuperAdminGate><SuperAdminTrendingPage /></SuperAdminGate>} />

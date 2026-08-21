@@ -5,8 +5,9 @@ one entity.
 """
 import logging
 import secrets
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from app.authz import is_super_admin, require_super_admin
 from app.core import redis_client
@@ -14,6 +15,7 @@ from app.core.config import settings
 from app.core.email_client import send_email
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
+from app.routers.events import _enrich_events
 from app.schemas import SuperAdminCreate, SuperAdminOtpVerify
 
 router = APIRouter(tags=["platform"])
@@ -178,21 +180,388 @@ def list_all_support_tickets(current_user: dict = Depends(get_current_user)):
     return items
 
 
+def _audit(supabase, actor_id: str, action_type: str, target_type: str,
+           target_id: str, metadata: dict | None = None) -> None:
+    """Record an administrative action.
+
+    Nothing in the codebase wrote to audit_log, so the audit page read an
+    always-empty table. Super admin edits are the clearest case for it:
+    they change another organiser's event, and without a record there is
+    nothing to say who did it or what it was before.
+
+    Never allowed to break the operation it is recording -- a failed log
+    write must not roll back a change that already happened.
+    """
+    try:
+        supabase.table("audit_log").insert({
+            "actor_id": actor_id,
+            "action_type": action_type,
+            "target_type": target_type,
+            "target_id": target_id,
+            "metadata": metadata or {},
+        }).execute()
+    except Exception:
+        logger.exception("audit write failed: %s on %s", action_type, target_id)
+
+
+# Statuses a super admin may set. Wider than the organiser's set, which
+# is limited to draft/live/early_access/on_sale, because cancelling or
+# postponing someone else's event is exactly the intervention this
+# surface exists for. sold_out is excluded deliberately: it is a
+# consequence of tickets running out, not a label to apply by hand.
+SUPER_EVENT_STATUSES = {
+    "draft", "live", "early_access", "on_sale",
+    "ongoing", "completed", "cancelled", "postponed",
+}
+SUPER_EVENT_VISIBILITY = {"public", "unlisted", "private"}
+
+
+@router.get("/super/events")
+def list_all_events(
+    q: str | None = None,
+    status: str | None = None,
+    limit: int = Query(100, le=300),
+    current_user: dict = Depends(get_current_user),
+):
+    """Every event on the platform, whatever its state.
+
+    Public discovery filters to published statuses and public
+    visibility, which is correct there and useless here -- the events a
+    super admin most needs to reach are precisely the drafts, the
+    private ones and the cancelled ones that discovery hides.
+    """
+    require_super_admin(current_user)
+    supabase = get_supabase()
+
+    query = supabase.table("events").select("*")
+    if status and status != "all":
+        query = query.eq("status", status)
+    if q:
+        query = query.or_(f"title.ilike.%{q}%,venue.ilike.%{q}%")
+
+    rows = query.order("starts_at", desc=True).limit(limit).execute().data or []
+    events = _enrich_events(supabase, rows, current_user)
+
+    # The admin table lists events belonging to other people, so it has
+    # to name the college as well as the organiser -- "who owns this"
+    # is the first question on this screen.
+    college_ids = list({e.get("college_id") for e in events if e.get("college_id")})
+    colleges = {}
+    if college_ids:
+        colleges = {
+            c["id"]: c["name"]
+            for c in supabase.table("colleges").select("id, name").in_("id", college_ids).execute().data or []
+        }
+
+    for e in events:
+        e["college_name"] = colleges.get(e.get("college_id"))
+    return events
+
+
+@router.patch("/super/events/{event_id}")
+def update_any_event(
+    event_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Edit any event's timing, status, visibility or headline details.
+
+    Only the listed fields are writable. Taking the request body as a
+    patch wholesale would let a caller set org_group_id or college_id
+    and move an event to a different owner, which is not what this
+    screen is for.
+    """
+    require_super_admin(current_user)
+    supabase = get_supabase()
+
+    existing = supabase.table("events").select("*").eq("id", event_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Event not found")
+    before = existing[0]
+
+    EDITABLE = {"title", "venue", "description", "starts_at", "ends_at",
+                "capacity", "status", "visibility"}
+    # The serializer renames three columns on the way out -- status is
+    # published as `state`, starts_at as `start_date`, ends_at as
+    # `end_date` -- so those are the names the entire client vocabulary
+    # uses. Accept them here rather than making one screen translate
+    # back into column names it never sees anywhere else. Sending a
+    # field under both names is a caller bug, so the column name wins
+    # and the alias is ignored rather than silently overriding it.
+    CLIENT_ALIASES = {"state": "status", "start_date": "starts_at", "end_date": "ends_at"}
+    body = dict(body or {})
+    for alias, column in CLIENT_ALIASES.items():
+        if alias in body and column not in body:
+            body[column] = body.pop(alias)
+    patch = {k: v for k, v in body.items() if k in EDITABLE}
+    if not patch:
+        raise HTTPException(status_code=422, detail="No editable fields supplied.")
+
+    if "status" in patch and patch["status"] not in SUPER_EVENT_STATUSES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"status must be one of: {', '.join(sorted(SUPER_EVENT_STATUSES))}",
+        )
+    if "visibility" in patch and patch["visibility"] not in SUPER_EVENT_VISIBILITY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"visibility must be one of: {', '.join(sorted(SUPER_EVENT_VISIBILITY))}",
+        )
+
+    if "title" in patch:
+        patch["title"] = (patch["title"] or "").strip()
+        if not patch["title"]:
+            raise HTTPException(status_code=422, detail="Title cannot be empty.")
+
+    if "capacity" in patch and patch["capacity"] is not None:
+        try:
+            patch["capacity"] = int(patch["capacity"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="Capacity must be a whole number.")
+        if patch["capacity"] < 0:
+            raise HTTPException(status_code=422, detail="Capacity cannot be negative.")
+
+    # An end before its start is the one combination that silently
+    # breaks every downstream duration calculation, so it is rejected
+    # against the merged record rather than only against what was sent.
+    starts = patch.get("starts_at", before.get("starts_at"))
+    ends = patch.get("ends_at", before.get("ends_at"))
+    if starts and ends:
+        try:
+            if datetime.fromisoformat(str(ends).replace("Z", "+00:00")) <= datetime.fromisoformat(
+                str(starts).replace("Z", "+00:00")
+            ):
+                raise HTTPException(status_code=422, detail="The event must end after it starts.")
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Dates must be valid timestamps.")
+
+    updated = supabase.table("events").update(patch).eq("id", event_id).execute().data
+    if not updated:
+        raise HTTPException(status_code=500, detail="The update did not apply.")
+
+    # Record only what actually changed, with both sides of each change,
+    # so the log can answer "what was this before" without a snapshot.
+    changed = {
+        key: {"from": before.get(key), "to": value}
+        for key, value in patch.items()
+        if before.get(key) != value
+    }
+    if changed:
+        _audit(
+            supabase, current_user["id"], "super_admin.event_updated", "event", event_id,
+            {"title": before.get("title"), "changes": changed},
+        )
+
+    return _enrich_events(supabase, updated, current_user)[0]
+
+
+@router.get("/platform-stats")
+def platform_stats(
+    days: int = Query(14, ge=7, le=60),
+    current_user: dict = Depends(get_current_user),
+):
+    """Headline counts for the super admin dashboard, each with a daily
+    series behind it.
+
+    The dashboard displayed four hard-coded numbers -- 23 organisers, a
+    revenue figure of Rs 2.4 crore -- that were never read from anything.
+    A fabricated metric is worse than an absent one: it looks like a
+    measurement, so it gets believed and acted on. Every number here is
+    counted from a table, and where a trend cannot be derived the series
+    comes back empty and the client draws no sparkline rather than
+    inventing a shape.
+
+    Rows are fetched by created_at once and bucketed in Python. Asking
+    the database for one count per day would be `days` round trips per
+    metric for data that is a few hundred rows wide.
+    """
+    require_super_admin(current_user)
+    supabase = get_supabase()
+
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+    def series(table: str, column: str = "created_at", **filters) -> list[int]:
+        """Count rows per day over the window, oldest bucket first."""
+        try:
+            q = supabase.table(table).select(column).gte(column, since)
+            for key, value in filters.items():
+                q = q.eq(key, value)
+            rows = q.execute().data or []
+        except Exception:
+            # A metric that cannot be read must not take the whole
+            # dashboard down with it; the card renders without a trend.
+            logger.exception("platform stats: series failed for %s", table)
+            return []
+
+        buckets: dict[str, int] = {}
+        for row in rows:
+            raw = row.get(column)
+            if not raw:
+                continue
+            buckets[str(raw)[:10]] = buckets.get(str(raw)[:10], 0) + 1
+
+        today = datetime.now(timezone.utc).date()
+        return [
+            buckets.get((today - timedelta(days=offset)).isoformat(), 0)
+            for offset in range(days - 1, -1, -1)
+        ]
+
+    def total(table: str, **filters) -> int:
+        try:
+            q = supabase.table(table).select("id", count="exact")
+            for key, value in filters.items():
+                q = q.eq(key, value)
+            return q.execute().count or 0
+        except Exception:
+            logger.exception("platform stats: count failed for %s", table)
+            return 0
+
+    # Revenue is summed from captured orders only. Pending and failed
+    # orders are money that does not exist yet.
+    revenue = 0
+    try:
+        paid = (
+            supabase.table("orders")
+            .select("total_amount, created_at")
+            .eq("status", "paid")
+            .gte("created_at", since)
+            .execute()
+            .data
+            or []
+        )
+        revenue = sum(int(o.get("total_amount") or 0) for o in paid)
+    except Exception:
+        logger.exception("platform stats: revenue failed")
+        paid = []
+
+    revenue_buckets: dict[str, int] = {}
+    for order in paid:
+        day = str(order.get("created_at") or "")[:10]
+        if day:
+            revenue_buckets[day] = revenue_buckets.get(day, 0) + int(
+                order.get("total_amount") or 0
+            )
+    today = datetime.now(timezone.utc).date()
+    revenue_series = [
+        revenue_buckets.get((today - timedelta(days=offset)).isoformat(), 0)
+        for offset in range(days - 1, -1, -1)
+    ]
+
+    open_support = 0
+    try:
+        open_support = (
+            supabase.table("support_tickets")
+            .select("id", count="exact")
+            .in_("status", ["open", "pending"])
+            .execute()
+            .count
+            or 0
+        )
+        open_support += (
+            supabase.table("ticket_theft_reports")
+            .select("id", count="exact")
+            .eq("status", "pending")
+            .execute()
+            .count
+            or 0
+        )
+    except Exception:
+        logger.exception("platform stats: support count failed")
+
+    return {
+        "window_days": days,
+        "metrics": [
+            {
+                "key": "organisers",
+                "label": "Active organisers",
+                "value": total("org_groups"),
+                "series": series("org_groups"),
+                "format": "count",
+            },
+            {
+                "key": "events",
+                "label": "Events created",
+                "value": total("events"),
+                "series": series("events"),
+                "format": "count",
+            },
+            {
+                "key": "support",
+                "label": "Awaiting support",
+                "value": open_support,
+                # A backlog is a level, not a rate -- a daily count of
+                # arrivals would say nothing about how many are waiting.
+                "series": [],
+                "format": "count",
+            },
+            {
+                "key": "revenue",
+                "label": f"Revenue, last {days} days",
+                "value": revenue,
+                "series": revenue_series,
+                # orders.total_amount is stored in rupees; only the
+                # Razorpay handoff converts to paise.
+                "format": "currency",
+            },
+        ],
+    }
+
+
 @router.get("/audit-log")
 def list_audit_log(
     limit: int = Query(100, le=500),
     current_user: dict = Depends(get_current_user),
 ):
+    """Recent administrative actions, with the actor and target named.
+
+    The raw rows carry actor_id and target_id as bare UUIDs, which is
+    not something anyone can read off a screen. The client was also
+    reading `actor`, `target` and `timestamp`, none of which are columns
+    on this table -- so even once the log had rows, every cell would
+    have rendered blank. Both names are supplied: the real column and
+    the one the client already asks for.
+    """
     require_super_admin(current_user)
     supabase = get_supabase()
-    return (
+    rows = (
         supabase.table("audit_log")
         .select("*")
         .order("created_at", desc=True)
         .limit(limit)
         .execute()
         .data
-    )
+    ) or []
+
+    actor_ids = list({r["actor_id"] for r in rows if r.get("actor_id")})
+    actors = {}
+    if actor_ids:
+        actors = {
+            u["id"]: (u.get("full_name") or u.get("email") or "Unknown")
+            for u in supabase.table("users").select("id, full_name, email").in_("id", actor_ids).execute().data or []
+        }
+
+    event_ids = list({r["target_id"] for r in rows if r.get("target_type") == "event" and r.get("target_id")})
+    event_titles = {}
+    if event_ids:
+        event_titles = {
+            e["id"]: e["title"]
+            for e in supabase.table("events").select("id, title").in_("id", event_ids).execute().data or []
+        }
+
+    out = []
+    for r in rows:
+        meta = r.get("metadata") or {}
+        target_label = event_titles.get(r.get("target_id")) or meta.get("title")
+        out.append({
+            **r,
+            "actor": actors.get(r.get("actor_id"), "System"),
+            "target": target_label or f"{r.get('target_type') or 'record'} {str(r.get('target_id') or '')[:8]}",
+            "timestamp": r.get("created_at"),
+            # A flat summary of what moved, so the table can show the
+            # substance of a change without unpacking the diff itself.
+            "summary": ", ".join(sorted((meta.get("changes") or {}).keys())) or None,
+        })
+    return out
 
 
 @router.get("/scoring-config")

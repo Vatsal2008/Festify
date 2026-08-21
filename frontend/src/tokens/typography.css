@@ -16,12 +16,49 @@
    fetched and parsed, which serialised it behind the CSS and
    pushed back first paint. */
 
+/* ── Metric-matched fallbacks ──────────────────────────────
+   The display and body faces are both narrower than the system
+   fallback, so while the webfonts were downloading the text ran
+   wider, wrapped to an extra line, and every section below it moved
+   when the real face arrived. On the home page that was one 0.355
+   layout shift -- worse than everything else on the site combined.
+
+   These faces are the same local fonts scaled so a line of text
+   occupies the same width either way. Every number below was read off
+   a canvas, not estimated: the hero headline set 1072.5px in
+   Bricolage against 1323.1px in Arial at 800/92px, hence 81.06%.
+   Instrument Sans runs slightly *wider* than Arial, 102.17%, which is
+   why guessing here is dangerous -- an assumed value in the wrong
+   direction moves text further than leaving it alone would. The
+   ascent and descent overrides are each webfont's own metrics divided
+   by its factor, so the scaling does not drag the baseline with it.
+
+   Retune these if either display or body face is ever replaced --
+   a stale size-adjust is worse than none, because it shifts text in
+   the opposite direction. */
+@font-face {
+  font-family: 'Bricolage Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 81.06%;
+  ascent-override: 115.3%;
+  descent-override: 33.6%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Instrument Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 102.17%;
+  ascent-override: 94.9%;
+  descent-override: 24.5%;
+  line-gap-override: 0%;
+}
+
 :root {
   /* ── Font Families ── */
-  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-  --font-body:    'Instrument Sans', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Bricolage Fallback', system-ui, sans-serif;
+  --font-body:    'Instrument Sans', 'Instrument Fallback', system-ui, sans-serif;
   --font-mono:    'Space Mono', 'Courier New', monospace;
-  --font-ui:      'Instrument Sans', system-ui, sans-serif;
+  --font-ui:      'Instrument Sans', 'Instrument Fallback', system-ui, sans-serif;
 
   /* ── Type scale — fluid ────────────────────────────────
      Each step interpolates between a 380px floor and a

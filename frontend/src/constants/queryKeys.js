@@ -50,11 +50,18 @@ export const queryKeys = {
     events:       (collegeId) => ['college-admin', collegeId, 'events'],
     analytics:    (collegeId) => ['college-admin', collegeId, 'analytics'],
   },
+  collegeAdmin: {
+    scope:     () => ['college-admin', 'scope'],
+    events:    (collegeId) => ['college-admin', 'events', collegeId],
+    analytics: (collegeId, months) => ['college-admin', 'analytics', collegeId, months],
+  },
   superAdmin: {
     dashboard:   () => ['super-admin', 'dashboard'],
     organizers:  (filters) => ['super-admin', 'organizers', filters],
     support:     (filters) => ['super-admin', 'support-tickets', filters],
     auditLog:    (filters) => ['super-admin', 'audit-log', filters],
     config:      () => ['super-admin', 'config'],
+    stats:       (days = 14) => ['super-admin', 'platform-stats', days],
+    events:      (filters) => ['super-admin', 'all-events', filters],
   },
 };

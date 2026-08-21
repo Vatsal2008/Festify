@@ -1,0 +1,35 @@
+/* components/primitives/sparkline.css */
+
+.spark {
+  display: block;
+  overflow: visible;
+}
+
+/* The line draws itself once on mount. It is a short, one-off gesture
+   that reads as the data arriving rather than as decoration, so it is
+   not repeated and never loops. */
+.spark__line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: spark-draw var(--dur-slow, 620ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+@keyframes spark-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@supports (stroke-dasharray: 1px) {
+  .spark__line {
+    stroke-dasharray: 400;
+    animation-name: spark-draw-px;
+  }
+  @keyframes spark-draw-px {
+    from { stroke-dashoffset: 400; }
+    to   { stroke-dashoffset: 0; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spark__line { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+}

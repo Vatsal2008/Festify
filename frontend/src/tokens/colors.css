@@ -59,6 +59,16 @@
   --state-postponed:      #FF7A29;
   --state-cancelled:      #E23D52;
 
+  --state-draft-text:        #5B5470;
+  --state-pending-text:      #B45309;
+  --state-on-sale-text:      #4338CA;
+  --state-sold-out-text:     #B91C1C;
+  --state-ongoing-text:      #A81B4A;
+  --state-early-access-text: #A81B4A;
+  --state-completed-text:    #5B5470;
+  --state-postponed-text:    #B45309;
+  --state-cancelled-text:    #B91C1C;
+
   --level-bronze:         #CD7F32;
   --level-silver:         #A8A9AD;
   --level-gold:           #FFD700;
@@ -164,6 +174,21 @@
     --state-completed:      oklch(0.62 0.03 var(--hue-base));
     --state-postponed:      oklch(0.72 0.17 48);
     --state-cancelled:      oklch(0.55 0.21 15);
+
+    /* The dark rung for every state, for text sitting on that state's
+       own pale tint. The bright rungs above are fills; used as text on
+       a light chip they measured as low as 3.6:1, under the 4.5:1 that
+       chip-sized text needs. Same hue and chroma family, dropped to the
+       lightness that carries on a near-white ground. */
+    --state-draft-text:        oklch(0.42 0.03 var(--hue-base));
+    --state-pending-text:      oklch(0.42 0.13 48);
+    --state-on-sale-text:      oklch(0.42 0.21 285);
+    --state-sold-out-text:     oklch(0.42 0.19 15);
+    --state-ongoing-text:      oklch(0.42 0.20 000);
+    --state-early-access-text: oklch(0.42 0.20 000);
+    --state-completed-text:    oklch(0.42 0.03 var(--hue-base));
+    --state-postponed-text:    oklch(0.42 0.13 48);
+    --state-cancelled-text:    oklch(0.42 0.19 15);
 
     /* Chips sitting on a near-ink plate over photography.
        The deep accents are tuned for canvas text and land

@@ -1,0 +1,111 @@
+/* components/errorBoundary.css
+   ------------------------------------------------------------------
+   The fallback paints its own ground. It replaces a subtree that may
+   have been sitting on any surface in the app, and it cannot know
+   which -- the previous version inherited whatever was behind it and
+   set ink-coloured text with no background at all, so on the dark
+   surfaces it rendered near-black on near-black and the failure it was
+   meant to explain became invisible.
+
+   It is also the one screen guaranteed to appear at a bad moment, so
+   it stays quiet: no animation, no colour beyond the single accent on
+   the icon, and the error text set in the mono face because it is a
+   machine string being quoted, not prose. */
+
+/* This boundary wraps the router, so when it catches it replaces the
+   whole page, navigation included. At 60vh it painted a dark block
+   with the light page ground showing beneath it, which read as a
+   second failure rather than one handled one. dvh rather than vh so
+   mobile browsers do not leave a gap as their toolbars collapse. */
+.errb {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3xl) var(--space-xl);
+  background: var(--surface-0, #0C0A12);
+  color: var(--light-0, #F7F6FA);
+}
+
+.errb__inner {
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  text-align: center;
+}
+
+.errb__mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full, 999px);
+  color: var(--color-error, #E23D52);
+  background: color-mix(in oklab, var(--color-error, #E23D52) 16%, transparent);
+}
+
+.errb__title {
+  color: var(--light-0, #F7F6FA);
+  margin: 0;
+}
+
+.errb__body {
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 72%, transparent);
+  margin: 0;
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+/* Raised off the ground rather than outlined, so it reads as a quoted
+   fragment instead of another panel competing with the message. */
+.errb__detail {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: var(--space-lg);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-2, #201A2E);
+  border: 1px solid var(--color-hairline-light, #2A2438);
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 88%, transparent);
+  text-align: left;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.errb__actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* The primary button's label contrast is fixed in Button.css, for every
+   surface at once. Only its border needs adjusting here: it is a 2px
+   ink outline, which disappears against the void tier and leaves the
+   button looking unfinished rather than deliberately outlined. */
+.errb__actions .btn--primary {
+  border-color: transparent;
+}
+
+/* The ghost variant is drawn for light surfaces; on this ground its ink
+   label measured 1.05:1, the same colour as what sits behind it.
+   Corrected here rather than in the button component, because where it
+   normally lives it is already correct -- the fault is the ground. */
+.errb__actions .btn--ghost {
+  background: transparent;
+  color: var(--light-0, #F7F6FA);
+  border: 1px solid color-mix(in oklab, var(--light-0, #F7F6FA) 28%, transparent);
+}
+.errb__actions .btn--ghost:hover {
+  background: color-mix(in oklab, var(--light-0, #F7F6FA) 10%, transparent);
+  color: var(--light-0, #F7F6FA);
+}
+
+@media (max-width: 560px) {
+  .errb { padding: var(--space-2xl) var(--space-lg); }
+  .errb__actions { width: 100%; }
+  .errb__actions .btn { flex: 1; }
+}

@@ -153,3 +153,16 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
   color: var(--color-ink);
   box-shadow: 0 4px 14px color-mix(in srgb, var(--cat) 40%, transparent);
 }
+
+/* The active chip's fill is a single travelling element shared across
+   chips via layoutId, so the chip itself no longer paints a background
+   when active -- two fills would fight and the travel would be hidden
+   behind a static one. */
+.cat-chip { position: relative; isolation: isolate; overflow: hidden; }
+.cat-chip__label { position: relative; z-index: 1; }
+.cat-chip__fill {
+  position: absolute; inset: 0; z-index: 0;
+  border-radius: inherit;
+  background: var(--cat);
+}
+.cat-chip.tag--active { background: transparent; }

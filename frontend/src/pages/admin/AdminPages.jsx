@@ -6,9 +6,10 @@ import { EventStateChip } from '@/components/domain';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { Avatar } from '@/components/primitives/Primitives';
+import Sparkline from '@/components/primitives/Sparkline';
 import { useToast } from '@/store/uiStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { platformApi, adminApi, supportApi, eventsApi } from '@/lib/api/endpoints';
+import { platformApi, adminApi, supportApi, eventsApi, mediaMaintenanceApi } from '@/lib/api/endpoints';
 import { apiError } from '@/lib/api/client';
 import { queryKeys } from '@/constants/queryKeys';
 import { ZapIcon, PlusIcon, BarChartIcon } from '@/components/icons/Icons';
@@ -189,187 +190,75 @@ export function CollegeAdminApplicationsPage() {
   );
 }
 
-export function CollegeAdminEventsPage() {
-  const toast = useToast();
-  const navigate = useNavigate();
-  const eventsQuery = useQuery({ queryKey: queryKeys.events.list({ admin: true }), queryFn: () => eventsApi.list({}) });
-  const events = eventsQuery.data ?? [];
+// The College Admin events and analytics screens moved to
+// CollegeAdminPages.jsx when they were rebuilt against the API. They
+// were the last two surfaces still rendering invented figures.
 
-  const approve = (id) => {
-    toast.info('Publishing from the admin panel is not wired to the API yet.');
-    toast.success('Event approved — now live!');
-  };
-  const reject = (id) => {
-    toast.info('Unpublishing from the admin panel is not wired to the API yet.');
-    toast.warning('Event rejected — returned to organizer');
-  };
+// ── Super Admin: KPI strip ─────────────────────────────────────────
+// These four numbers were hard-coded -- "23" organisers, "₹2.4Cr"
+// revenue -- and had never been connected to anything. The live values
+// are 5 and ₹16,189. A fabricated metric is worse than a missing one,
+// because it looks like a measurement and gets acted on.
+//
+// Each card carries the trend behind its number. The support backlog
+// deliberately has none: it is a level rather than a rate, and a daily
+// count of arrivals would say nothing about how many are still waiting.
+const KPI_ACCENTS = {
+  organisers: 'var(--hue-hackathon)',
+  events:     'var(--hue-talk)',
+  support:    'var(--color-warning)',
+  revenue:    'var(--hue-sports)',
+};
 
-  return (
-    <DashboardShell orgId={null} sidebarType="college-admin">
-      <div style={{ padding: 'var(--space-2xl)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)' }}>
-          <h1 className="type-display-md">College Events</h1>
-          <Button variant="primary" onClick={() => navigate('/admin/create-event')}><PlusIcon size={16} /> Create Event</Button>
-        </div>
-        <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          <table className="admin-table">
-            <thead><tr><th>Event</th><th>Organizer</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {events.slice(0, 5).map(e => (
-                <tr key={e.id}>
-                  <td><strong>{e.title}</strong><br/><span style={{ color: 'rgba(22, 16, 31,0.55)', fontSize: 12 }}>{e.venue}</span></td>
-                  <td>{e.organizer?.name ?? '—'}</td>
-                  <td>{(e.capacity ?? 0).toLocaleString()}</td>
-                  <td><EventStateChip state={e.state} /></td>
-                  <td>
-                    {e.state === 'pending' ? (
-                      <div className="admin-actions">
-                        <Button variant="primary" size="sm" onClick={() => approve(e.id)}>Approve</Button>
-                        <Button variant="danger"  size="sm" onClick={() => reject(e.id)}>Reject</Button>
-                      </div>
-                    ) : (
-                      <Button variant="secondary" size="sm" onClick={() => navigate(`/events/${e.id}`)}>View</Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </DashboardShell>
-  );
+function formatMetric(m) {
+  if (m.format === 'currency') {
+    return `₹${Number(m.value || 0).toLocaleString('en-IN')}`;
+  }
+  return Number(m.value || 0).toLocaleString('en-IN');
 }
 
-// ── College Admin: Interactive Analytics ──────────────────────────
-export function CollegeAdminAnalyticsPage() {
-  const toast = useToast();
-  const [timeRange, setTimeRange] = useState('YTD');
+function KpiStrip() {
+  const statsQuery = useQuery({
+    queryKey: queryKeys.superAdmin.stats(14),
+    queryFn: () => platformApi.stats(14),
+    staleTime: 60_000,
+  });
 
-  const monthlyCollegeData = [
-    { month: 'Jan', revenue: 320, tickets: 980 },
-    { month: 'Feb', revenue: 450, tickets: 1420 },
-    { month: 'Mar', revenue: 390, tickets: 1100 },
-    { month: 'Apr', revenue: 620, tickets: 1890 },
-    { month: 'May', revenue: 840, tickets: 2540 },
-    { month: 'Jun', revenue: 510, tickets: 1600 },
-    { month: 'Jul', revenue: 780, tickets: 2310 },
-    { month: 'Aug', revenue: 910, tickets: 2840 },
-  ];
+  if (statsQuery.isError) {
+    return (
+      <div className="kpi-strip kpi-strip--failed" role="status">
+        <p className="type-body-sm">
+          Platform figures are unavailable right now. {apiError(statsQuery.error)}
+        </p>
+      </div>
+    );
+  }
 
-  const maxRev = Math.max(...monthlyCollegeData.map(m => m.revenue));
-
-  const handleExportCSV = () => {
-    toast.success('Campus Analytics report downloaded successfully!');
-  };
+  const metrics = statsQuery.data?.metrics ?? [];
 
   return (
-    <DashboardShell orgId={null} sidebarType="college-admin">
-      <div style={{ padding: 'var(--space-2xl)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)', flexWrap: 'wrap', gap: 'var(--space-lg)' }}>
-          <div>
-            <h1 className="type-display-md">College Analytics &amp; Reports</h1>
-            <p className="type-body-sm" style={{ color: 'rgba(22, 16, 31,0.65)', marginTop: 4 }}>
-              BITS Pilani — Campus revenue, registration metrics, and club performance
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
-            <div style={{ display: 'flex', border: 'var(--border-hairline)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              {['7d', '30d', 'YTD', 'All'].map(range => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  style={{
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: timeRange === range ? 'var(--color-ink)' : 'transparent',
-                    color: timeRange === range ? 'var(--color-canvas)' : 'var(--color-ink)',
-                  }}
-                >
-                  {range.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <Button variant="primary" size="sm" onClick={handleExportCSV}>
-              Export CSV
-            </Button>
-          </div>
-        </div>
-
-        {/* Metrics Overview */}
-        <div style={{ background: 'var(--color-ink)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
-          <div className="dash-metrics">
-            {[
-              { value: '12', label: 'Active Clubs / Orgs' },
-              { value: '28', label: 'Events Hosted' },
-              { value: '18,400', label: 'Tickets Sold' },
-              { value: '₹48.2L', label: 'Gross Revenue' },
-            ].map(m => (
-              <div key={m.label} className="dash-metric">
-                <p className="dash-metric__value">{m.value}</p>
-                <p className="dash-metric__label">{m.label}</p>
+    <div className="kpi-strip">
+      {(statsQuery.isLoading ? [1, 2, 3, 4] : metrics).map((m, i) => (
+        <div className="kpi" key={statsQuery.isLoading ? i : m.key}>
+          {statsQuery.isLoading ? (
+            <>
+              <span className="kpi__ghost kpi__ghost--value" />
+              <span className="kpi__ghost kpi__ghost--label" />
+            </>
+          ) : (
+            <>
+              <div className="kpi__top">
+                <p className="kpi__value">{formatMetric(m)}</p>
+                <span className="kpi__spark" style={{ color: KPI_ACCENTS[m.key] || 'var(--color-accent)' }}>
+                  <Sparkline data={m.series} label={m.label} />
+                </span>
               </div>
-            ))}
-          </div>
+              <p className="kpi__label">{m.label}</p>
+            </>
+          )}
         </div>
-
-        {/* Chart + Distribution Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-2xl)', alignItems: 'start' }}>
-          {/* Revenue Chart */}
-          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-canvas)' }}>
-            <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-2xl)' }}>Campus Event Revenue (₹ in Thousands)</h2>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-lg)', height: 220, paddingTop: 'var(--space-xl)', borderBottom: '2px solid var(--color-hairline)' }}>
-              {monthlyCollegeData.map(item => {
-                const heightPct = (item.revenue / maxRev) * 100;
-                return (
-                  <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.7)' }}>₹{item.revenue}k</span>
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: 36,
-                        height: `${heightPct}%`,
-                        background: 'linear-gradient(180deg, var(--color-accent) 0%, var(--color-ink) 100%)',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 0.4s ease',
-                      }}
-                    />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: 'var(--color-ink)', marginTop: 4 }}>{item.month}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Department / Category Breakdown */}
-          <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', background: 'var(--color-surface-sage)' }}>
-            <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Club Distribution</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-              {[
-                { name: 'Cultural Societies', pct: 40, color: '#6C4DFF' },
-                { name: 'Tech & Hackathons', pct: 35, color: '#FF7A29' },
-                { name: 'Sports Council', pct: 15, color: '#16101F' },
-                { name: 'Music & Arts', pct: 10, color: '#FF3D8A' },
-              ].map(cat => (
-                <div key={cat.name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span className="type-body-sm" style={{ fontWeight: 600 }}>{cat.name}</span>
-                    <span className="type-label-mono">{cat.pct}%</span>
-                  </div>
-                  <div style={{ width: '100%', height: 8, background: 'rgba(22, 16, 31,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: `${cat.pct}%`, height: '100%', background: cat.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </DashboardShell>
+      ))}
+    </div>
   );
 }
 
@@ -382,13 +271,7 @@ export function SuperAdminDashboardPage() {
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <ZapIcon size={28} filled /> Super Admin Dashboard
         </h1>
-        <div style={{ background: 'var(--color-ink)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
-          <div className="sa-metrics">
-            {[{ value: '23', label: 'Active Orgs' }, { value: '4', label: 'College Admins' }, { value: '3', label: 'Pending Support' }, { value: '₹2.4Cr', label: 'Platform Revenue' }].map(m => (
-              <div key={m.label} className="dash-metric"><p className="dash-metric__value">{m.value}</p><p className="dash-metric__label">{m.label}</p></div>
-            ))}
-          </div>
-        </div>
+        <KpiStrip />
         <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Recent Audit Events</h2>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
@@ -589,9 +472,99 @@ export function SuperAdminConfigPage() {
               Prime Pass pricing, level thresholds and ban durations are still marked open in the system design, so they are not editable here yet.
             </p>
           </div>
+
+          <StorageSweepPanel />
         </div>
       </div>
     </DashboardShell>
+  );
+}
+
+// ── Storage sweep ─────────────────────────────────────────────────
+// Deleting media marks the row and leaves the file, so a mistake stays
+// recoverable. Nothing reclaimed those files afterwards, which made
+// every deletion a permanent storage charge for something no longer
+// reachable. This reclaims them, on demand and deliberately.
+//
+// Preview and sweep are separate calls. Anything that deletes files
+// should say what it will delete before it does, and the retention
+// window is the safety rail -- the default keeps a month of undo.
+function StorageSweepPanel() {
+  const toast = useToast();
+  const [days, setDays] = useState(30);
+  const [result, setResult] = useState(null);
+
+  const previewQuery = useQuery({
+    queryKey: ['media', 'sweep-preview', days],
+    queryFn: () => mediaMaintenanceApi.preview(days),
+  });
+
+  const sweep = useMutation({
+    mutationFn: () => mediaMaintenanceApi.sweep(days),
+    onSuccess: (data) => {
+      setResult(data);
+      previewQuery.refetch();
+      toast.success(
+        data.swept === 0
+          ? 'Nothing needed reclaiming.'
+          : `Reclaimed ${data.swept} file${data.swept === 1 ? '' : 's'}.`
+      );
+      // A partial result is not a success worth burying in a toast that
+      // disappears: the panel keeps it on screen.
+      if (data.failed) toast.warning(`${data.failed} could not be deleted and will be retried.`);
+    },
+    onError: (e) => toast.error(apiError(e)),
+  });
+
+  const count = previewQuery.data?.count ?? 0;
+  const kb = previewQuery.data?.bytes_kb ?? 0;
+
+  return (
+    <section className="sweep" aria-label="Storage maintenance">
+      <h2 className="type-label-mono sweep__title">Storage maintenance</h2>
+      <p className="sweep__body">
+        Removed photos keep their file so a mistake can be undone. Once the undo window has
+        passed the file is only costing storage, and this deletes it for good.
+      </p>
+
+      <div className="sweep__row">
+        <label className="sweep__field">
+          <span>Keep removed files for</span>
+          <select
+            className="input-field"
+            value={days}
+            onChange={(e) => { setDays(Number(e.target.value)); setResult(null); }}
+          >
+            {[7, 30, 90, 365].map((d) => <option key={d} value={d}>{d} days</option>)}
+          </select>
+        </label>
+
+        <p className="sweep__count" role="status">
+          {previewQuery.isLoading
+            ? 'Checking…'
+            : count === 0
+              ? 'Nothing to reclaim.'
+              : `${count} file${count === 1 ? '' : 's'} older than ${days} days${kb ? `, about ${Math.round(kb / 1024)}MB` : ''}.`}
+        </p>
+
+        <Button
+          variant="danger"
+          isDisabled={count === 0 || previewQuery.isLoading}
+          isLoading={sweep.isPending}
+          onClick={() => sweep.mutate()}
+        >
+          Delete permanently
+        </Button>
+      </div>
+
+      {result && (
+        <p className="sweep__result">
+          Reclaimed {result.swept}. {result.failed > 0
+            ? `${result.failed} could not be deleted; their records were kept so the next run tries again.`
+            : 'Nothing was left behind.'}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -604,14 +577,18 @@ export function SuperAdminAuditLogPage() {
         <h1 className="type-display-md" style={{ marginBottom: 'var(--space-2xl)' }}>Audit Log</h1>
         <div style={{ border: 'var(--border-hairline)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table className="admin-table">
-            <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Metadata</th><th>Timestamp</th></tr></thead>
+            <thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Changed</th><th>Timestamp</th></tr></thead>
             <tbody>
               {(auditQuery.data ?? []).map(log => (
                 <tr key={log.id}>
                   <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.action_type}</code></td>
                   <td>{log.actor}</td>
                   <td style={{ color: 'rgba(22, 16, 31,0.65)' }}>{log.target}</td>
-                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.65)' }}>{JSON.stringify(log.metadata)}</code></td>
+                  {/* The names of the fields that moved, not the raw
+                      metadata blob. A stringified object spilled across
+                      the column and was unreadable at a glance, which is
+                      the only way anyone scans an audit table. */}
+                  <td><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(22, 16, 31,0.65)' }}>{log.summary || '—'}</code></td>
                   <td style={{ color: 'rgba(22, 16, 31,0.65)', fontSize: 12 }}>{new Date(log.timestamp).toLocaleString()}</td>
                 </tr>
               ))}

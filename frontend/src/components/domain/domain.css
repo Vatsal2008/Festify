@@ -497,11 +497,21 @@
 .mm__q--failed { background: var(--color-error-bg); }
 .mm__q-err { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-error-text); }
 
+/* A single scrolling row, not a wrapping grid. Reordering runs on one
+   axis, and in a grid that wraps, tiles on different rows occupy the
+   same horizontal range -- so a drag never registered as crossing
+   anything and the gesture silently did nothing. One row makes the
+   axis mean what the drag is doing, and it matches the strip visitors
+   see on the event page. */
 .mm__grid {
-  display: grid; gap: var(--space-lg); margin-top: var(--space-xl);
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex; gap: var(--space-lg); margin-top: var(--space-xl);
+  overflow-x: auto; overflow-y: hidden;
+  padding-bottom: var(--space-sm);
+  scroll-snap-type: x proximity;
+  list-style: none;
 }
 .mm__tile {
+  flex: 0 0 190px; scroll-snap-align: start;
   position: relative; margin: 0;
   border-radius: var(--radius-md); overflow: hidden;
   aspect-ratio: 4 / 3; background: var(--color-surface-sage);
@@ -566,3 +576,109 @@
   inset: auto;
 }
 .gal__frame { position: relative; aspect-ratio: 16 / 9; width: min(1000px, 90vw); height: auto; }
+
+/* ── Card image ───────────────────────────────────────────────────
+   A fixed 16:9 box holds the space before the bytes arrive, and the
+   shimmer sits inside it. Without the reserved box the card grew as
+   each image landed and the whole grid reflowed under the cursor. */
+.event-card__image-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cat) 10%, var(--color-surface-sage));
+}
+.event-card__image-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--cat) 22%, transparent) 45%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: card-shimmer 1.5s ease-in-out infinite;
+}
+/* The sweep is tinted with the category hue, so even the loading state
+   tells you what kind of event this is. */
+@keyframes card-shimmer {
+  from { background-position: 140% 0; }
+  to   { background-position: -40% 0; }
+}
+.event-card__image {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-out-soft),
+              transform var(--dur-slow) var(--ease-out-expo);
+}
+.event-card__image.is-loaded { opacity: 1; }
+/* Once loaded the shimmer is dead weight behind an opaque image. */
+.event-card__image.is-loaded ~ * { }
+.event-card:hover .event-card__image { transform: scale(1.04); }
+
+@media (prefers-reduced-motion: reduce) {
+  .event-card__image-wrap::before { animation: none; }
+  .event-card:hover .event-card__image { transform: none; }
+}
+
+/* ── Media reordering ─────────────────────────────────────────────
+   Gallery order is the order visitors see it in, so it has to be
+   settable. Dragging starts from a handle rather than the tile itself:
+   a drag surface covering the whole card swallows every click on the
+   placement select and the remove button underneath it. */
+.mm__reorder-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--color-ink) 62%, transparent);
+  margin: var(--space-lg) 0 var(--space-md);
+  text-wrap: pretty;
+}
+
+.mm__tile { position: relative; touch-action: pan-y; }
+
+.mm__grip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-0, #0C0A12) 62%, transparent);
+  color: var(--light-0, #F7F6FA);
+  cursor: grab;
+  /* The handle is the drag surface, so the browser must not claim the
+     gesture for scrolling first. */
+  touch-action: none;
+}
+.mm__grip:active { cursor: grabbing; }
+.mm__grip:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* Position number, so the order is legible without counting tiles. */
+.mm__pos {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-0, #0C0A12) 62%, transparent);
+  color: var(--light-0, #F7F6FA);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm__tile { transition: none; }
+}

@@ -11,6 +11,7 @@ from app.routers import (
     bulk_purchase,
     co_hosts,
     college_admins,
+    college_admin_views,
     college_verification,
     event_lifecycle,
     events,
@@ -108,6 +109,7 @@ app.include_router(user_groups.router)
 app.include_router(hype_reviews.router)
 app.include_router(organizer_admin.router)
 app.include_router(college_admins.router)
+app.include_router(college_admin_views.router)
 app.include_router(support.router)
 app.include_router(bulk_purchase.router)
 app.include_router(co_hosts.router)
@@ -115,6 +117,7 @@ app.include_router(team_size_overrides.router)
 app.include_router(event_lifecycle.router)
 app.include_router(college_verification.router)
 app.include_router(media.router)
+app.include_router(media.maintenance_router)
 app.include_router(wishlist.router)
 app.include_router(gate.router)
 app.include_router(prime_pass.router)

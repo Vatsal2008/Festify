@@ -8,14 +8,27 @@
 }
 @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
+/* The chromatic elevation pass moved this panel onto the dark tier-2
+   surface (see .surface-2 in tokens/effects.css) but the foreground
+   here was left as ink. Every modal in the app was therefore drawing
+   dark text on a dark panel -- title, close button and body all
+   measured 1.07:1, which is text the same colour as what is behind it.
+   The panel owns a dark surface, so it must own light text to match. */
 .modal-panel {
-  background: var(--color-canvas); color: var(--color-ink);
-  border: 1px solid transparent; border-radius: var(--radius-xl); box-shadow: var(--raise-hover), 0 40px 80px -20px rgba(11,7,20,0.45);
+  background: var(--surface-2, var(--color-canvas));
+  color: var(--light-0, #F7F6FA);
+  border: 1px solid transparent; border-radius: var(--radius-xl);
   box-shadow: 6px 6px 0 var(--color-accent);
   width: 100%; display: flex; flex-direction: column; max-height: 90vh;
   animation: panel-in var(--duration-slow) var(--ease-spring);
   overflow: hidden;
 }
+/* Anything inside that pinned itself to ink inherits the correction. */
+.modal-panel .type-body-md,
+.modal-panel .type-body-sm,
+.modal-panel p,
+.modal-panel li,
+.modal-panel dd { color: inherit; }
 @keyframes panel-in { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 .modal-panel--sm  { max-width: 400px; }
@@ -29,22 +42,39 @@
   padding: var(--space-xl) var(--space-xl) 0;
   flex-shrink: 0;
 }
-.modal-title { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700; }
+.modal-title {
+  font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700;
+  color: var(--light-0, #F7F6FA);
+}
 .modal-close {
   width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  background: none; border: var(--border-hairline-teal); border-radius: var(--radius-sm);
-  color: var(--color-ink); cursor: pointer; font-size: 18px; flex-shrink: 0; margin-left: auto;
+  background: none;
+  border: 1px solid color-mix(in oklab, var(--light-0, #F7F6FA) 20%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--light-0, #F7F6FA); cursor: pointer; font-size: 18px; flex-shrink: 0; margin-left: auto;
   transition: background var(--duration-fast);
 }
-.modal-close:hover { background: var(--color-surface-cool); }
+.modal-close:hover { background: color-mix(in oklab, var(--light-0, #F7F6FA) 12%, transparent); }
 .modal-close:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .modal-body { padding: var(--space-xl); overflow-y: auto; flex: 1; }
 .modal-footer {
   padding: var(--space-lg) var(--space-xl);
-  border-top: var(--border-hairline);
+  border-top: 1px solid var(--color-hairline-light, rgba(255,255,255,0.1));
   display: flex; gap: var(--space-md); justify-content: flex-end;
   flex-shrink: 0;
+}
+
+/* The ghost variant is drawn for light surfaces; on this panel its ink
+   label vanished into the ground. Corrected here rather than in the
+   button, which is correct everywhere it normally appears. */
+.modal-panel .btn--ghost {
+  color: var(--light-0, #F7F6FA);
+  border-color: color-mix(in oklab, var(--light-0, #F7F6FA) 24%, transparent);
+}
+.modal-panel .btn--ghost:hover {
+  background: color-mix(in oklab, var(--light-0, #F7F6FA) 10%, transparent);
+  color: var(--light-0, #F7F6FA);
 }
 
 /* Toast */

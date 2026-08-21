@@ -21,9 +21,14 @@
 }
 
 /* ── Variants ── */
+/* Near-white on the accent measured 3.39:1 -- under the 4.5:1 that
+   button text needs, on the most-used control in the app. The accent is
+   a bright fill, so the legible label on it is a dark one: ink measures
+   5.14:1 against the same background. This is already how the category
+   chips treat this fill, so the two now agree. */
 .btn--primary {
   background-color: var(--color-accent);
-  color: var(--color-canvas);
+  color: var(--surface-0, var(--color-ink));
   border: 2px solid var(--color-ink);
   border-radius: var(--radius-none); /* squared — manga panel edge */
   padding: 12px 24px;

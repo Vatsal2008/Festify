@@ -1,21 +1,18 @@
 /* pages/pages.css — Shared page-level styles */
 
 /* ── Home Page ── */
-/* Asymmetric hero: a wide lead column and a narrow counterweight.
-   The old rule centred an 780px stack, which is the single most
-   recognisable generated-layout signature. */
+/* One column, anchored left, with the right third left open. The
+   counterweight panel became the HUD strip below, and re-centring the
+   column would put the hero straight back onto the dead-centre axis
+   that reads as generated. */
 .home-hero {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
-  gap: var(--space-4xl, 56px);
-  align-items: center;
   max-width: 1280px;
   margin: 0 auto;
   text-align: left;
 }
-.home-hero__lead { min-width: 0; }
+.home-hero__lead { min-width: 0; max-width: 62ch; }
 
 /* Counterweight panel. Glass with a 1px inner edge rather than a plain
    blur -- the inner border is what makes it read as a pane of glass
@@ -296,8 +293,78 @@
 .admin-table th { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(22, 16, 31,0.6); padding: var(--space-md) var(--space-lg); text-align: left; border-bottom: var(--border-hairline); white-space: nowrap; }
 .admin-table td { padding: var(--space-md) var(--space-lg); font-family: var(--font-body); font-size: var(--text-body-sm); color: var(--color-ink); border-bottom: var(--border-hairline); vertical-align: middle; }
 .admin-table tr:last-child td { border-bottom: none; }
-.admin-table tr:hover td { background: var(--color-surface-sage); }
+/* Zebra striping carries the eye across a wide row better than rules
+   between every line do. The stripe is deliberately weaker than the
+   hover state, so the row under the cursor still reads as the selected
+   one; nth-child(even) is scoped to tbody so a sticky header never
+   picks up a stripe. */
+.admin-table tbody tr:nth-child(even) td { background: color-mix(in oklab, var(--color-ink) 3%, transparent); }
+.admin-table tbody tr:hover td,
+.admin-table tbody tr:nth-child(even):hover td { background: var(--color-surface-sage); }
 .admin-actions { display: flex; gap: var(--space-sm); }
+
+/* ── Super admin KPI strip ────────────────────────────────────────
+   One row of figures, each with the trend that produced it. Cards sit
+   on the raised tier rather than inside one big ink panel, so a number
+   that is climbing and one that is flat are visibly separate readings
+   rather than a single block of statistics. */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+.kpi {
+  background: var(--surface-1, var(--color-ink));
+  border: 1px solid var(--color-hairline-light, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-height: 116px;
+  /* Backstop: nothing inside a KPI card may paint outside it. */
+  overflow: hidden;
+}
+.kpi__top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.kpi__value {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.2vw, 34px);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--light-0, var(--color-canvas));
+  /* Tabular figures so the numbers do not jitter sideways as they
+     refresh -- these are values being compared, not prose. */
+  font-variant-numeric: tabular-nums;
+}
+.kpi__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 62%, transparent);
+}
+/* The spark yields before the figure does. It was flex-shrink: 0,
+   so on the widest value -- the revenue card -- the row could not
+   compress and the line ran 34px past the card edge. The number is
+   the point of the card; the trend is what gives way. */
+.kpi__spark { flex: 0 1 132px; min-width: 54px; line-height: 0; }
+.kpi__spark .spark { width: 100%; height: auto; }
+
+.kpi-strip--failed {
+  display: block;
+  padding: var(--space-lg) var(--space-xl);
+  border: 1px solid var(--color-hairline-light, rgba(255,255,255,0.08));
+  border-radius: var(--radius-lg);
+  background: var(--surface-1, var(--color-ink));
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 76%, transparent);
+}
+
+/* Placeholders match the final shapes, so the strip does not resize
+   when the figures land. */
+.kpi__ghost { display: block; border-radius: var(--radius-sm); background: color-mix(in oklab, var(--light-0, #F7F6FA) 9%, transparent); }
+.kpi__ghost--value { width: 58%; height: 32px; }
+.kpi__ghost--label { width: 78%; height: 11px; margin-top: var(--space-md); }
 
 /* ── Event Builder ── */
 .builder-steps { display: flex; gap: 0; margin-bottom: var(--space-3xl); border-bottom: var(--border-hairline); overflow-x: auto; }
@@ -740,6 +807,211 @@
 }
 .ticket-qr-panel--art > * { position: relative; z-index: 1; }
 
+/* ── The pass ─────────────────────────────────────────────────────
+   A ticket shaped like a ticket. The body holds the details, the stub
+   holds the code, and a perforation runs between them.
+
+   The notches are cut with a mask rather than drawn as circles in the
+   page colour. Painted circles only look right on the exact background
+   they were matched to, and this page has two of them already -- the
+   plain canvas and the organiser's artwork -- so a matched circle
+   would show as a coloured blob on one of them. A mask removes the
+   pixels, and whatever is behind the pass shows through. */
+.pass {
+  --pass-stub: 320px;
+  --pass-notch: 17px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr var(--pass-stub);
+  background: var(--light-1, var(--color-surface-sage));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--raise);
+  overflow: hidden;
+
+  --pass-seam-x: calc(100% - var(--pass-stub));
+  -webkit-mask-image:
+    radial-gradient(circle var(--pass-notch) at var(--pass-seam-x) 0,    transparent 97%, #000 100%),
+    radial-gradient(circle var(--pass-notch) at var(--pass-seam-x) 100%, transparent 97%, #000 100%);
+  mask-image:
+    radial-gradient(circle var(--pass-notch) at var(--pass-seam-x) 0,    transparent 97%, #000 100%),
+    radial-gradient(circle var(--pass-notch) at var(--pass-seam-x) 100%, transparent 97%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* The tear line. Inset top and bottom so it starts clear of the
+   notches instead of running into them. */
+.pass::after {
+  content: '';
+  position: absolute;
+  top: var(--pass-notch);
+  bottom: var(--pass-notch);
+  left: var(--pass-seam-x);
+  width: 0;
+  border-left: 2px dashed color-mix(in oklab, var(--color-ink) 22%, transparent);
+  pointer-events: none;
+}
+
+.pass__body { padding: var(--space-2xl); display: flex; flex-direction: column; gap: var(--space-lg); }
+
+.pass__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-ink) 72%, transparent);
+}
+.pass__event {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+
+.pass__rows { display: flex; flex-direction: column; gap: var(--space-lg); margin: 0; }
+.pass__row { display: grid; grid-template-columns: 110px 1fr; gap: var(--space-lg); align-items: baseline; }
+.pass__row dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-ink) 58%, transparent);
+}
+.pass__row dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--color-ink);
+}
+
+.pass__actions { margin-top: var(--space-sm); padding-top: var(--space-lg); border-top: var(--border-hairline); }
+
+/* The stub is tinted a step darker so the two halves read as different
+   pieces of card even before the perforation is noticed. */
+.pass__stub {
+  position: relative;
+  background: var(--light-2, #E9E7F2);
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xl);
+}
+.pass__stub--art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(251,247,240,0.88), rgba(251,247,240,0.95));
+  backdrop-filter: blur(3px);
+}
+.pass__stub-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+.pass__stub-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-ink) 62%, transparent);
+}
+/* A spent or revoked pass is desaturated and dimmed. The gate is the
+   authority on whether it still works, but someone holding the phone
+   should be able to tell at a glance that this one is finished. */
+.pass--used, .pass--revoked, .pass--expired, .pass--theft_reported { filter: grayscale(0.85); opacity: 0.72; }
+
+/* ── Report stolen ────────────────────────────────────────────────
+   Numbered because these are genuinely sequential -- file, review,
+   outcome -- and the order is the part the reader needs. */
+.theft-modal { display: flex; flex-direction: column; gap: var(--space-lg); }
+.theft-modal__lead { display: flex; gap: var(--space-md); align-items: flex-start; }
+.theft-modal__icon { flex-shrink: 0; margin-top: 2px; color: var(--color-warning); }
+
+.theft-modal__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: theft;
+}
+.theft-modal__steps li {
+  counter-increment: theft;
+  position: relative;
+  padding-left: 34px;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 82%, transparent);
+  text-wrap: pretty;
+}
+.theft-modal__steps li::before {
+  content: counter(theft);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full, 999px);
+  background: color-mix(in oklab, var(--color-warning) 26%, transparent);
+  /* The -text rungs are tuned for canvas; on the dark panel the bright
+     rung is the legible one. */
+  color: var(--color-warning);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+.theft-modal__steps strong { color: var(--light-0, #F7F6FA); font-weight: 700; }
+
+.theft-modal__note {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 66%, transparent);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-hairline-light, rgba(255,255,255,0.1));
+  text-wrap: pretty;
+}
+
+@media (max-width: 860px) {
+  /* Stacked, so the perforation turns horizontal and the notches move
+     to the left and right edges. */
+  .pass {
+    grid-template-columns: 1fr;
+    --pass-seam-y: calc(100% - 300px);
+    -webkit-mask-image:
+      radial-gradient(circle var(--pass-notch) at 0    var(--pass-seam-y), transparent 97%, #000 100%),
+      radial-gradient(circle var(--pass-notch) at 100% var(--pass-seam-y), transparent 97%, #000 100%);
+    mask-image:
+      radial-gradient(circle var(--pass-notch) at 0    var(--pass-seam-y), transparent 97%, #000 100%),
+      radial-gradient(circle var(--pass-notch) at 100% var(--pass-seam-y), transparent 97%, #000 100%);
+  }
+  .pass::after {
+    top: var(--pass-seam-y);
+    bottom: auto;
+    left: var(--pass-notch);
+    right: var(--pass-notch);
+    width: auto;
+    height: 0;
+    border-left: none;
+    border-top: 2px dashed color-mix(in oklab, var(--color-ink) 22%, transparent);
+  }
+  .pass__stub { min-height: 300px; }
+  .pass__body { padding: var(--space-xl); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pass { transition: box-shadow var(--dur-med, 240ms) var(--ease-out-expo, ease); }
+}
+
 /* ── Support queue ────────────────────────────────────────────────
    One table for two sources. Theft reports are visually distinct
    because they carry a deadline the others do not -- a stolen ticket
@@ -809,4 +1081,515 @@
 @media (max-width: 900px) {
   .sup__actions { flex-direction: column; align-items: stretch; }
   .sup__note { width: 100%; }
+}
+
+/* ── Ambient hero glow ────────────────────────────────────────────
+   Several off-centre radial washes rather than one linear fade. A
+   single 45-degree gradient across a hero is the most recognisable
+   generated background there is; overlapping radials at odd positions
+   and different sizes read as stage lighting instead. Sits above the
+   video and below the content. */
+.home-hero-glow {
+  position: absolute;
+  inset: -15% -8% -25%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 52% at 18% 26%, oklch(0.58 0.24 285 / 0.55), transparent 68%),
+    radial-gradient(34% 44% at 62% 8%,  oklch(0.68 0.26 330 / 0.40), transparent 70%),
+    radial-gradient(48% 46% at 88% 42%, oklch(0.78 0.18 200 / 0.32), transparent 72%),
+    radial-gradient(56% 60% at 40% 96%, oklch(0.72 0.22 35  / 0.30), transparent 74%);
+  filter: blur(48px) saturate(130%);
+  /* Screen so the washes add light to the footage rather than sitting
+     on top of it as flat coloured film. */
+  mix-blend-mode: screen;
+}
+
+/* ── HUD strip ────────────────────────────────────────────────────
+   The stats read as instrumentation rather than as marketing: one
+   horizontal glass rail, mono figures, a live pip on each. */
+.hud {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  margin-top: var(--space-2xl);
+  padding: 2px;
+  border-radius: 999px;
+  background: oklch(0.16 0.04 280 / 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.12),
+    0 12px 32px -10px oklch(0.12 0.03 280 / 0.7);
+}
+.hud__stat {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  position: relative;
+}
+/* Hairline separators drawn as a pseudo-element so the first item does
+   not get a leading rule. */
+.hud__stat + .hud__stat::before {
+  content: '';
+  position: absolute; left: 0; top: 22%; bottom: 22%;
+  width: 1px; background: oklch(1 0 0 / 0.12);
+}
+.hud__num {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 800; line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--color-canvas);
+  font-variant-numeric: tabular-nums;
+}
+.hud__label {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: oklch(1 0 0 / 0.55);
+}
+/* The pip pulses because the figure behind it is live data, not
+   because motion is decorative -- it is the one signal that this
+   number moves. */
+.hud__pip {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 0 currentColor;
+  animation: hud-pulse 2.4s var(--ease-out-soft) infinite;
+}
+.hud__pip--sports { background: var(--hue-sports); animation-delay: 0.8s; }
+.hud__pip--talk   { background: var(--hue-talk);   animation-delay: 1.6s; }
+
+@keyframes hud-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+@media (max-width: 640px) {
+  .hud { display: flex; width: 100%; border-radius: var(--radius-lg); }
+  .hud__stat { flex: 1; flex-direction: column; gap: 4px; padding: 12px 8px; text-align: center; }
+  .hud__pip { position: absolute; top: 8px; right: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__pip { animation: none; opacity: 1; }
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────
+   Centred rather than top-aligned so any residual difference between
+   the two font metrics is absorbed evenly above and below the text
+   instead of being shunted downward onto the sections underneath.
+
+   The webfont shift itself is fixed in typography.css by matching the
+   fallback's metrics; reserving a height here could not fix it,
+   because the headline shrink-wraps its balanced text and so the box
+   tracked the glyphs no matter what the reservation said. */
+.teal-band--hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+/* A cap on the measure, for ultrawide screens only -- text-wrap:
+   balance keeps the headline well inside this at normal widths, so
+   this never binds during the font swap. */
+.home-hero__title { max-width: 720px; }
+@media (max-width: 900px) { .home-hero__title { max-width: none; } }
+
+/* ── Super admin: all events ──────────────────────────────────────
+   A wide table with an editor that slides in beside it. A modal was
+   the obvious choice and the wrong one: the recurring task here is
+   comparing several events against each other, and a modal covers the
+   very rows the admin is working from. */
+.sae__controls {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
+}
+.sae__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 300px;
+  padding: 0 var(--space-lg);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+  color: var(--color-muted);
+}
+.sae__search-input {
+  flex: 1;
+  height: 42px;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--color-ink);
+}
+.sae__search:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.sae__status { flex: 0 0 190px; height: 42px; }
+
+.sae__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) - 1);
+  background: var(--color-overlay);
+}
+
+.sae__panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(560px, 100vw);
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2, var(--color-ink));
+  color: var(--light-0, #F7F6FA);
+  border-left: 1px solid var(--color-hairline-light, rgba(255,255,255,0.1));
+  box-shadow: -30px 0 70px -30px oklch(0.12 0.03 280 / 0.8);
+}
+
+.sae__panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--color-hairline-light, rgba(255,255,255,0.1));
+  flex-shrink: 0;
+}
+.sae__panel-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 55%, transparent);
+}
+.sae__panel-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display-sm, 22px);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--light-0, #F7F6FA);
+  margin-top: 2px;
+  text-wrap: balance;
+}
+.sae__panel-sub {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 66%, transparent);
+  margin-top: 4px;
+}
+.sae__panel-x {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid color-mix(in oklab, var(--light-0, #F7F6FA) 20%, transparent);
+  color: var(--light-0, #F7F6FA);
+  cursor: pointer;
+}
+.sae__panel-x:hover { background: color-mix(in oklab, var(--light-0, #F7F6FA) 12%, transparent); }
+.sae__panel-x:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.sae__tabs {
+  display: flex;
+  gap: var(--space-xs, 6px);
+  padding: var(--space-md) var(--space-xl) 0;
+  flex-shrink: 0;
+}
+.sae__tab {
+  position: relative;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill, 999px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 62%, transparent);
+}
+.sae__tab--on { color: var(--surface-0, #0C0A12); }
+.sae__tab-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-accent);
+  z-index: 0;
+}
+.sae__tab-label { position: relative; z-index: 1; }
+.sae__tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.sae__panel-body { padding: var(--space-xl); overflow-y: auto; flex: 1; }
+
+.sae__form { display: flex; flex-direction: column; gap: var(--space-lg); }
+/* min-width: 0 so a grid column may shrink below its content. Without
+   it datetime-local keeps its intrinsic width -- wider than half the
+   panel -- and the "ends" field was clipped by the panel edge. */
+.sae__field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sae__field > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 62%, transparent);
+}
+.sae__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+@media (max-width: 560px) { .sae__pair { grid-template-columns: 1fr; } }
+
+/* The form sits on a dark panel while input-field is drawn for the
+   light canvas, so its ink text would land on a dark ground. */
+.sae__panel .input-field {
+  width: 100%;
+  min-width: 0;
+  background: var(--surface-1, #16111E);
+  border: 1px solid var(--color-hairline-light, rgba(255,255,255,0.14));
+  color: var(--light-0, #F7F6FA);
+}
+.sae__panel .input-field:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+/* Chromium renders the native date/time picker glyph in black, which
+   is invisible here; the filter lifts it to match the text. */
+.sae__panel input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.7);
+  cursor: pointer;
+}
+
+/* Consequences that are not obvious from the control itself. Shown
+   only for the two settings that remove an event from view, because a
+   warning attached to every option teaches people to ignore it. */
+.sae__warn {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: 1.55;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-warning) 14%, transparent);
+  border-left: 3px solid var(--color-warning);
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 88%, transparent);
+  text-wrap: pretty;
+}
+
+.sae__actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-hairline-light, rgba(255,255,255,0.1));
+}
+.sae__panel .btn--ghost {
+  color: var(--light-0, #F7F6FA);
+  border-color: color-mix(in oklab, var(--light-0, #F7F6FA) 24%, transparent);
+}
+.sae__panel .btn--ghost:hover {
+  background: color-mix(in oklab, var(--light-0, #F7F6FA) 10%, transparent);
+  color: var(--light-0, #F7F6FA);
+}
+
+/* MediaManager is built for the organiser's light dashboard; on this
+   panel its own surfaces and labels need the dark treatment. */
+.sae__panel .mm__drop {
+  background: var(--surface-1, #16111E);
+  border-color: color-mix(in oklab, var(--light-0, #F7F6FA) 22%, transparent);
+  color: var(--light-0, #F7F6FA);
+}
+.sae__panel .mm__hint,
+.sae__panel .mm__drop-sub,
+.sae__panel .mm__empty,
+.sae__panel .mm__yt-label {
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 66%, transparent);
+}
+.sae__panel .mm__drop-title,
+.sae__panel .mm__head h2 { color: var(--light-0, #F7F6FA); }
+.sae__panel .mm__place {
+  background: var(--surface-1, #16111E);
+  border: 1px solid color-mix(in oklab, var(--light-0, #F7F6FA) 18%, transparent);
+  color: color-mix(in oklab, var(--light-0, #F7F6FA) 76%, transparent);
+}
+.sae__panel .mm__place--on {
+  background: var(--color-accent);
+  color: var(--surface-0, #0C0A12);
+  border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sae__panel { transition: none; }
+}
+
+/* ── College admin ────────────────────────────────────────────────
+   These two screens showed invented figures; rebuilt against the API,
+   the real numbers for a young college are small. The layout is sized
+   for that honestly -- a chart with one bar in it should look like a
+   chart with one bar, not be padded out to seem busier. */
+.ca__head-actions { display: flex; gap: var(--space-md); align-items: center; flex-wrap: wrap; }
+/* input-field sets width:100%, which made each select claim the whole
+   flex line and pushed the controls into a vertical stack. And its
+   14px vertical padding plus a 17px face overflowed a 40px box, so the
+   chosen option was clipped through the middle. Both are corrected for
+   the compact header variant only, leaving form fields alone. */
+.ca__picker {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 170px;
+  max-width: 260px;
+  height: 40px;
+  padding: 0 var(--space-lg);
+  font-size: var(--text-body-sm);
+  line-height: 38px;
+}
+
+.ca__grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+@media (max-width: 1024px) { .ca__grid { grid-template-columns: 1fr; } }
+
+.ca__panel {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2xl);
+  background: var(--color-canvas);
+}
+.ca__panel--alt { background: var(--color-surface-sage); }
+.ca__panel-title { margin-bottom: var(--space-xl); display: flex; align-items: center; }
+
+.ca__none {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--color-ink) 62%, transparent);
+  text-wrap: pretty;
+}
+
+.ca__chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-lg);
+  height: 220px;
+  padding-top: var(--space-xl);
+  border-bottom: 2px solid var(--color-hairline);
+}
+.ca__bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  height: 100%;
+  min-width: 0;
+}
+.ca__bar {
+  width: 100%;
+  max-width: 40px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-primary) 100%);
+  transition: height var(--dur-slow, 420ms) var(--ease-out-expo, ease);
+}
+.ca__bar-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: color-mix(in oklab, var(--color-ink) 72%, transparent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ca__bar-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) { .ca__bar { transition: none; } }
+
+.ca__cats { display: flex; flex-direction: column; gap: var(--space-lg); }
+.ca__cat-head { display: flex; justify-content: space-between; margin-bottom: 4px; gap: var(--space-md); }
+.ca__cat-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--color-ink) 12%, transparent);
+}
+.ca__cat-fill { height: 100%; border-radius: 4px; }
+
+.ca__top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-md); }
+.ca__top li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--color-ink);
+}
+.ca__top-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca__top-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: color-mix(in oklab, var(--color-ink) 66%, transparent);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The KPI cards keep their dark tier on this light page. That is the
+   existing treatment -- the metrics here previously sat on a solid ink
+   panel -- so they read as a deliberate band rather than an import
+   from another screen. */
+
+/* ── Storage sweep ────────────────────────────────────────────────
+   A destructive maintenance action, so it is visually separated from
+   the config fields above it and its button carries the danger
+   variant. The count is shown before the button is usable: nothing
+   here should be triggered without knowing what it will delete. */
+.sweep {
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-xl);
+  border-top: var(--border-hairline);
+}
+.sweep__title { margin-bottom: var(--space-sm); }
+.sweep__body {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--color-ink) 66%, transparent);
+  margin-bottom: var(--space-lg);
+  max-width: 56ch;
+  text-wrap: pretty;
+}
+.sweep__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+.sweep__field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sweep__field > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-ink) 62%, transparent);
+}
+.sweep__field .input-field { width: auto; min-width: 150px; height: 40px; padding: 0 var(--space-lg); }
+.sweep__count {
+  flex: 1 1 200px;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--color-ink);
+  padding-bottom: 10px;
+}
+.sweep__result {
+  margin-top: var(--space-lg);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklab, var(--color-ink) 72%, transparent);
+  padding: var(--space-md) var(--space-lg);
+  border-left: 3px solid var(--color-success);
+  background: var(--color-success-bg);
+  text-wrap: pretty;
 }

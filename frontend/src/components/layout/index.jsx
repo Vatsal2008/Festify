@@ -197,6 +197,7 @@ export function DashboardSidebar({ orgId, type = 'organizer' }) {
     { path: '/super/applications',       label: 'Applications', icon: <UsersIcon size={18} /> },
     { path: '/super/college-admins',     label: 'Admin Access', icon: <UsersIcon size={18} /> },
     { path: '/super/organizers',         label: 'Organizers',  icon: <UsersIcon size={18} /> },
+    { path: '/super/events',             label: 'Events',      icon: <CalendarIcon size={18} /> },
     { path: '/super/support-tickets',    label: 'Support',     icon: <SupportIcon size={18} /> },
     { path: '/super/trending-curation',  label: 'Curation',    icon: <SparklesIcon size={18} /> },
     { path: '/super/config',             label: 'Config',      icon: <SettingsIcon size={18} /> },
@@ -254,7 +255,15 @@ export function DashboardShell({ children, orgId, sidebarType = 'organizer' }) {
     <div className="dashboard-shell">
       <a href="#dash-content" className="skip-link">Skip to content</a>
       <TopNav />
-      <div className={`dashboard-shell__sidebar ${sidebarOpen ? 'dashboard-shell__sidebar--open' : ''}`}>
+      {/* The variant reaches the CSS so the super admin rail can be
+          styled apart from the organiser one -- it is the surface that
+          governs the whole platform, and looking identical to a single
+          organiser's dashboard hid that difference. */}
+      <div
+        className={`dashboard-shell__sidebar dashboard-shell__sidebar--${sidebarType} ${
+          sidebarOpen ? 'dashboard-shell__sidebar--open' : ''
+        }`}
+      >
         <DashboardSidebar orgId={orgId} type={sidebarType} />
       </div>
       <main id="dash-content" className="dashboard-shell__content">

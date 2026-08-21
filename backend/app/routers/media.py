@@ -14,13 +14,18 @@ import mimetypes
 import re
 import secrets
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from datetime import datetime, timedelta, timezone
 
-from app.authz import require_org_manager
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+
+from app.authz import is_super_admin, require_org_manager, require_super_admin
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/events", tags=["media"])
+# Storage maintenance is platform-wide, not an operation on one event,
+# so it gets its own prefix rather than hiding under /events/{id}.
+maintenance_router = APIRouter(prefix="/media", tags=["media"])
 logger = logging.getLogger(__name__)
 
 BUCKET = "event-media"
@@ -98,11 +103,17 @@ def _serialize(supabase, row: dict) -> dict:
     return {**row, "url": _public_url(supabase, row["storage_path"])}
 
 
-def _require_manager_for_event(supabase, event_id: str, user_id: str) -> dict:
+def _require_manager_for_event(supabase, event_id: str, user: dict) -> dict:
     result = supabase.table("events").select("org_group_id").eq("id", event_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Event not found")
-    require_org_manager(user_id, result.data[0]["org_group_id"])
+    # A super admin manages any event's media. This admitted only the
+    # owning organiser, which left the platform-wide event surface able
+    # to change an event's timing but not the banner sitting above it --
+    # and the banner is the half people actually see.
+    if is_super_admin(user):
+        return result.data[0]
+    require_org_manager(user["id"], result.data[0]["org_group_id"])
     return result.data[0]
 
 
@@ -118,7 +129,7 @@ async def upload_media(
         raise HTTPException(status_code=422, detail=f"placement must be one of {', '.join(PLACEMENTS)}")
 
     supabase = get_supabase()
-    _require_manager_for_event(supabase, event_id, current_user["id"])
+    _require_manager_for_event(supabase, event_id, current_user)
 
     content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
     if content_type in IMAGE_TYPES:
@@ -220,7 +231,7 @@ def attach_youtube(event_id: str, body: dict, current_user: dict = Depends(get_c
     page can request. YouTube absorbs that bandwidth for nothing.
     """
     supabase = get_supabase()
-    _require_manager_for_event(supabase, event_id, current_user["id"])
+    _require_manager_for_event(supabase, event_id, current_user)
 
     placement = (body or {}).get("placement", "hero_video")
     if placement not in PLACEMENTS:
@@ -317,7 +328,7 @@ def update_media(
 ):
     """Move an asset to another placement, reorder it, or retitle it."""
     supabase = get_supabase()
-    _require_manager_for_event(supabase, event_id, current_user["id"])
+    _require_manager_for_event(supabase, event_id, current_user)
 
     patch = {}
     if "placement" in body:
@@ -352,7 +363,7 @@ def reorder_media(event_id: str, body: dict, current_user: dict = Depends(get_cu
     leave the gallery briefly inconsistent between requests.
     """
     supabase = get_supabase()
-    _require_manager_for_event(supabase, event_id, current_user["id"])
+    _require_manager_for_event(supabase, event_id, current_user)
 
     ids = body.get("ids") or []
     if not isinstance(ids, list) or not ids:
@@ -365,12 +376,166 @@ def reorder_media(event_id: str, body: dict, current_user: dict = Depends(get_cu
     return list_media(event_id)
 
 
+def _sweep_candidates(supabase, older_than_days: int) -> list[dict]:
+    """Soft-deleted rows old enough to reclaim, plus what they cost.
+
+    Removal marks the row and leaves the object in the bucket, so a
+    mistaken delete stays recoverable. Nothing ever came back for those
+    objects, which means every removal was a permanent charge against
+    storage for a file no longer reachable from the product.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=older_than_days)).isoformat()
+    rows = (
+        supabase.table("event_media")
+        .select("id, event_id, storage_path, kind, source, file_size_kb, created_at")
+        .eq("status", "removed")
+        .lte("created_at", cutoff)
+        .execute()
+        .data
+    ) or []
+    # A YouTube attachment has no stored bytes; its row is reclaimable
+    # but there is nothing in the bucket to delete.
+    return [r for r in rows if r.get("storage_path")]
+
+
+def _paths_absent(supabase, paths: list[str]) -> list[str]:
+    """Which of these objects are genuinely not in the bucket.
+
+    One listing per folder rather than one existence check per file:
+    media is stored under the event id, so a sweep usually touches a
+    handful of folders however many files it covers.
+    """
+    by_folder: dict[str, list[str]] = {}
+    for path in paths:
+        folder, _, name = path.rpartition("/")
+        by_folder.setdefault(folder, []).append(name)
+
+    absent: list[str] = []
+    for folder, names in by_folder.items():
+        try:
+            present = {
+                entry.get("name")
+                for entry in (supabase.storage.from_(BUCKET).list(folder) or [])
+                if isinstance(entry, dict)
+            }
+        except Exception:
+            # Cannot prove absence, so assume the object is still there.
+            # Keeping a row costs one wasted check next run; dropping it
+            # wrongly loses the pointer for good.
+            logger.exception("media sweep: could not list %s", folder)
+            continue
+        absent.extend(f"{folder}/{n}" for n in names if n not in present)
+    return absent
+
+
+@maintenance_router.get("/sweep/preview")
+def preview_sweep(
+    older_than_days: int = Query(30, ge=0, le=3650),
+    current_user: dict = Depends(get_current_user),
+):
+    """What a sweep would reclaim, without touching anything.
+
+    Deleting files is not something to trigger blind, so the count and
+    the size are shown first and the destructive call is separate.
+    """
+    require_super_admin(current_user)
+    supabase = get_supabase()
+    rows = _sweep_candidates(supabase, older_than_days)
+    return {
+        "older_than_days": older_than_days,
+        "count": len(rows),
+        "bytes_kb": sum(int(r.get("file_size_kb") or 0) for r in rows),
+        "oldest": min((r.get("created_at") or "" for r in rows), default=None),
+    }
+
+
+@maintenance_router.post("/sweep")
+def sweep_media(
+    older_than_days: int = Query(30, ge=0, le=3650),
+    current_user: dict = Depends(get_current_user),
+):
+    """Delete the stored objects behind soft-deleted media, then the rows.
+
+    Storage first, row second. If the object delete fails the row stays,
+    so the next sweep tries again; dropping the row first would lose the
+    only pointer to the file and make the leak permanent and untraceable.
+    """
+    require_super_admin(current_user)
+    supabase = get_supabase()
+
+    rows = _sweep_candidates(supabase, older_than_days)
+    if not rows:
+        return {"swept": 0, "freed_kb": 0, "failed": 0}
+
+    paths = [r["storage_path"] for r in rows]
+    by_path = {r["storage_path"]: r for r in rows}
+
+    removed_paths: list[str] = []
+    # Batched, because one request per object against a remote bucket is
+    # the difference between a sweep that finishes and one that times
+    # out on a few hundred files.
+    #
+    # The response is read rather than assumed. remove() does not raise
+    # for a path that is not there -- it returns an empty list and looks
+    # exactly like success -- so trusting the call would drop the row
+    # while the object stayed, which is the leak this endpoint exists to
+    # close, made permanent and now untraceable. Only paths the API
+    # confirms it deleted are treated as gone.
+    for start in range(0, len(paths), 100):
+        batch = paths[start:start + 100]
+        try:
+            result = supabase.storage.from_(BUCKET).remove(batch)
+            confirmed = {
+                entry.get("name")
+                for entry in (result or [])
+                if isinstance(entry, dict) and entry.get("name")
+            }
+            removed_paths.extend(p for p in batch if p in confirmed)
+            missed = [p for p in batch if p not in confirmed]
+            # An unconfirmed path is either a failure or a file that was
+            # already gone -- remove() answers [] for both. Left
+            # undistinguished, a row whose object had vanished by some
+            # other route could never be reclaimed and every future sweep
+            # would report the same permanent failure. Listing settles
+            # it: if the object is not there, there is nothing to leak
+            # and the row is safe to drop.
+            if missed:
+                absent = _paths_absent(supabase, missed)
+                removed_paths.extend(absent)
+                still_failing = [p for p in missed if p not in set(absent)]
+                if still_failing:
+                    logger.warning(
+                        "media sweep: %d objects could not be deleted; rows kept for the next run",
+                        len(still_failing),
+                    )
+        except Exception:
+            logger.exception("media sweep: storage delete failed for %d paths", len(batch))
+
+    freed = 0
+    swept_ids = []
+    for path in removed_paths:
+        row = by_path[path]
+        try:
+            supabase.table("event_media").delete().eq("id", row["id"]).execute()
+            swept_ids.append(row["id"])
+            freed += int(row.get("file_size_kb") or 0)
+        except Exception:
+            logger.exception("media sweep: row delete failed for %s", row["id"])
+
+    return {
+        "swept": len(swept_ids),
+        "freed_kb": freed,
+        "failed": len(rows) - len(swept_ids),
+        "older_than_days": older_than_days,
+    }
+
+
 @router.delete("/{event_id}/media/{media_id}")
 def delete_media(event_id: str, media_id: str, current_user: dict = Depends(get_current_user)):
     """Soft delete. The stored object is left in place so a mistaken
     removal is recoverable; a storage sweep can reclaim it later."""
     supabase = get_supabase()
-    _require_manager_for_event(supabase, event_id, current_user["id"])
+    _require_manager_for_event(supabase, event_id, current_user)
 
     result = (
         supabase.table("event_media")

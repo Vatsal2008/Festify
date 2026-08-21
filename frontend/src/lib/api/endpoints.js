@@ -49,6 +49,18 @@ export const eventsApi = {
   deleteMedia: (id, mediaId) => api.delete(`/events/${id}/media/${mediaId}`).then(r => r.data),
 };
 
+// ── storage maintenance ───────────────────────────────────────────
+// Removing media only marks the row; the stored object stays so a
+// mistaken delete is recoverable. Nothing ever reclaimed those objects,
+// so every removal was a permanent storage charge for a file no longer
+// reachable from the product.
+export const mediaMaintenanceApi = {
+  preview: (olderThanDays = 30) =>
+    api.get('/media/sweep/preview', { params: { older_than_days: olderThanDays } }).then(r => r.data),
+  sweep: (olderThanDays = 30) =>
+    api.post('/media/sweep', null, { params: { older_than_days: olderThanDays } }).then(r => r.data),
+};
+
 // ── orders & tickets ──────────────────────────────────────────────
 export const ordersApi = {
   create: (body) => api.post('/orders', body).then(r => r.data),
@@ -164,6 +176,13 @@ export const platformApi = {
   orgGroups: () => api.get('/org-groups').then(r => r.data),
   allSupportTickets: () => api.get('/support-tickets').then(r => r.data),
   auditLog: () => api.get('/audit-log').then(r => r.data),
+  stats: (days = 14) => api.get('/platform-stats', { params: { days } }).then(r => r.data),
+
+  // Platform-wide event management. Separate from eventsApi.list because
+  // that one is public discovery and deliberately hides drafts, private
+  // and cancelled events -- which are exactly the ones an admin needs.
+  allEvents: (params = {}) => api.get('/super/events', { params }).then(r => r.data),
+  updateEvent: (id, patch) => api.patch(`/super/events/${id}`, patch).then(r => r.data),
   scoringConfig: () => api.get('/scoring-config').then(r => r.data),
   setScoringConfig: (key, value) => api.put('/scoring-config', { key, value }).then(r => r.data),
 
@@ -179,6 +198,21 @@ export const platformApi = {
   collegeAdmins: () => api.get('/college-admins/all').then(r => r.data),
   addCollegeAdmin: (userId, collegeId) =>
     api.post('/college-admins', { user_id: userId, college_id: collegeId }).then(r => r.data),
+};
+
+// ── college admin surfaces ────────────────────────────────────────
+// The college's own events and analytics. Distinct from adminApi, which
+// handles organizer applications; these are the oversight screens.
+export const collegeAdminApi = {
+  scope: () => api.get('/college-admin/scope').then(r => r.data),
+  events: (collegeId) =>
+    api.get('/college-admin/events', { params: collegeId ? { college_id: collegeId } : {} }).then(r => r.data),
+  setEventState: (eventId, state, note) =>
+    api.patch(`/college-admin/events/${eventId}`, { state, note }).then(r => r.data),
+  analytics: (collegeId, months = 8) =>
+    api.get('/college-admin/analytics', {
+      params: { ...(collegeId ? { college_id: collegeId } : {}), months },
+    }).then(r => r.data),
 };
 
 // ── support ───────────────────────────────────────────────────────

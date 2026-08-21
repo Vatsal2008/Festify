@@ -6,9 +6,9 @@
 // flight at once on a phone connection is how uploads time out, and a
 // per-file progress line is more useful than one aggregate bar that
 // stalls for a minute.
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import { Spinner } from '@/components/primitives/Primitives';
@@ -25,6 +25,78 @@ const PLACEMENTS = [
   { id: 'hero_video', label: 'Hero video',         hint: 'Plays behind the event page title. Paste a YouTube link — videos are not uploaded, so they cost no bandwidth.', youtube: true },
   { id: 'ticket_bg',  label: 'Ticket background',  hint: 'Behind the QR code in the attendee wallet.' },
 ];
+
+// One tile. Dragging is started from the handle rather than the whole
+// tile, so the placement select and the remove button stay usable --
+// a drag surface covering the entire card swallows every click on it.
+//
+// The arrow keys move a tile too. Drag-and-drop with no keyboard path
+// is an ordering feature that simply does not exist for anyone not
+// using a mouse.
+function MediaTile({ item, index, total, onCommit, onNudge, onPlacement, onRemove }) {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={item}
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={onCommit}
+      className="mm__tile"
+      as="figure"
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileDrag={{ scale: 1.04, zIndex: 2, cursor: 'grabbing' }}
+    >
+      <button
+        type="button"
+        className="mm__grip"
+        onPointerDown={(e) => controls.start(e)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); onNudge(-1); }
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); onNudge(1); }
+        }}
+        aria-label={`Reorder ${item.alt_text || item.kind}, position ${index + 1} of ${total}. Use arrow keys to move.`}
+      >
+        <GripIcon />
+      </button>
+
+      <span className="mm__pos" aria-hidden="true">{index + 1}</span>
+
+      {item.kind === 'youtube'
+        ? <img src={item.thumbnail} alt={item.alt_text || 'Video thumbnail'} loading="lazy" draggable={false} />
+        : item.kind === 'video'
+          ? <video src={item.url} muted playsInline preload="metadata" />
+          : <img src={item.url} alt={item.alt_text || ''} loading="lazy" draggable={false} />}
+      {item.kind === 'youtube' && <span className="mm__yt-flag">YouTube</span>}
+
+      <figcaption className="mm__tile-bar">
+        <select
+          value={item.placement}
+          onChange={(e) => onPlacement(e.target.value)}
+          aria-label={`Placement for ${item.alt_text || item.kind}`}
+        >
+          {PLACEMENTS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <button type="button" onClick={onRemove} aria-label="Remove this file" className="mm__tile-x">
+          <XIcon size={13} />
+        </button>
+      </figcaption>
+    </Reorder.Item>
+  );
+}
+
+// Six dots: the conventional grip. Drawn here rather than added to the
+// icon set because nothing else needs it.
+function GripIcon() {
+  return (
+    <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
+      {[2, 8].map((x) => [3, 8, 13].map((y) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="1.4" />
+      )))}
+    </svg>
+  );
+}
 
 export default function MediaManager({ eventId }) {
   const qc = useQueryClient();
@@ -84,8 +156,33 @@ export default function MediaManager({ eventId }) {
     onError: (e) => toast.error(apiError(e)),
   });
 
-  const items = mediaQuery.data?.media ?? [];
+  // Memoised against the query data, not recreated per render. As a
+  // bare `data?.media ?? []` this was a new array identity every pass,
+  // so the effect below re-fired on its own output and the component
+  // hit "Maximum update depth exceeded" in a tight loop.
+  const items = useMemo(() => mediaQuery.data?.media ?? [], [mediaQuery.data]);
   const current = PLACEMENTS.find((p) => p.id === placement);
+
+  // Gallery order is the order visitors see, so it needs to be settable.
+  // The list is held locally while dragging: reordering through the
+  // query cache would make each item snap back to its server position
+  // between frames, which is unusable.
+  const [order, setOrder] = useState([]);
+  useEffect(() => { setOrder(items); }, [items]);
+
+  const reorder = useMutation({
+    mutationFn: (ids) => eventsApi.reorderMedia(eventId, ids),
+    onSuccess: () => { refresh(); toast.success('Order saved.'); },
+    // On failure the local order is the lie, so it is discarded and the
+    // server's answer put back rather than left looking saved.
+    onError: (e) => { setOrder(items); toast.error(apiError(e)); },
+  });
+
+  const commitOrder = (next) => {
+    const before = items.map((m) => m.id).join(',');
+    const after = next.map((m) => m.id).join(',');
+    if (before !== after) reorder.mutate(next.map((m) => m.id));
+  };
 
   return (
     <section className="mm" aria-label="Event media">
@@ -179,36 +276,41 @@ export default function MediaManager({ eventId }) {
 
       {mediaQuery.isLoading && <div style={{ padding: 'var(--space-xl)', display: 'grid', placeItems: 'center' }}><Spinner /></div>}
 
-      {items.length > 0 && (
-        <div className="mm__grid">
-          {items.map((m) => (
-            <motion.figure key={m.id} className="mm__tile" layout initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
-              {m.kind === 'youtube'
-                ? <img src={m.thumbnail} alt={m.alt_text || 'Video thumbnail'} loading="lazy" />
-                : m.kind === 'video'
-                  ? <video src={m.url} muted playsInline preload="metadata" />
-                  : <img src={m.url} alt={m.alt_text || ''} loading="lazy" />}
-              {m.kind === 'youtube' && <span className="mm__yt-flag">YouTube</span>}
-              <figcaption className="mm__tile-bar">
-                <select
-                  value={m.placement}
-                  onChange={(e) => move.mutate({ mediaId: m.id, to: e.target.value })}
-                  aria-label={`Placement for ${m.alt_text || m.kind}`}
-                >
-                  {PLACEMENTS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => remove.mutate(m.id)}
-                  aria-label="Remove this file"
-                  className="mm__tile-x"
-                >
-                  <XIcon size={13} />
-                </button>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
+      {order.length > 0 && (
+        <>
+          {order.length > 1 && (
+            <p className="mm__reorder-hint">
+              Drag a tile to change the order visitors see. Keyboard: focus a tile and use the arrow keys.
+            </p>
+          )}
+          <Reorder.Group
+            axis="x"
+            values={order}
+            onReorder={setOrder}
+            className="mm__grid"
+            as="div"
+          >
+            {order.map((m, index) => (
+              <MediaTile
+                key={m.id}
+                item={m}
+                index={index}
+                total={order.length}
+                onCommit={() => commitOrder(order)}
+                onNudge={(delta) => {
+                  const next = [...order];
+                  const target = index + delta;
+                  if (target < 0 || target >= next.length) return;
+                  [next[index], next[target]] = [next[target], next[index]];
+                  setOrder(next);
+                  commitOrder(next);
+                }}
+                onPlacement={(to) => move.mutate({ mediaId: m.id, to })}
+                onRemove={() => remove.mutate(m.id)}
+              />
+            ))}
+          </Reorder.Group>
+        </>
       )}
 
       {!mediaQuery.isLoading && items.length === 0 && (

@@ -20,9 +20,18 @@ import {
 import { format } from 'date-fns';
 import './domain.css';
 
+// How long the hype button waits before telling the server. Long enough
+// to swallow a burst of taps, short enough that a single tap still feels
+// immediate to anyone watching the network rather than the button.
+const HYPE_DEBOUNCE_MS = 400;
+
 // ── Helpers ──────────────────────────────────────────────────────
 function formatPrice(tiers) {
-  if (!tiers || !tiers.length) return 'Free';
+  // Array.isArray, not a truthy length check. A string has a length too,
+  // so anything other than an array walked straight past the old guard
+  // and died on .map -- which took the whole page down with it, since a
+  // throw here happens during render.
+  if (!Array.isArray(tiers) || !tiers.length) return 'Free';
   const prices = tiers.map(t => t.price).filter(p => p !== null);
   if (!prices.length) return 'Free';
   const min = Math.min(...prices);
@@ -88,6 +97,7 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   const [hypeCount, setHyped] = useState(event.hype_count);
   const [isWishlisted, setWishlisted] = useState(event.is_wishlisted);
   const [animating, setAnimating] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -174,14 +184,35 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
     },
   });
 
+  // Hype is a toggle on a button people tap repeatedly -- it is the one
+  // control on the card that invites drumming on it. Firing a request per
+  // tap sent a burst the server answered out of order, so the count
+  // settled on whichever reply happened to land last, and any failure in
+  // the burst produced one error toast per tap.
+  //
+  // The button still responds on every tap; only the request waits. Taps
+  // inside the window collapse into a single call, and if the taps cancel
+  // out -- an even number, ending where it started -- no request is sent
+  // at all, because there is nothing to tell the server.
+  const hypeTimer = useRef(null);
+  const serverHyped = useRef(event.is_hyped);
+  useEffect(() => { serverHyped.current = event.is_hyped; }, [event.is_hyped]);
+  useEffect(() => () => clearTimeout(hypeTimer.current), []);
+
   const handleHype = (e) => {
     e.stopPropagation();
     if (!isAuthenticated) { navigate('/login'); return; }
+
+    const next = !isHyped;
     setAnimating(true);
-    setIsHyped(h => !h);
+    setIsHyped(next);
     setHyped(c => (isHyped ? c - 1 : c + 1));
     setTimeout(() => setAnimating(false), 300);
-    hypeMutation.mutate();
+
+    clearTimeout(hypeTimer.current);
+    hypeTimer.current = setTimeout(() => {
+      if (next !== serverHyped.current) hypeMutation.mutate();
+    }, HYPE_DEBOUNCE_MS);
   };
 
   const handleWishlist = (e) => {
@@ -210,10 +241,18 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
         <img
           src={event.cover_image || `https://picsum.photos/seed/${event.id}/800/600`}
           alt={event.title}
-          className="event-card__image"
+          className={`event-card__image ${imgLoaded ? 'is-loaded' : ''}`}
           loading="lazy"
+          decoding="async"
+          // Explicit intrinsic size so the browser reserves the box
+          // before the bytes arrive; without it the card grows as each
+          // image lands and the grid reflows under the cursor.
+          width={800}
+          height={450}
+          onLoad={() => setImgLoaded(true)}
           onError={(e) => {
             e.currentTarget.src = `https://picsum.photos/seed/${event.id}-alt/800/600`;
+            setImgLoaded(true);
           }}
         />
         <div className="event-card__chips">
