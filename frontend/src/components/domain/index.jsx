@@ -99,6 +99,12 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
   // Pointer position drives the spotlight border. Written as CSS custom
   // properties rather than React state so moving the mouse never
   // triggers a re-render.
+  // Warm the detail chunk on first hover. Without this the shared
+  // cover transition cannot run at all: the route is code-split, so
+  // clicking unmounts the card and shows a Suspense fallback while the
+  // destination downloads, and the two elements never coexist.
+  const warm = () => { import('@/pages/discovery/EventDetailPage'); };
+
   const trackPointer = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
@@ -167,9 +173,11 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
       className={cardClass}
       style={{ '--cat': hueFor(event.category) }}
       onPointerMove={trackPointer}
+      onPointerEnter={warm}
+      onFocus={warm}
     >
       {/* Image */}
-      <div className="event-card__image-wrap">
+      <motion.div className="event-card__image-wrap" layoutId={`cover-${event.id}`}>
         <img
           src={event.cover_image || `https://picsum.photos/seed/${event.id}/800/600`}
           alt={event.title}
@@ -185,7 +193,7 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
             <CategoryIcon category={event.category} size={12} /> {event.category}
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Body */}
       <div className="event-card__body">

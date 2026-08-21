@@ -58,8 +58,21 @@
   /* ── Motion ─────────────────────────────────────────────
      One spring-ish curve used everywhere. Consistent easing
      is most of what makes motion feel designed. */
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  /* This was also named --ease-spring, colliding with the overshoot
+     curve in spacing.css. Same token, two different behaviours,
+     resolved by import order -- so a component's motion depended on
+     which file happened to load last. Distinct names now:
+       --ease-out-expo  decelerate, no overshoot  (movement, layout)
+       --ease-spring    overshoot                 (discrete controls)  */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* Press physics. Asymmetric on purpose: real objects depress fast
+     and rebound slower. Symmetric timing reads as an animation;
+     asymmetric reads as a button. */
+  --dur-press:   90ms;
+  --dur-rebound: 220ms;
+  --press-scale: 0.96;
   --dur-fast:   160ms;
   --dur-med:    280ms;
   --dur-slow:   520ms;
@@ -218,7 +231,7 @@ html { scroll-behavior: smooth; }
      1:1. Adding depth must not repaint the surface. */
   box-shadow: var(--raise);
   transition: box-shadow var(--dur-med) var(--ease-out-soft),
-              transform var(--dur-med) var(--ease-spring);
+              transform var(--dur-med) var(--ease-out-expo);
 }
 
 .card:hover,
@@ -264,3 +277,56 @@ textarea {
 }
 /* Tables and rows are structure, not raised planes. */
 .admin-table, .dash-events-table { box-shadow: none; }
+
+/* ── Press physics ────────────────────────────────────────
+   Every control depresses. Nav links, chips, tabs and the
+   bell had hover and no active state at all -- which on a
+   touch device means they had *no* feedback, since hover
+   never fires there.
+
+   The asymmetry is the point: 90ms down, 220ms back. Objects
+   compress fast under force and recover slowly. Matching the
+   two durations is what makes an interface feel like
+   software rather than like something you pressed. */
+:where(
+  button, a, [role='button'], summary,
+  .tag, .top-nav__link, .tickets-tab, .notif,
+  .bottom-tab-bar__item, .dash-sidebar__link,
+  .profile-quick-links button
+):not(:disabled):not([aria-disabled='true']) {
+  transition:
+    transform var(--dur-rebound) var(--ease-spring),
+    background-color var(--dur-fast) var(--ease-out-soft),
+    color var(--dur-fast) var(--ease-out-soft),
+    box-shadow var(--dur-med) var(--ease-out-soft),
+    opacity var(--dur-fast) linear;
+}
+:where(
+  button, a, [role='button'], summary,
+  .tag, .top-nav__link, .tickets-tab,
+  .bottom-tab-bar__item, .dash-sidebar__link,
+  .profile-quick-links button
+):not(:disabled):not([aria-disabled='true']):active {
+  transform: scale(var(--press-scale));
+  transition-duration: var(--dur-press);
+  /* Linear on the way down: a decelerating press feels
+     mushy, like the control is resisting. */
+  transition-timing-function: linear;
+}
+
+/* Links and nav items only need a hint of travel -- a full
+   0.96 on a text link looks like the word is falling over. */
+:where(.top-nav__link, a:not(.btn)):active { transform: scale(0.985); }
+
+/* Disabled controls must not appear pressable. */
+:where(button, [role='button']):disabled,
+:where(button, [role='button'])[aria-disabled='true'] {
+  transform: none !important;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button, a, [role='button'], .tag, .top-nav__link):active {
+    transform: none;
+  }
+}

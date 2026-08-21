@@ -34,8 +34,8 @@
 /* ── Interactive card — manga-panel lift: hard offset shadow, not blur ── */
 .card--interactive {
   cursor: pointer;
-  transition: transform var(--duration-normal) var(--ease-spring),
-              box-shadow var(--duration-normal) var(--ease-spring),
+  transition: transform var(--duration-normal) var(--ease-out-expo),
+              box-shadow var(--duration-normal) var(--ease-out-expo),
               border-color var(--duration-fast) var(--ease-out);
 }
 /* The hover was a 5px hard-offset block in the accent colour with the

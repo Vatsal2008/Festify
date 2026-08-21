@@ -8,7 +8,7 @@
   color: var(--color-ink); background: var(--color-surface-cool);
   border: 1.5px solid var(--color-ink);
   border-radius: var(--radius-pill); padding: 4px 14px; white-space: nowrap;
-  cursor: default; transition: all var(--duration-fast) var(--ease-spring);
+  cursor: default; transition: transform var(--duration-fast) var(--ease-out-expo), background-color var(--duration-fast) var(--ease-out-expo), color var(--duration-fast) var(--ease-out-expo), border-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo);
 }
 button.tag { cursor: pointer; }
 button.tag:hover { background: var(--color-surface-sage); transform: translateY(-1px); box-shadow: 2px 2px 0 var(--color-ink); }
@@ -134,7 +134,7 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
   letter-spacing: 0.09em;
   text-transform: uppercase;
   transition: background var(--dur-fast) var(--ease-out-soft),
-              transform var(--dur-fast) var(--ease-spring),
+              transform var(--dur-fast) var(--ease-out-expo),
               border-color var(--dur-fast) var(--ease-out-soft),
               color var(--dur-fast) var(--ease-out-soft);
 }

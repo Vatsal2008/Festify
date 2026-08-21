@@ -243,7 +243,7 @@
 
 /* ── Tickets wallet ── */
 .tickets-tabs { display: flex; border-bottom: var(--border-hairline); margin-bottom: var(--space-2xl); }
-.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-muted, rgba(22,16,31,0.68)); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all var(--duration-fast); }
+.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-muted, rgba(22,16,31,0.68)); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: transform var(--duration-fast), background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast); }
 .tickets-tab--active { color: var(--color-ink); border-bottom-color: var(--color-ink); }
 .tickets-list { display: flex; flex-direction: column; gap: var(--space-lg); }
 
@@ -626,7 +626,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: background var(--dur-fast) var(--ease-out-soft),
-              transform var(--dur-fast) var(--ease-spring);
+              transform var(--dur-fast) var(--ease-out-expo);
 }
 .event-hero__back:hover {
   background: rgba(11, 7, 20, 0.75);
@@ -681,4 +681,29 @@
 }
 .event-detail-hero__title {
   text-shadow: 0 2px 24px rgba(11, 7, 20, 0.6);
+}
+
+/* Shared cover: the element the grid thumbnail becomes. It must be a
+   real positioned box rather than a background on the band, because a
+   layout transition animates a box -- a background-image has no
+   geometry of its own to tween. */
+.event-hero__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+.event-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 7, 20, 0.35) 0%,
+    rgba(11, 7, 20, 0.78) 62%,
+    rgba(11, 7, 20, 0.97) 100%
+  );
 }

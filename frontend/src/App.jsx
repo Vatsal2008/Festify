@@ -1,5 +1,6 @@
 // App.jsx — Complete router tree for Festify
 import { useEffect, lazy, Suspense } from 'react';
+import { LayoutGroup } from 'framer-motion';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Spinner } from '@/components/primitives/Primitives';
@@ -53,6 +54,10 @@ const SuperLoginPage               = lazy(() => import('@/pages/admin/SuperLogin
 
 import ErrorBoundary from '@/components/ErrorBoundary';
 
+// Warms the detail-route chunk before it is needed. Exported so the
+// card can call it on hover; the module cache makes repeat calls free.
+export const prefetchEventDetail = () => import('@/pages/discovery/EventDetailPage');
+
 // ── Scroll to Top on Navigation ───────────────────────────────────
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -100,6 +105,10 @@ export default function App() {
     <>
       <ScrollToTop />
       <ErrorBoundary>
+      {/* Shared-element transitions between the grid and a detail page
+          need both elements under one LayoutGroup; they are in
+          different routes, so the group has to wrap the router. */}
+      <LayoutGroup>
       <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* ── Public ── */}
@@ -154,6 +163,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </Suspense>
+      </LayoutGroup>
       </ErrorBoundary>
 
       {/* Global toast container */}

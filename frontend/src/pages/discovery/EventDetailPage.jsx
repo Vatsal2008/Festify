@@ -1,5 +1,6 @@
 // pages/discovery/EventDetailPage.jsx
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
@@ -38,6 +39,23 @@ export default function EventDetailPage() {
   const eventQuery = useQuery({
     queryKey: queryKeys.events.detail(id),
     queryFn: () => eventsApi.get(id),
+    // Seed from whatever the visitor was just looking at. Arriving from
+    // the grid, this event is already in a cached list response --
+    // title, cover, venue, price -- so gating the whole page behind a
+    // fresh fetch shows a spinner for data we already hold.
+    //
+    // This is also what makes the shared cover transition possible at
+    // all: the hero has to exist in the same frame the card unmounts,
+    // and it cannot if it is waiting on the network.
+    placeholderData: () => {
+      const lists = qc.getQueriesData({ queryKey: ['events'] });
+      for (const [, data] of lists) {
+        const rows = Array.isArray(data) ? data : data?.events;
+        const hit = Array.isArray(rows) ? rows.find((e) => e?.id === id) : null;
+        if (hit) return hit;
+      }
+      return undefined;
+    },
   });
   const event = eventQuery.data;
 
@@ -169,16 +187,30 @@ export default function EventDetailPage() {
               className="event-hero"
               style={{
                 '--cat': hueFor(ev.category),
+                backgroundColor: 'var(--color-ink-deep)',
                 // Three stops rather than two: a lighter top lets the
                 // image read, a hue-tinted middle ties the page to the
                 // category, and a near-opaque base carries white text.
-                backgroundImage: `linear-gradient(180deg, rgba(11,7,20,0.35) 0%, rgba(11,7,20,0.78) 62%, rgba(11,7,20,0.97) 100%), url(${ev.cover_image || `https://picsum.photos/seed/${ev.id}/1600/900`})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
+
                 marginTop: 'calc(-1 * (var(--nav-height) + 32px))',
                 paddingTop: 'calc(var(--nav-height) + 72px)',
               }}
             >
+              {/* Destination of the grid card's cover. Same layoutId,
+                  so Framer treats the two as one object and tweens the
+                  card's thumbnail into this full-bleed hero rather than
+                  cutting between two unrelated screens. */}
+              <motion.div
+                className="event-hero__cover"
+                layoutId={`cover-${ev.id}`}
+                transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.9 }}
+                aria-hidden="true"
+                style={{
+                  backgroundImage: `url(${ev.cover_image || `https://picsum.photos/seed/${ev.id}/1600/900`})`,
+                }}
+              />
+              <div className="event-hero__scrim" aria-hidden="true" />
+
               <div className="event-detail-hero">
                 {/* Every page needs a way back; this one was a dead end. */}
                 <button className="event-hero__back" onClick={() => navigate(-1)}>
