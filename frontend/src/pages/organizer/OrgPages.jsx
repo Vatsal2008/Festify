@@ -614,6 +614,7 @@ export function OrgEventsPage() {
               <span className="type-body-sm">{e.tiers.reduce((a, t) => a + t.sold_count, 0)} sold</span>
               <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
                 <Button variant="secondary" size="sm" onClick={() => navigate(`/events/${e.id}`)}>View</Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/org/${orgId}/events/${e.id}/media`)}>Media</Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate(`/org/${orgId}/events/${e.id}/scan`)}>Scanner</Button>
               </div>
             </div>

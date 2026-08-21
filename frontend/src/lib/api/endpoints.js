@@ -29,6 +29,22 @@ export const eventsApi = {
   toggleWishlist: (id) => api.post(`/events/${id}/wishlist`).then(r => r.data),
 
   banners: (id) => api.get(`/events/${id}/banners`).then(r => r.data),
+
+  // media
+  media: (id) => api.get(`/events/${id}/media`).then(r => r.data),
+  uploadMedia: (id, file, placement = 'gallery', altText = '') => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('placement', placement);
+    form.append('alt_text', altText);
+    // Content-Type is deliberately unset: the browser must add the
+    // multipart boundary itself, and axios's JSON default would
+    // overwrite it and break the upload.
+    return api.post(`/events/${id}/media`, form, { headers: { 'Content-Type': undefined } }).then(r => r.data);
+  },
+  updateMedia: (id, mediaId, body) => api.patch(`/events/${id}/media/${mediaId}`, body).then(r => r.data),
+  reorderMedia: (id, ids) => api.post(`/events/${id}/media/reorder`, { ids }).then(r => r.data),
+  deleteMedia: (id, mediaId) => api.delete(`/events/${id}/media/${mediaId}`).then(r => r.data),
 };
 
 // ── orders & tickets ──────────────────────────────────────────────

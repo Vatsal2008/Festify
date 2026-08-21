@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.authz import require_org_manager
 from app.core.supabase_client import get_supabase
 from app.deps import get_current_user, get_current_user_optional
+from app.routers.media import BUCKET as MEDIA_BUCKET
 from app.schemas import EventCreate, TicketTierCreate
 from app.serializers import serialize_event, serialize_tier
 
@@ -67,17 +68,31 @@ def _enrich_events(supabase, events: list[dict], viewer: dict | None) -> list[di
         )
         wishlisted = {w["event_id"] for w in wl.data}
 
-    banners = (
-        supabase.table("event_banners")
-        .select("event_id, storage_path, banner_type")
+    # Cover comes from uploaded media. An explicit 'cover' wins; failing
+    # that the first gallery image stands in, so an organiser who
+    # uploaded photos without nominating one still gets a card image
+    # rather than a placeholder.
+    media = (
+        supabase.table("event_media")
+        .select("event_id, storage_path, placement, sort_order, kind")
         .in_("event_id", event_ids)
         .eq("status", "active")
+        .in_("placement", ["cover", "gallery"])
+        .order("sort_order")
         .execute()
     )
     cover_by_event: dict[str, str] = {}
-    for b in banners.data:
-        if b["banner_type"] in ("main", "event_page") and b["event_id"] not in cover_by_event:
-            cover_by_event[b["event_id"]] = supabase.storage.from_(BUCKET).get_public_url(b["storage_path"])
+    fallback_by_event: dict[str, str] = {}
+    for m in media.data:
+        if m["kind"] != "image":
+            continue
+        url = supabase.storage.from_(MEDIA_BUCKET).get_public_url(m["storage_path"])
+        if m["placement"] == "cover":
+            cover_by_event[m["event_id"]] = url
+        elif m["event_id"] not in fallback_by_event:
+            fallback_by_event[m["event_id"]] = url
+    for eid, url in fallback_by_event.items():
+        cover_by_event.setdefault(eid, url)
 
     reviews = supabase.table("event_reviews").select("event_id, rating").in_("event_id", event_ids).execute()
     review_stats: dict[str, dict] = {}

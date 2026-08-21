@@ -52,6 +52,29 @@ def my_tickets(current_user: dict = Depends(get_current_user)):
     )
     scanned = {s["ticket_id"] for s in scans.data}
 
+    # Ticket background art, per event, chosen by the organiser. Fetched
+    # for the whole wallet in one query rather than per ticket.
+    from app.routers.media import BUCKET as MEDIA_BUCKET
+    ticket_bg_by_event: dict[str, str] = {}
+    if event_ids:
+        bgs = (
+            supabase.table("event_media")
+            .select("event_id, storage_path, placement")
+            .in_("event_id", event_ids)
+            .eq("status", "active")
+            .in_("placement", ["ticket_bg", "cover"])
+            .execute()
+        )
+        for m in bgs.data:
+            # An explicit ticket_bg wins; the cover stands in otherwise,
+            # so a ticket is never a blank rectangle.
+            if m["placement"] == "ticket_bg" or m["event_id"] not in ticket_bg_by_event:
+                url = supabase.storage.from_(MEDIA_BUCKET).get_public_url(m["storage_path"])
+                if m["placement"] == "ticket_bg":
+                    ticket_bg_by_event[m["event_id"]] = url
+                else:
+                    ticket_bg_by_event.setdefault(m["event_id"], url)
+
     out = []
     for t in tickets.data:
         ev = events_by_id.get(t.get("event_id")) or {}
@@ -82,6 +105,7 @@ def my_tickets(current_user: dict = Depends(get_current_user)):
                 "cover_image": None,
                 "qr_revealed_at": ev.get("qr_revealed_at"),
                 "gate_opened_at": ev.get("gate_opened_at"),
+                "ticket_bg": ticket_bg_by_event.get(ev.get("id")),
             },
             "tier": {
                 "id": tier.get("id"),

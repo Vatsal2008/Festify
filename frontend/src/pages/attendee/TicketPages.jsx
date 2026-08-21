@@ -210,7 +210,16 @@ export function TicketDetailPage() {
                   )}
                 </div>
 
-                <div>
+                {/* The organiser's ticket art sits behind the code. It is
+                    decoration, so it stays well under the QR's contrast --
+                    a scanner needs the code to be the highest-contrast
+                    thing in frame. */}
+                <div
+                  className={`ticket-qr-panel ${ticket.event?.ticket_bg ? 'ticket-qr-panel--art' : ''}`}
+                  style={ticket.event?.ticket_bg
+                    ? { backgroundImage: `url(${ticket.event.ticket_bg})` }
+                    : undefined}
+                >
                   <p className="type-label-mono" style={{ marginBottom: 'var(--space-xl)' }}>Your QR Code</p>
                   <QRDisplay ticket={ticket} />
                 </div>

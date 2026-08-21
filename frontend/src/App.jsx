@@ -30,6 +30,7 @@ const PrimePassPage      = lazy(() => import('@/pages/attendee/PrimePassPage'));
 // ── Organizer ──────────────────────────────────────────────────────
 const OrganizerApplicationPage = lazy(() => import('@/pages/organizer/OrganizerApplicationPage'));
 const GateScannerPage    = lazy(() => import('@/pages/organizer/GateScannerPage'));
+const EventMediaPage     = lazy(() => import('@/pages/organizer/EventMediaPage'));
 const OrgDashboardPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.OrgDashboardPage })));
 const EventBuilderPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.EventBuilderPage })));
 const BulkRequestsPage   = lazy(() => import('@/pages/organizer/OrgPages').then(m => ({ default: m.BulkRequestsPage })));
@@ -132,6 +133,7 @@ export default function App() {
         <Route path="/org/:orgId/events"                       element={<RequireAuth><OrgEventsPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/new"                   element={<RequireAuth><EventBuilderPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><GateScannerPage /></RequireAuth>} />
+        <Route path="/org/:orgId/events/:eventId/media"        element={<RequireAuth><EventMediaPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/bulk-requests" element={<RequireAuth><BulkRequestsPage /></RequireAuth>} />
         <Route path="/org/:orgId/members"                      element={<RequireAuth><OrgMembersPage /></RequireAuth>} />
         <Route path="/org/:orgId/chat"                         element={<RequireAuth><OrgChatPage /></RequireAuth>} />

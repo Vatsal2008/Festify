@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
 import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner, hueFor } from '@/components/domain';
+import MediaGallery from '@/components/domain/MediaGallery';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
@@ -58,6 +59,14 @@ export default function EventDetailPage() {
     },
   });
   const event = eventQuery.data;
+
+  // Uploaded media for this event. Kept separate from the event query
+  // so a gallery upload does not invalidate the whole event payload.
+  const mediaQuery = useQuery({
+    queryKey: ['events', id, 'media'],
+    queryFn: () => eventsApi.media(id),
+    enabled: !!id,
+  });
 
   const reviewsQuery = useQuery({
     queryKey: queryKeys.events.reviews(id),
@@ -206,9 +215,22 @@ export default function EventDetailPage() {
                 transition={{ type: 'spring', stiffness: 260, damping: 30, mass: 0.9 }}
                 aria-hidden="true"
                 style={{
-                  backgroundImage: `url(${ev.cover_image || `https://picsum.photos/seed/${ev.id}/1600/900`})`,
+                  backgroundImage: `url(${
+                    mediaQuery.data?.detail_bg?.url
+                    || mediaQuery.data?.cover?.url
+                    || ev.cover_image
+                    || `https://picsum.photos/seed/${ev.id}/1600/900`
+                  })`,
                 }}
               />
+              {mediaQuery.data?.hero_video?.url && (
+                <video
+                  className="event-hero__video"
+                  src={mediaQuery.data.hero_video.url}
+                  autoPlay loop muted playsInline
+                  aria-hidden="true"
+                />
+              )}
               <div className="event-hero__scrim" aria-hidden="true" />
 
               <div className="event-detail-hero">
@@ -281,6 +303,8 @@ export default function EventDetailPage() {
                       {ev.description || 'No description provided.'}
                     </div>
                   </section>
+
+                  <MediaGallery media={mediaQuery.data?.gallery ?? []} title="Event gallery" />
 
                   <section aria-labelledby="reviews-heading" style={{ marginTop: 'var(--space-3xl)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>
