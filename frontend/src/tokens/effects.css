@@ -10,21 +10,9 @@
    ========================================================= */
 
 :root {
-  /* ── Category hues ──────────────────────────────────────
-     One hue per event category. This is the load-bearing
-     use of colour on the platform: a hackathon is always
-     violet, a concert is always orange, everywhere they
-     appear. Learnable at a glance after two visits. */
-  --hue-hackathon: #6C4DFF;   /* violet */
-  --hue-cultural:  #FF3D8A;   /* pink   */
-  --hue-music:     #FF7A29;   /* orange */
-  --hue-sports:    #D4FF3D;   /* lime   */
-  --hue-talk:      #22D3EE;   /* cyan   */
-  --hue-workshop:  #38BDF8;   /* sky   */
-  --hue-party:     #F472B6;   /* rose  */
-  --hue-comedy:    #FBBF24;   /* amber */
-  --hue-theatre:   #A78BFA;   /* lilac */
-  --hue-default:   #94A3B8;   /* slate — deliberately dull, so an
+  /* Category hues live in colors.css. They were declared here
+     too, and because this file imports last the duplicates won
+     -- so re-grading the palette changed nothing visible. */   /* slate — deliberately dull, so an
                                  unclassified event looks unclassified
                                  rather than borrowing a real category's
                                  identity */
@@ -364,4 +352,73 @@ textarea {
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--color-accent) 55%, transparent),
     0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Chromatic elevation in use ───────────────────────────
+   The four tiers exist as tokens; these are the behaviours
+   that make them read as depth rather than as four greys.
+
+   The inner top highlight is the whole trick on dark: a 1px
+   line of light along the upper lip is what the eye reads as
+   a raised plane catching a light source above it. Without
+   it a lighter rectangle just looks like a lighter
+   rectangle. */
+.surface-1,
+.card--teal,
+.teal-band .card,
+.dash-sidebar,
+.super-login__card,
+.home-hero__panel {
+  background-color: var(--surface-1-glass, rgba(24, 20, 34, 0.7));
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.1),
+    0 2px 8px oklch(0.12 0.03 280 / 0.4),
+    0 18px 40px -14px oklch(0.12 0.03 280 / 0.6);
+  border: 1px solid oklch(1 0 0 / 0.08);
+}
+
+.surface-2, .modal-panel {
+  background-color: var(--surface-2, #201a2c);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.12),
+    0 24px 60px -18px oklch(0.12 0.03 280 / 0.7);
+}
+
+/* ── Category backlight ───────────────────────────────────
+   A card lights its surroundings in its own hue on hover.
+   Rendered on a pseudo-element behind the card rather than
+   as a box-shadow so it can be blurred well past the card's
+   bounds -- a glow that stops at the border is a rim, not a
+   backlight. */
+.event-card { position: relative; isolation: isolate; }
+.event-card::after {
+  content: '';
+  position: absolute;
+  inset: 8% 6%;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  background: var(--cat);
+  filter: blur(30px);
+  transition: opacity var(--dur-med) var(--ease-out-soft);
+  pointer-events: none;
+}
+.event-card:hover::after { opacity: 0.35; }
+
+/* Translucent edge instead of a drawn line. */
+.event-card,
+.card {
+  border: 1px solid oklch(1 0 0 / 0.08);
+}
+/* On light grounds a white edge is invisible, so the same
+   idea inverts to a faint dark line. */
+.canvas-band .card,
+.canvas-band .event-card {
+  border-color: oklch(0.12 0.03 280 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-card::after { display: none; }
 }
