@@ -90,7 +90,7 @@ export default function SearchPage() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: sort === opt.id ? 'var(--color-ink)' : 'rgba(22, 16, 31,0.5)',
+                color: sort === opt.id ? 'var(--color-ink)' : 'var(--color-muted, rgba(22,16,31,0.68))',
                 borderBottom: sort === opt.id ? '2px solid var(--color-ink)' : '2px solid transparent',
                 padding: '4px 0',
                 marginRight: 'var(--space-md)',
@@ -102,7 +102,7 @@ export default function SearchPage() {
         </div>
 
         <div className="search-results-header" style={{ marginBottom: 'var(--space-xl)' }}>
-          <p className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.7)' }}>
+          <p className="type-label-mono" style={{ color: 'var(--color-muted, rgba(22,16,31,0.68))' }}>
             {searchQuery.isPending ? 'Searching…' : `${results.length} event${results.length === 1 ? '' : 's'} found`}
           </p>
         </div>

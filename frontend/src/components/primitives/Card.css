@@ -38,15 +38,19 @@
               box-shadow var(--duration-normal) var(--ease-spring),
               border-color var(--duration-fast) var(--ease-out);
 }
+/* The hover was a 5px hard-offset block in the accent colour with the
+   border darkening -- a printed-sticker effect. Replaced with a lift:
+   the surface rises and its shadow softens and spreads, which is what
+   a raised plane actually does to light. */
 .card--interactive:hover {
-  transform: translate(-3px, -3px);
-  border-color: var(--color-ink);
-  box-shadow: 5px 5px 0 var(--color-accent);
+  transform: translateY(-4px);
+  box-shadow: var(--raise-hover);
 }
+/* Press physically depresses rather than snapping flat. */
 .card--interactive:active {
-  transform: translate(0, 0);
-  box-shadow: none;
-  transition-duration: var(--duration-instant);
+  transform: translateY(-1px) scale(0.995);
+  box-shadow: var(--raise);
+  transition-duration: var(--dur-fast);
 }
 .card--interactive:focus-visible {
   outline: 2px solid var(--color-accent);

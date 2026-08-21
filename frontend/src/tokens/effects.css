@@ -191,3 +191,76 @@ html { scroll-behavior: smooth; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Surfaces: lit, not outlined ──────────────────────────
+   --border-hairline is transparent now, so anything that
+   relied on it for definition needs light instead. These
+   rules give it, centrally, rather than editing 235 call
+   sites.
+
+   The inner top highlight is the whole trick: a 1px white
+   inset along the upper edge reads as light landing on the
+   lip of a raised surface. Paired with a tinted shadow
+   below, the eye infers a plane. A drawn border tells you
+   there is a box; this shows you one. */
+.card,
+.notif,
+.event-card,
+.prime-plan,
+.apply-form,
+.apply-status,
+.gate-control,
+.notif-settings {
+  /* Light only. An earlier version also forced
+     background-color here, which overrode surfaces that
+     already had their own -- most damagingly the glass hero
+     panel, whose cream text then sat on a cream ground at
+     1:1. Adding depth must not repaint the surface. */
+  box-shadow: var(--raise);
+  transition: box-shadow var(--dur-med) var(--ease-out-soft),
+              transform var(--dur-med) var(--ease-spring);
+}
+
+.card:hover,
+.notif:hover,
+.event-card:hover,
+.prime-plan:hover { box-shadow: var(--raise-hover); }
+
+/* On the ink band the same surface is defined by being a
+   fraction lighter than its ground, with a far softer
+   highlight -- a bright inner line on dark reads as a
+   scratch, not as light. */
+.card--teal,
+.teal-band .card,
+.dash-sidebar,
+.super-login__card {
+  box-shadow: var(--raise-dark);
+}
+
+/* ── Where an edge is still the right answer ─────────────
+   These are affordances, not decoration. A field with no
+   edge is invisible until focus, and a table without rules
+   is a wall of text. */
+.input-field,
+.select-field,
+input[type='text'],
+input[type='email'],
+input[type='search'],
+input[type='number'],
+input[type='password'],
+select,
+textarea {
+  border: var(--edge-line);
+  box-shadow: inset 0 1px 2px rgba(22, 16, 31, 0.04);
+}
+.admin-table th,
+.admin-table td,
+.apply-history__row,
+.gate-history__row,
+.dash-events-table th,
+.dash-events-table td {
+  border-bottom: var(--edge-line);
+  box-shadow: none;
+}
+/* Tables and rows are structure, not raised planes. */
+.admin-table, .dash-events-table { box-shadow: none; }

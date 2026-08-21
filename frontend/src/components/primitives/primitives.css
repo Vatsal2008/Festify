@@ -12,7 +12,7 @@
 }
 button.tag { cursor: pointer; }
 button.tag:hover { background: var(--color-surface-sage); transform: translateY(-1px); box-shadow: 2px 2px 0 var(--color-ink); }
-.tag--active { background: var(--color-accent); color: var(--color-canvas); border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink); }
+.tag--active { background: var(--color-accent); color: var(--color-ink); border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink); }
 
 /* ── Input ── */
 .input-wrapper { display: flex; flex-direction: column; gap: var(--space-sm); width: 100%; }

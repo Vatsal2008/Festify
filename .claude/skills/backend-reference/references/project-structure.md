@@ -1,0 +1,63 @@
+# Directory Structure
+
+```
+backend/
+  app/
+    core/
+      __init__.py (0 lines)
+      config.py (65 lines)
+      email_client.py (184 lines)
+      razorpay_client.py (11 lines)
+      redis_client.py (24 lines)
+      security.py (1 lines)
+      supabase_client.py (28 lines)
+    routers/
+      __init__.py (0 lines)
+      auth.py (172 lines)
+      bulk_purchase.py (99 lines)
+      co_hosts.py (42 lines)
+      college_admins.py (87 lines)
+      college_verification.py (74 lines)
+      event_lifecycle.py (86 lines)
+      events.py (251 lines)
+      gate.py (120 lines)
+      health.py (116 lines)
+      hype_reviews.py (132 lines)
+      media.py (84 lines)
+      notifications.py (139 lines)
+      orders.py (291 lines)
+      org_groups.py (120 lines)
+      organizer_admin.py (334 lines)
+      organizer_interactions.py (100 lines)
+      platform.py (313 lines)
+      prime_pass.py (236 lines)
+      scoring.py (60 lines)
+      super_auth.py (277 lines)
+      support.py (86 lines)
+      team_size_overrides.py (99 lines)
+      theft.py (416 lines)
+      tickets.py (301 lines)
+      user_groups.py (109 lines)
+      waitlist.py (70 lines)
+      webhooks.py (44 lines)
+      wishlist.py (82 lines)
+    services/
+      __init__.py (0 lines)
+      notifications.py (137 lines)
+    __init__.py (0 lines)
+    authz.py (97 lines)
+    deps.py (54 lines)
+    main.py (128 lines)
+    schemas.py (175 lines)
+    serializers.py (83 lines)
+supabase/
+  migrations/
+    0001_festify_full_schema.sql (589 lines)
+    0002_wishlist_waitlist_scoring_config.sql (40 lines)
+    0003_enable_rls.sql (63 lines)
+    0004_add_razorpay_payment_id.sql (1 lines)
+    0005_org_payouts_ledger.sql (16 lines)
+    0006_event_category_capacity.sql (12 lines)
+    0007_super_admins.sql (16 lines)
+    0008_prime_pass_and_gate_control.sql (46 lines)
+```

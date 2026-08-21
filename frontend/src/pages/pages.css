@@ -243,7 +243,7 @@
 
 /* ── Tickets wallet ── */
 .tickets-tabs { display: flex; border-bottom: var(--border-hairline); margin-bottom: var(--space-2xl); }
-.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(22, 16, 31,0.55); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all var(--duration-fast); }
+.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-muted, rgba(22,16,31,0.68)); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all var(--duration-fast); }
 .tickets-tab--active { color: var(--color-ink); border-bottom-color: var(--color-ink); }
 .tickets-list { display: flex; flex-direction: column; gap: var(--space-lg); }
 

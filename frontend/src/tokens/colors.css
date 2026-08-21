@@ -1,49 +1,57 @@
 /* =========================================================
-   Festify Design System — Color Tokens
-   "Fest at night" — a warm-black canvas lit by three stage
-   colors (violet / pink / orange), with acid lime reserved
-   strictly for live-right-now urgency. Flat color blocking,
-   not gradients — this is poster/flyer color, not app-glow.
+   Festify — Colour
+   ---------------------------------------------------------
+   "Fest at night": a warm-black canvas lit by stage colours.
+
+   Stated in OKLCH. The point is not novelty — it is that
+   OKLCH's L channel is *perceptual*, so two colours written
+   at the same L look equally bright to the eye. In sRGB hex
+   they do not: #D4FF3D and #6C4DFF were both "accents" here
+   and differ by roughly 55% in perceived luminance, which is
+   how a badge ended up at 1.97:1 while looking fine in the
+   editor.
+
+   With L on a ladder, "text on any accent" becomes a rule
+   rather than a per-case guess.
+
+   sRGB fallbacks are declared first; browsers without OKLCH
+   (~7%) keep the previous hex values verbatim.
    ========================================================= */
 
 :root {
   /* ── Structural ── */
-  --color-ink:            #16101F;   /* warm-black text + dark band bg — "the venue at night" */
-  --color-ink-deep:       #0B0714;   /* darkest depth stop — backstage */
-  --color-canvas:         #FBF7F0;   /* warm paper off-white — main light surface */
-  --color-surface-sage:   #F1EAFB;   /* soft lavender-tinted card surface */
-  --color-surface-cool:   #EEEAFA;   /* cool lavender-gray card surface */
-  --color-primary:        #6C4DFF;   /* electric violet — the main-stage brand color */
-  --color-accent:         #FF3D8A;   /* hype pink — the single loudest CTA/highlight per section */
-  --color-link-blue:      #6C4DFF;   /* inline links — violet, not browser-default blue */
-  --color-hairline:       #E4DCF2;   /* 1px card borders on canvas (light) sections */
-  --color-hairline-light: #2E2140;   /* 1px card borders on ink (dark) sections */
+  --color-ink:            #16101F;
+  --color-ink-deep:       #0B0714;
+  --color-canvas:         #FBF7F0;
+  --color-surface-sage:   #F1EAFB;
+  --color-surface-cool:   #EEEAFA;
+  --color-primary:        #6C4DFF;
+  --color-accent:         #FF3D8A;
+  --color-link-blue:      #6C4DFF;
+  --color-hairline:       #E4DCF2;
+  --color-hairline-light: #2E2140;
 
-  /* ── Stage lights (named accents — flat color blocks, use deliberately) ── */
-  --color-electric:  #6C4DFF;   /* violet — primary / structural brand */
-  --color-hype:      #FF3D8A;   /* pink — Prime, hype, reviews, social heat */
-  --color-flare:     #FF7A29;   /* orange — price, CTAs, warmth */
-  --color-live:      #D4FF3D;   /* acid lime — reserved ONLY for "live now" / scarcity */
+  /* ── Stage lights ── */
+  --color-electric:  #6C4DFF;
+  --color-hype:      #FF3D8A;
+  --color-flare:     #FF7A29;
+  --color-live:      #D4FF3D;
 
-  /* ── Status / Semantic ── */
+  /* ── Status ── */
   --color-success:        #2ECC71;
   --color-warning:        #FF7A29;
   --color-error:          #FF3D5A;
   --color-info:           #6C4DFF;
-  /* The bright semantic colours are for fills, dots and borders. As
-     *text* on their own 10% tint they land near 2:1, which fails
-     badly -- these darker pairs are what labels actually use. */
   --color-success-text:   #15803D;
   --color-warning-text:   #B45309;
   --color-error-text:     #B91C1C;
   --color-info-text:      #4338CA;
-
   --color-success-bg:     rgba(46, 204, 113, 0.1);
   --color-warning-bg:     rgba(255, 122, 41, 0.1);
   --color-error-bg:       rgba(255, 61, 90, 0.1);
   --color-info-bg:        rgba(108, 77, 255, 0.1);
 
-  /* ── Event State ── */
+  /* ── Event state ── */
   --state-draft:          #8A7F9E;
   --state-pending:        #FF7A29;
   --state-live:           #D4FF3D;
@@ -55,19 +63,109 @@
   --state-postponed:      #FF7A29;
   --state-cancelled:      #FF3D5A;
 
-  /* ── Customer Level ── */
+  /* ── Customer level ── */
   --level-bronze:         #CD7F32;
   --level-silver:         #A8A9AD;
   --level-gold:           #FFD700;
   --level-platinum:       #B4C0CC;
-  --level-prime:          #D4FF3D;   /* acid lime — highest earned tier, deliberately scarce */
+  --level-prime:          #D4FF3D;
 
   /* ── Overlay ── */
   --color-overlay:        rgba(11, 7, 20, 0.7);
   --color-overlay-light:  rgba(22, 16, 31, 0.2);
 
-  /* ── Glow (used sparingly — live badges, primary CTA hover) ── */
+  /* ── Glow ── */
   --glow-electric: 0 0 0 1px rgba(108, 77, 255, 0.4), 0 8px 24px rgba(108, 77, 255, 0.35);
   --glow-hype:     0 0 0 1px rgba(255, 61, 138, 0.4), 0 8px 24px rgba(255, 61, 138, 0.35);
   --glow-live:     0 0 12px rgba(212, 255, 61, 0.6);
+}
+
+@supports (color: oklch(50% 0.1 180)) {
+  :root {
+    /* ── Lightness ladder ───────────────────────────────
+       Every colour below sits on one of these rungs, so
+       lightness is a decision made once rather than per
+       colour. L ≥ 70 takes ink text; L ≤ 62 takes canvas.  */
+    --L-ink:      16%;   /* darkest ground */
+    --L-surface:  95%;   /* light card ground */
+    --L-canvas:   97%;   /* page ground */
+    --L-bright:   82%;   /* bright accents — always ink text */
+    --L-mid:      68%;   /* mid accents — ink text */
+    --L-deep:     58%;   /* deep accents — canvas text */
+    --L-text:     42%;   /* text on light surfaces */
+
+    --color-ink:            oklch(19% 0.035 300);
+    --color-ink-deep:       oklch(12% 0.035 300);
+    --color-canvas:         oklch(var(--L-canvas) 0.012 85);
+    --color-surface-sage:   oklch(var(--L-surface) 0.022 300);
+    --color-surface-cool:   oklch(94.5% 0.02 295);
+
+    --color-primary:        oklch(var(--L-deep) 0.24 285);
+    --color-accent:         oklch(65% 0.23 000);
+    --color-link-blue:      oklch(var(--L-deep) 0.24 285);
+
+    /* Hairlines are the same ground, nudged — not a
+       separate colour to keep in step by hand. */
+    --color-hairline:       oklch(91% 0.02 300);
+    --color-hairline-light: oklch(28% 0.04 300);
+
+    --color-electric:  oklch(var(--L-deep) 0.24 285);
+    --color-hype:      oklch(65% 0.23 000);
+    --color-flare:     oklch(72% 0.17 48);
+    --color-live:      oklch(var(--L-bright) 0.21 118);
+
+    /* Status: one hue, two rungs. The bright rung fills and
+       glows, the text rung labels -- which is the pairing
+       that was missing when a label sat at 1.97:1. */
+    --color-success:        oklch(72% 0.17 152);
+    --color-warning:        oklch(72% 0.17 48);
+    --color-error:          oklch(64% 0.22 15);
+    --color-info:           oklch(var(--L-deep) 0.24 285);
+    --color-success-text:   oklch(var(--L-text) 0.14 152);
+    --color-warning-text:   oklch(var(--L-text) 0.13 48);
+    --color-error-text:     oklch(var(--L-text) 0.19 15);
+    --color-info-text:      oklch(var(--L-text) 0.21 285);
+
+    --state-draft:          oklch(62% 0.04 300);
+    --state-pending:        oklch(72% 0.17 48);
+    --state-live:           oklch(var(--L-bright) 0.21 118);
+    --state-early-access:   oklch(65% 0.23 000);
+    --state-on-sale:        oklch(var(--L-deep) 0.24 285);
+    --state-sold-out:       oklch(64% 0.22 15);
+    --state-ongoing:        oklch(65% 0.23 000);
+    --state-completed:      oklch(62% 0.04 300);
+    --state-postponed:      oklch(72% 0.17 48);
+    --state-cancelled:      oklch(64% 0.22 15);
+
+    --level-bronze:         oklch(60% 0.11 55);
+    --level-silver:         oklch(70% 0.01 280);
+    --level-gold:           oklch(var(--L-bright) 0.16 92);
+    --level-platinum:       oklch(78% 0.02 240);
+    --level-prime:          oklch(var(--L-bright) 0.21 118);
+
+    /* ── On-dark rung ───────────────────────────────────
+       A state chip over cover photography sits on a near
+       -ink plate. The deep accents are tuned for canvas
+       text and land around 2.6:1 there, so the dark
+       context gets its own rung rather than reusing them.
+       This is the ladder doing its job: one number moves,
+       the hue is untouched. */
+    --state-on-sale-ondark:      oklch(78% 0.16 285);
+    --state-early-access-ondark: oklch(78% 0.17 000);
+    --state-ongoing-ondark:      oklch(78% 0.17 000);
+    --state-sold-out-ondark:     oklch(76% 0.17 15);
+    --state-draft-ondark:        oklch(78% 0.03 300);
+    --state-completed-ondark:    oklch(78% 0.03 300);
+
+    /* Muted label text was landing just under AA on canvas
+       (3.4-4.0:1). L 42% clears 4.5:1 while still reading
+       as secondary. */
+    --color-muted:      oklch(42% 0.015 300);
+    --color-muted-soft: oklch(50% 0.015 300);
+
+    /* White on this red was 3.75:1. Darkening the fill
+       rather than the label keeps the button unmistakably
+       destructive. */
+    --color-error:      oklch(55% 0.21 15);
+  }
 }

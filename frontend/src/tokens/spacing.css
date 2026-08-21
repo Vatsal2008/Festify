@@ -3,17 +3,21 @@
    ========================================================= */
 :root {
   /* ── Spacing ── */
+  /* Small steps stay fixed -- a 4px gap should be 4px on any
+     screen; scaling it just makes it wrong somewhere. The
+     large steps carry section rhythm and are the ones that
+     should breathe, so those interpolate. */
   --space-xs:   4px;
   --space-sm:   6px;
   --space-md:   8px;
-  --space-base: 10px;  /* base unit */
+  --space-base: 10px;
   --space-lg:   16px;
-  --space-xl:   24px;
-  --space-2xl:  32px;
-  --space-3xl:  48px;
-  --space-4xl:  64px;
-  --space-5xl:  80px;
-  --space-6xl:  120px;
+  --space-xl:   clamp(1.25rem, 1.15rem + 0.42vw, 1.5rem);
+  --space-2xl:  clamp(1.5rem, 1.3rem + 0.85vw, 2rem);
+  --space-3xl:  clamp(2rem, 1.6rem + 1.7vw, 3rem);
+  --space-4xl:  clamp(2.5rem, 1.9rem + 2.55vw, 4rem);
+  --space-5xl:  clamp(3rem, 2.1rem + 3.8vw, 5rem);
+  --space-6xl:  clamp(4rem, 2.3rem + 7.2vw, 7.5rem);
 
   /* ── Border Radius ── */
   --radius-none: 0px;    /* primary CTA buttons — archival precision */
@@ -31,11 +35,44 @@
   --content-padding:  var(--space-2xl);
   --section-gap:      var(--space-3xl);
 
-  /* ── Borders (no shadows in this system) ── */
-  --border-hairline:       1px solid var(--color-hairline);
-  --border-hairline-teal:  1px solid var(--color-hairline-light);
-  --border-hairline-accent:1px solid var(--color-accent);
-  --border-hairline-canvas:1px solid var(--color-canvas);
+  /* ── Edges ─────────────────────────────────────────────
+     Surfaces used to be defined by a literal 1px line, 235
+     declarations of it. A drawn line is the cheapest way to
+     say "this is a box" and it reads as exactly that.
+
+     --border-hairline is now transparent, and the edge is
+     carried by --raise instead: an inner top highlight
+     (light landing on the upper lip of a raised surface)
+     over a tinted drop shadow. Because the token name is
+     unchanged, every existing rule inherits the new
+     treatment without being touched.
+
+     Kept as real borders, deliberately: inputs, table row
+     dividers and focus rings. A field with no edge is
+     invisible until focus, and "subtle background shift"
+     is not a control affordance. */
+  --border-hairline:        1px solid transparent;
+  --border-hairline-teal:   1px solid transparent;
+  --border-hairline-accent: 1px solid var(--color-accent);
+  --border-hairline-canvas: 1px solid var(--color-canvas);
+
+  /* Explicit edge, for the cases that still need one. */
+  --edge-line:       1px solid var(--color-hairline);
+  --edge-line-dark:  1px solid var(--color-hairline-light);
+
+  /* Light, not line. */
+  --raise:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(22, 16, 31, 0.05),
+    0 6px 16px -8px rgba(22, 16, 31, 0.14);
+  --raise-dark:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 14px 32px -12px rgba(0, 0, 0, 0.5);
+  --raise-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 2px 6px rgba(22, 16, 31, 0.07),
+    0 16px 36px -10px rgba(22, 16, 31, 0.2);
 
   /* ── Animation Timing ── */
   --duration-instant: 100ms;

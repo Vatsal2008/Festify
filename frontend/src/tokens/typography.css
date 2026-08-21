@@ -23,34 +23,51 @@
   --font-mono:    'Space Mono', 'Courier New', monospace;
   --font-ui:      'Instrument Sans', system-ui, sans-serif;
 
-  /* ── Type Scale ── */
-  --text-display-xl:  88px;
-  --text-display-lg:  56px;
-  --text-display-md:  36px;
-  --text-heading-lg:  28px;
-  --text-heading-md:  22px;
-  --text-body-lg:     19px;
-  --text-body-md:     17px;
-  --text-body-sm:     15px;
-  --text-body-xs:     13px;
-  --text-label-mono:  13px;
+  /* ── Type scale — fluid ────────────────────────────────
+     Each step interpolates between a 380px floor and a
+     1440px ceiling. The scale used to be fixed px with a
+     second set redeclared inside a 768px media query, so
+     type snapped at one width and did nothing across the
+     whole 768-1440 range where most people actually read
+     it. One source of truth now; the media query is gone.
 
-  /* ── Line Heights ── */
-  --lh-display-xl:   86px;
-  --lh-display-lg:   58px;
-  --lh-display-md:   40px;
-  --lh-heading-lg:   34px;
-  --lh-heading-md:   28px;
-  --lh-body-lg:      28px;
-  --lh-body-md:      25px;
-  --lh-body-sm:      22px;
-  --lh-body-xs:      18px;
-  --lh-label-mono:   18px;
+     Read as: clamp(min, preferred, max) where the middle
+     term is rem + vw so it still honours browser text-size
+     settings rather than scaling on viewport alone. */
+  --text-display-xl:  clamp(2.75rem, 1.55rem + 5.05vw, 5.5rem);
+  --text-display-lg:  clamp(2.125rem, 1.55rem + 2.42vw, 3.5rem);
+  --text-display-md:  clamp(1.625rem, 1.35rem + 1.14vw, 2.25rem);
+  --text-heading-lg:  clamp(1.375rem, 1.21rem + 0.66vw, 1.75rem);
+  --text-heading-md:  clamp(1.1875rem, 1.11rem + 0.33vw, 1.375rem);
+  --text-body-lg:     clamp(1.0625rem, 1.02rem + 0.19vw, 1.1875rem);
+  --text-body-md:     clamp(1rem, 0.98rem + 0.09vw, 1.0625rem);
+  --text-body-sm:     clamp(0.9375rem, 0.93rem + 0.02vw, 0.9375rem);
+  --text-body-xs:     0.8125rem;
+  --text-label-mono:  0.8125rem;
+
+  /* ── Line heights — unitless ───────────────────────────
+     Ratios, not pixels. A fixed px line-height cannot track
+     a fluid font-size: at the top of the clamp range an
+     88px headline on an 86px line would have overlapped
+     itself. Tighter as size grows, which is how display
+     type is set. */
+  --lh-display-xl:   0.96;
+  --lh-display-lg:   1.04;
+  --lh-display-md:   1.12;
+  --lh-heading-lg:   1.22;
+  --lh-heading-md:   1.28;
+  --lh-body-lg:      1.55;
+  --lh-body-md:      1.6;
+  --lh-body-sm:      1.55;
+  --lh-body-xs:      1.45;
+  --lh-label-mono:   1.4;
 
   /* ── Letter Spacing ── */
-  --ls-display-xl:  -3px;
-  --ls-display-lg:  -1.5px;
-  --ls-display-md:  -0.5px;
+  /* em, so tracking scales with the type rather than being
+     a fixed nudge that is too tight small and too loose big. */
+  --ls-display-xl:  -0.035em;
+  --ls-display-lg:  -0.027em;
+  --ls-display-md:  -0.018em;
   --ls-body-lg:     0px;
   --ls-body-md:     0px;
   --ls-body-sm:     0.1px;
@@ -140,6 +157,7 @@
   letter-spacing: var(--ls-label-mono);
   font-weight: 700;
   text-transform: uppercase;
+  color: var(--color-muted, rgba(22,16,31,0.68));
 }
 
 .type-ui-button {
@@ -151,14 +169,7 @@
 }
 
 /* ── Responsive type scale (mobile) ── */
-@media (max-width: 768px) {
-  :root {
-    --text-display-xl:  48px;
-    --text-display-lg:  34px;
-    --text-display-md:  26px;
-    --lh-display-xl:    50px;
-    --lh-display-lg:    38px;
-    --lh-display-md:    30px;
-    --ls-display-xl:    -1.5px;
-  }
-}
+/* The 768px type override is gone: the clamp scale above covers
+   every width continuously, and a second set of values here
+   could only disagree with it. */
+

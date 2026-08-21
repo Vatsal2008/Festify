@@ -4,8 +4,13 @@
    .card.event-card (0,2,0) intentionally outranks the base .card border
    (0,1,0) regardless of stylesheet order, so this never needs !important. */
 .event-card { overflow: hidden; display: flex; flex-direction: column; height: 100%; }
-.card.event-card { border: 2px solid var(--color-ink); }
-.card--teal.event-card { border: 2px solid var(--color-hairline-light); }
+/* The 2px ink outline came from the poster/flyer direction. It reads
+   as a drawn box rather than a surface, and at card scale it is the
+   heaviest line on the page. Depth now comes from light -- the shared
+   --raise stack -- so the card sits on the page instead of being
+   fenced off from it. */
+.card.event-card { border: 1px solid transparent; }
+.card--teal.event-card { border: 1px solid transparent; box-shadow: var(--raise-dark); }
 .event-card--list { flex-direction: row; height: auto; }
 .event-card__image-wrap { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--color-ink) 0%, var(--color-primary) 100%); overflow: hidden; flex-shrink: 0; }
 .event-card--list .event-card__image-wrap { width: 180px; aspect-ratio: auto; height: 120px; }
