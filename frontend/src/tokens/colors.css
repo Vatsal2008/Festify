@@ -29,7 +29,16 @@
   --color-success:        #2ECC71;
   --color-warning:        #FF7A29;
   --color-error:          #FF3D5A;
+  /* Same hue, dark enough to carry white button text at 4.5:1. */
+  --color-error-strong:   #C4132F;
   --color-info:           #6C4DFF;
+  /* Dark rungs, for status text on its own pale tint. The bright
+     values above are fills and glows and fail as text. */
+  --color-success-text:   #116635;
+  --color-warning-text:   #B45309;
+  --color-error-text:     #B91C1C;
+  --color-info-text:      #4338CA;
+
   --color-success-bg:     rgba(46, 204, 113, 0.1);
   --color-warning-bg:     rgba(255, 122, 41, 0.1);
   --color-error-bg:       rgba(255, 61, 90, 0.1);

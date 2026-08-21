@@ -22,8 +22,10 @@
 .badge--default  { background: var(--color-surface-cool); color: var(--color-ink); }
 .badge--teal     { background: var(--color-ink); color: var(--color-canvas); }
 .badge--accent   { background: var(--color-accent); color: var(--color-ink); }
-.badge--success  { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success); }
-.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); }
+/* The bright rung is the fill colour; on its own 10% tint it measured
+   1.83:1. Text takes the dark rung of the same hue instead. */
+.badge--success  { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid var(--color-success); }
+.badge--warning  { background: var(--color-warning-bg); color: var(--color-warning-text); border: 1px solid var(--color-warning); }
 .badge--error    { background: var(--color-error-bg);   color: var(--color-error);   border: 1px solid var(--color-error); }
 .badge--info     { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid var(--color-info); }
 .badge--canvas   { background: transparent; color: var(--color-canvas); border: 1px solid var(--color-canvas); }

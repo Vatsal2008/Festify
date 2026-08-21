@@ -135,14 +135,17 @@
 .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xl); }
 @media (max-width: 640px) { .profile-stats { grid-template-columns: 1fr 1fr; } }
 .profile-stat { text-align: center; }
-.profile-stat__value { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700; color: var(--color-canvas); }
-.profile-stat__label { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(251, 247, 240,0.6); margin-top: 4px; }
+/* These were written in canvas cream for a dark band, but the stats sit
+   on the canvas band itself -- cream on cream, measured at exactly
+   1:1. The numbers were invisible, not merely low contrast. */
+.profile-stat__value { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700; color: var(--color-ink); }
+.profile-stat__label { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(22, 16, 31, 0.68); margin-top: 4px; }
 .profile-quick-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }
 @media (max-width: 640px) { .profile-quick-links { grid-template-columns: repeat(2, 1fr); } }
 
 /* ── Tickets wallet ── */
 .tickets-tabs { display: flex; border-bottom: var(--border-hairline); margin-bottom: var(--space-2xl); }
-.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(22, 16, 31,0.55); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all var(--duration-fast); }
+.tickets-tab { padding: var(--space-md) var(--space-xl); font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 500; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: rgba(22, 16, 31,0.72); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all var(--duration-fast); }
 .tickets-tab--active { color: var(--color-ink); border-bottom-color: var(--color-ink); }
 .tickets-list { display: flex; flex-direction: column; gap: var(--space-lg); }
 
@@ -491,4 +494,67 @@
 
 @media (prefers-reduced-motion: reduce) {
   .notif, .notif:hover { transition: none; transform: none; }
+}
+
+/* ── Following ────────────────────────────────────────────────────
+   Rows rather than cards: an organiser here is a link to somewhere
+   else, not a thing to browse, and the wishlist grid above already
+   carries the card treatment for events. */
+.follow-list { display: flex; flex-direction: column; gap: var(--space-md); }
+.follow-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+}
+.follow-row__main { flex: 1; min-width: 0; }
+.follow-row__name { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--color-ink); }
+.follow-row__sub {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: rgba(22, 16, 31, 0.62);
+  margin-top: 2px;
+}
+
+/* ── My reviews ── */
+.myrev-list { display: flex; flex-direction: column; gap: var(--space-lg); }
+.myrev {
+  padding: var(--space-xl);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+}
+.myrev__head { display: flex; justify-content: space-between; gap: var(--space-lg); align-items: flex-start; }
+.myrev__event { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--color-ink); }
+.myrev__meta {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: rgba(22, 16, 31, 0.6);
+  margin-top: 2px;
+}
+.myrev__body {
+  margin-top: var(--space-lg);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--lh-body-md);
+  color: rgba(22, 16, 31, 0.88);
+}
+.myrev__foot {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: var(--border-hairline);
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-md);
+}
+.myrev__date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* 0.55 alpha measured 4.24:1 on this card; 11px needs 4.5:1. */
+  color: rgba(22, 16, 31, 0.68);
 }

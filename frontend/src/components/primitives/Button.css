@@ -78,8 +78,12 @@
 }
 .btn--ghost-canvas:hover:not(:disabled) { background-color: rgba(251, 247, 240,0.1); }
 
+/* White on --color-error (#FF3D5A) measured 3.46:1, under the 4.5:1
+   button text needs. The fill is darkened rather than the label
+   lightened, because there is nothing lighter than white; the hue is
+   unchanged so the variant still reads as the same red. */
 .btn--danger {
-  background-color: var(--color-error);
+  background-color: var(--color-error-strong, #C4132F);
   color: #fff;
   border-radius: var(--radius-none);
   padding: 10px 16px;

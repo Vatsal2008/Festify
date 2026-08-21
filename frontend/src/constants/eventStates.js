@@ -71,7 +71,6 @@ export const LEVEL_LABELS = {
   silver:   'Silver',
   gold:     'Gold',
   platinum: 'Platinum',
-  prime:    'Prime',
 };
 
 export const LEVEL_COLORS = {
@@ -79,7 +78,6 @@ export const LEVEL_COLORS = {
   silver:   'var(--level-silver)',
   gold:     'var(--level-gold)',
   platinum: 'var(--level-platinum)',
-  prime:    'var(--level-prime)',
 };
 
 export const ORG_TRUST_TIERS = {

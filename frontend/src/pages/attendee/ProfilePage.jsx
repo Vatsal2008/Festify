@@ -1,6 +1,6 @@
 // pages/attendee/ProfilePage.jsx — Compact 100vh fitted Profile view with matching hero background
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { LevelBadge, PrimeBadge, PrimePassBadge } from '@/components/domain';
+import { LevelBadge, PrimePassBadge } from '@/components/domain';
 import { Avatar, ProgressBar } from '@/components/primitives/Primitives';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   TicketIcon, HeartIcon, UsersIcon, StarIcon, SparklesIcon, BellIcon,
-  GraduationCapIcon, CheckIcon, ZapIcon
+  GraduationCapIcon, CheckIcon
 } from '@/components/icons/Icons';
 import '@/pages/pages.css';
 
@@ -33,10 +33,22 @@ export default function ProfilePage() {
     { icon: <BellIcon size={22} />, label: 'Notifications', path: '/me/notifications' },
   ];
 
-  const LEVEL_ORDER = ['bronze', 'silver', 'gold', 'platinum', 'prime'];
-  const levelIdx = LEVEL_ORDER.indexOf(user.customer_level);
-  const nextLevel = LEVEL_ORDER[levelIdx + 1];
-  const progressPct = ((levelIdx + 0.65) / (LEVEL_ORDER.length - 1)) * 100;
+  // Level and Prime are two unrelated things and the server now returns
+  // them separately: the level is earned from events attended, Prime is
+  // an active paid pass. They used to share the customer_level column --
+  // buying a pass overwrote the tier with "prime" -- which is why this
+  // page rendered a level badge saying PRIME, a Prime badge, and a Prime
+  // Pass badge all at once.
+  //
+  // The old progress was ((tierIndex + 0.65) / 4), a bar that moved when
+  // the tier changed and never when the user actually attended anything;
+  // it showed two thirds full to someone who had attended none.
+  const level = user.level ?? { key: 'bronze', label: 'Bronze', events_attended: 0, percent: 0 };
+  const isPrime = !!user.is_prime;
+  const primeRenews = user.prime_pass_expires_at
+    ? new Date(user.prime_pass_expires_at).toLocaleDateString('en-GB',
+        { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : null;
 
   return (
     <PageShell>
@@ -51,7 +63,7 @@ export default function ProfilePage() {
           }}
         >
           <div className="profile-hero">
-            <Avatar name={user.name} size="xl" level={user.customer_level} src={user.avatar_url} />
+            <Avatar name={user.name} size="xl" level={level.key} src={user.avatar_url} />
             <div className="profile-hero__info">
               <h1 className="profile-hero__name">{user.name}</h1>
               <p className="type-body-md" style={{ color: 'rgba(251, 247, 240,0.75)', marginBottom: 'var(--space-sm)' }}>{user.email}</p>
@@ -61,9 +73,8 @@ export default function ProfilePage() {
                 </p>
               )}
               <div className="profile-hero__badges">
-                <LevelBadge level={user.customer_level} />
-                {user.is_prime && <PrimeBadge />}
-                {user.has_prime_pass && <PrimePassBadge />}
+                <LevelBadge level={level.key} />
+                {isPrime && <PrimePassBadge />}
                 {user.college_verified && (
                   <Badge variant="canvas" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <CheckIcon size={12} /> Verified Student
@@ -77,15 +88,29 @@ export default function ProfilePage() {
           <div style={{ marginTop: 'var(--space-xl)', maxWidth: 480 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.7)' }}>
-                Level: {user.customer_level.charAt(0).toUpperCase() + user.customer_level.slice(1)}
+                Level: {level.label}
               </span>
-              {nextLevel && (
-                <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.5)' }}>
-                  Next: {nextLevel.charAt(0).toUpperCase() + nextLevel.slice(1)}
+              {!level.is_max && level.next_label && (
+                <span className="type-label-mono" style={{ color: 'rgba(251, 247, 240,0.65)' }}>
+                  {level.events_to_next} more for {level.next_label}
                 </span>
               )}
             </div>
-            <ProgressBar value={progressPct} max={100} variant="prime" size="sm" ariaLabel="Level progress" />
+            <ProgressBar
+              value={level.percent}
+              max={100}
+              variant="prime"
+              size="sm"
+              ariaLabel={`${level.label} level, ${level.events_attended} events attended`}
+            />
+            <p className="type-body-sm" style={{ color: 'rgba(251, 247, 240,0.65)', marginTop: 6 }}>
+              {level.is_max
+                ? `${level.events_attended} events attended — top tier reached.`
+                : `${level.events_attended}/${level.next_at} events attended for ${level.next_label}.`}
+              {isPrime
+                ? `  ·  Prime active${primeRenews ? `, renews ${primeRenews}` : ''}.`
+                : ''}
+            </p>
           </div>
         </TealBand>
 
@@ -93,9 +118,9 @@ export default function ProfilePage() {
         <CanvasBand variant="compact">
           <div className="profile-stats">
             {[
-              { value: user.lifetime_events_attended ?? 0, label: 'Events Attended' },
-              { value: user.is_prime ? <ZapIcon size={20} filled /> : '—', label: 'Prime Status' },
-              { value: user.has_prime_pass ? <SparklesIcon size={20} /> : '—', label: 'Prime Pass' },
+              { value: level.events_attended, label: 'Events Attended' },
+              { value: level.label, label: 'Level' },
+              { value: isPrime ? <SparklesIcon size={20} /> : '—', label: 'Prime Member' },
             ].map(stat => (
               <div key={stat.label} className="profile-stat">
                 <p className="profile-stat__value">{stat.value}</p>

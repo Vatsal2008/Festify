@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.security import JWT_ALGORITHM
 from app.core.supabase_client import get_supabase
+from app.membership import level_for, prime_status
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -143,6 +144,13 @@ def _with_profile(user: dict) -> dict:
 
     active_pass = get_active_pass(supabase, user["id"])
 
+    # Level and Prime are computed from different sources and never
+    # from each other. customer_level is deliberately not consulted: a
+    # Prime purchase used to overwrite it with "prime", so for anyone
+    # who has ever subscribed the column no longer holds a tier at all.
+    level = level_for(user.get("lifetime_events_attended"))
+    prime = prime_status(active_pass)
+
     return {
         **user,
         # The column is full_name; every client surface reads `name`, so
@@ -150,9 +158,17 @@ def _with_profile(user: dict) -> dict:
         # everyone. Aliasing here fixes each call site at once rather
         # than patching them one at a time and missing one.
         "name": user.get("full_name"),
-        "is_prime": user.get("customer_level") == "prime",
-        "has_prime_pass": bool(active_pass),
-        "prime_pass_expires_at": (active_pass or {}).get("expires_at"),
+        # Earned, from attendance.
+        "level": level,
+        "customer_level": level["key"],
+        # Paid for, from the pass. is_prime and has_prime_pass were two
+        # names for one fact read from two different sources, which is
+        # how the profile ended up rendering both badges plus the level.
+        # They now agree because they are the same value.
+        "is_prime": prime["is_prime"],
+        "has_prime_pass": prime["is_prime"],
+        "prime_plan": prime["plan"],
+        "prime_pass_expires_at": prime["expires_at"],
         "is_college_verified": bool(user.get("college_verified_at")),
         "org_memberships": [
             {

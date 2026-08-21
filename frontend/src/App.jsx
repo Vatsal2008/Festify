@@ -16,7 +16,7 @@ import LoginPage, { OnboardingPage } from '@/pages/auth/LoginPage';
 // ── Attendee ───────────────────────────────────────────────────────
 import ProfilePage      from '@/pages/attendee/ProfilePage';
 import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages';
-import { WishlistPage } from '@/pages/attendee/OtherAttendeePages';
+import { WishlistPage, FollowingPage, MyReviewsPage } from '@/pages/attendee/OtherAttendeePages';
 import NotificationsPage from '@/pages/attendee/NotificationsPage';
 import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
@@ -97,6 +97,10 @@ export default function App() {
         <Route path="/me"                element={<RequireAuth><ProfilePage /></RequireAuth>} />
         <Route path="/me/tickets"        element={<RequireAuth><TicketWalletPage /></RequireAuth>} />
         <Route path="/me/tickets/:id"    element={<RequireAuth><TicketDetailPage /></RequireAuth>} />
+        {/* Both were linked from the profile with no route behind
+            them, so two of the six account tiles hit the 404 page. */}
+        <Route path="/me/following"      element={<RequireAuth><FollowingPage /></RequireAuth>} />
+        <Route path="/me/reviews"        element={<RequireAuth><MyReviewsPage /></RequireAuth>} />
         <Route path="/me/wishlist"       element={<RequireAuth><WishlistPage /></RequireAuth>} />
         <Route path="/me/prime-pass"     element={<RequireAuth><PrimePassPage /></RequireAuth>} />
         <Route path="/me/notifications"  element={<RequireAuth><NotificationsPage /></RequireAuth>} />

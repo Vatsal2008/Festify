@@ -25,7 +25,10 @@ def send_feedback_request(
     prime_result = (
         supabase.table("users").select("customer_level").eq("id", body.prime_user_id).execute()
     )
-    if not prime_result.data or prime_result.data[0]["customer_level"] != "prime":
+    # Gated on an active pass rather than customer_level, which no
+    # longer carries subscription state.
+    from app.routers.prime_pass import get_active_pass
+    if not prime_result.data or not get_active_pass(supabase, body.prime_user_id):
         raise HTTPException(status_code=422, detail="Target user is not a Prime user")
 
     block_result = (

@@ -151,11 +151,11 @@ def _activate(supabase, row: dict, payment_id: str) -> dict:
         .execute()
         .data[0]
     )
-    # customer_level drives the Prime badge and the early-access checks
-    # that were written before this table existed, so keep it in step.
-    supabase.table("users").update({"customer_level": "prime"}).eq(
-        "id", row["user_id"]
-    ).execute()
+    # customer_level is deliberately NOT written here any more. Setting
+    # it to "prime" overwrote the tier the user had earned by attending
+    # events, permanently and unrecoverably -- nothing recorded what the
+    # level had been. Prime is read from this table, so the pass row
+    # that was just activated is already the whole answer.
 
     expires = (updated.get("expires_at") or "")[:10]
     notify(

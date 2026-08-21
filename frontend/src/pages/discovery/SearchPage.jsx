@@ -90,7 +90,8 @@ export default function SearchPage() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: sort === opt.id ? 'var(--color-ink)' : 'rgba(22, 16, 31,0.5)',
+                // 0.5 alpha measured 3.48:1 on the cream ground; 13px mono needs 4.5:1.
+                color: sort === opt.id ? 'var(--color-ink)' : 'rgba(22, 16, 31,0.72)',
                 borderBottom: sort === opt.id ? '2px solid var(--color-ink)' : '2px solid transparent',
                 padding: '4px 0',
                 marginRight: 'var(--space-md)',

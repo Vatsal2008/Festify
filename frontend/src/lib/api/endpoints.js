@@ -54,6 +54,7 @@ export const ticketsApi = {
 export const meApi = {
   wishlist: () => api.get('/users/me/wishlist').then(r => r.data),
   following: () => api.get('/users/me/following').then(r => r.data),
+  reviews: () => api.get('/users/me/reviews').then(r => r.data),
 };
 
 // ── notifications ─────────────────────────────────────────────────
