@@ -93,9 +93,15 @@ button.tag:hover { background: var(--color-surface-sage); transform: translateY(
 
 /* ── StarRating ── */
 .star-rating { display: inline-flex; gap: 2px; }
-.star { font-size: 20px; cursor: default; color: var(--color-surface-cool); transition: color var(--duration-fast), transform var(--duration-fast); line-height: 1; }
-.star--filled  { color: var(--color-gold, #ffd700); }
-.star--partial { color: var(--color-gold, #ffd700); }
+.star { font-size: 20px; cursor: default; /* Empty stars were --color-surface-cool on the cream card: 1.04:1,
+   so the rating control a reviewer is meant to click was invisible
+   until hovered. An interactive graphic needs 3:1. */
+  color: rgba(22, 16, 31, 0.55); transition: color var(--duration-fast), transform var(--duration-fast); line-height: 1; }
+/* --color-gold has never been a token here, so every filled star fell
+   through to #ffd700: bright gold on a cream card, measured 1.04:1.
+   A rating is meaningful graphics and has to carry. */
+.star--filled  { color: var(--star-gold, #8A5E00); }
+.star--partial { color: var(--star-gold, #8A5E00); }
 .star-input .star { cursor: pointer; }
 .star-input .star:hover, .star-input .star:hover ~ .star { transform: scale(1.2); }
 

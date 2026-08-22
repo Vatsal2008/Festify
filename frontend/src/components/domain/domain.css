@@ -96,8 +96,41 @@
 .org-card { display: flex; flex-direction: column; gap: var(--space-md); }
 .org-card__header { display: flex; align-items: center; gap: var(--space-lg); }
 .org-card__info { flex: 1; }
-.org-card__name { font-family: var(--font-display); font-size: var(--text-display-md); font-weight: 700; }
-.org-card__rank { font-family: var(--font-mono); font-size: var(--text-label-mono); font-weight: 600; letter-spacing: var(--ls-label-mono); text-transform: uppercase; color: var(--color-accent); text-shadow: -0.5px -0.5px 0 var(--color-ink), 0.5px -0.5px 0 var(--color-ink), -0.5px 0.5px 0 var(--color-ink), 0.5px 0.5px 0 var(--color-ink); -webkit-text-stroke: 0.4px var(--color-ink); }
+/* Was --text-display-md (36px) with no line-height, inside a ~230px
+   sidebar card: a three-word name wrapped to three lines and the lines
+   sat on top of each other, because the inherited body line-height is
+   shorter than the glyphs. Sized for the column it actually occupies,
+   with its own line-height and a wrap that breaks long names instead of
+   overflowing. */
+.org-card__name {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-md);
+  line-height: 1.15;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+/* The four-way text-shadow and the -webkit-text-stroke drew a black
+   outline around every letter, which at 13px reads as smudged rather
+   than emphasised. The accent colour carries it on its own. */
+.org-card__rank {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--ls-label-mono);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.org-card__stats {
+  display: flex;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+  color: rgba(22, 16, 31, 0.68);
+}
 .card--teal .org-card__name { color: var(--color-canvas); }
 
 /* ── EarlyAccessBanner ── */
@@ -321,43 +354,106 @@
 }
 .mm__empty { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.66); margin-top: var(--space-lg); }
 
-/* ── Public gallery ── */
-.gal { margin-top: var(--space-2xl); }
-.gal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg); }
-.gal__count { margin-left: 8px; opacity: 0.6; }
-.gal__nav { display: flex; gap: 6px; }
-.gal__nav button {
-  width: 32px; height: 32px; display: grid; place-items: center;
-  border: var(--border-hairline); border-radius: var(--radius-sm);
-  background: none; cursor: pointer; color: var(--color-ink);
+/* ── Media strip ──────────────────────────────────────────────────
+   Video first, photos after. The stage is a fixed 16:9 box: event
+   photos are 16:9 and so is a YouTube embed, so the frame never
+   letterboxes or crops, and switching slides moves nothing on the page. */
+.gal { margin-bottom: var(--space-3xl); }
+.gal__title { margin-bottom: var(--space-lg); }
+
+.gal__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-ink);
+  border: var(--border-hairline);
 }
-.gal__strip { display: flex; gap: var(--space-md); overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-sm); }
-.gal__item {
-  position: relative; flex: 0 0 220px; aspect-ratio: 4 / 3;
-  border: var(--border-hairline); border-radius: var(--radius-md);
-  overflow: hidden; padding: 0; cursor: pointer; background: var(--color-surface-sage);
-  scroll-snap-align: start;
+.gal__media { width: 100%; height: 100%; display: block; border: 0; }
+.gal__media--photo { padding: 0; cursor: zoom-in; background: none; }
+.gal__media--photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.gal__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(11, 7, 20, 0.72);
+  color: var(--color-canvas);
+  cursor: pointer;
 }
-.gal__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gal__play {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: 30px; color: #fff; background: rgba(11, 7, 20, 0.35);
+.gal__arrow:hover { background: rgba(11, 7, 20, 0.88); }
+.gal__arrow:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.gal__arrow--prev { left: 10px; }
+.gal__arrow--next { right: 10px; }
+/* Kept clear of YouTube's own controls, which own the bottom strip. */
+@media (max-width: 560px) { .gal__arrow { width: 32px; height: 32px; } }
+
+.gal__thumbs {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
+.gal__thumb {
+  position: relative;
+  flex: 0 0 96px;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-surface-sage);
+  border: 2px solid transparent;
+}
+.gal__thumb--on { border-color: var(--color-accent); }
+.gal__thumb:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.gal__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal__thumb-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #fff;
+  /* The scrim was 0.38, which put the glyph at 2.94:1 over a bright
+     thumbnail. Darkened until the mark carries on any photo. */
+  background: rgba(11, 7, 20, 0.55);
+  text-shadow: 0 1px 3px rgba(11, 7, 20, 0.9);
+}
+
 .gal__lightbox {
-  position: fixed; inset: 0; z-index: var(--z-modal);
-  background: rgba(11, 7, 20, 0.92);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: var(--space-lg); padding: var(--space-xl);
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(11, 7, 20, 0.93);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
 }
+.gal__lightbox img { max-width: min(1100px, 94vw); max-height: 84vh; object-fit: contain; display: block; }
 .gal__close {
-  position: absolute; top: var(--space-xl); right: var(--space-xl);
-  width: 40px; height: 40px; display: grid; place-items: center;
-  border: 1px solid rgba(251, 247, 240, 0.3); border-radius: var(--radius-sm);
-  background: none; color: var(--color-canvas); cursor: pointer;
+  position: absolute;
+  top: var(--space-xl);
+  right: var(--space-xl);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(251, 247, 240, 0.3);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-canvas);
+  cursor: pointer;
 }
-/* A rigid 16:9 box so an embed cannot bleed past the viewport at any
-   width -- the failure the brief describes. */
-.gal__stage { width: min(1100px, 92vw); max-height: 82vh; display: grid; place-items: center; }
-.gal__stage img { max-width: 100%; max-height: 82vh; object-fit: contain; display: block; }
-.gal__frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-md); display: block; }
-.gal__pos { font-family: var(--font-mono); font-size: 12px; color: rgba(251, 247, 240, 0.75); }
+.gal__pos { font-family: var(--font-mono); font-size: 12px; color: rgba(251, 247, 240, 0.78); }

@@ -5,7 +5,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/store/uiStore';
-import { eventsApi } from '@/lib/api/endpoints';
+import { apiError } from '@/lib/api/client';
+import { eventsApi, orgsApi } from '@/lib/api/endpoints';
 import { Avatar, StarRating } from '@/components/primitives/Primitives';
 import Badge from '@/components/primitives/Badge';
 import Card from '@/components/primitives/Card';
@@ -46,6 +47,17 @@ function timeAgo(dt) {
   if (h < 1) return 'Just now';
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+// One resolver for an event's cover image. The card fell back to this
+// stock photo inline while the hero used ev.cover_image directly, so an
+// event with no uploaded cover showed a photo on its card and a blank
+// dark rectangle on its own page.
+export const COVER_FALLBACK =
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=85';
+
+export function coverFor(event) {
+  return event?.cover_image || COVER_FALLBACK;
 }
 
 export function CategoryIcon({ category, size = 16, className = '' }) {
@@ -141,12 +153,12 @@ export function EventCard({ event, variant = 'grid', showHypeButton = true, show
       {/* Image */}
       <div className="event-card__image-wrap">
         <img
-          src={event.cover_image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85'}
+          src={coverFor(event)}
           alt={event.title}
           className="event-card__image"
           loading="lazy"
           onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85';
+            e.currentTarget.src = COVER_FALLBACK;
           }}
         />
         <div className="event-card__chips">
@@ -464,18 +476,44 @@ export function ReviewForm({ eventId, onSubmit }) {
 
 // ── OrganizerCard ─────────────────────────────────────────────────
 export function OrganizerCard({ org, onFollow }) {
-  const [following, setFollowing] = useState(false);
   const toast = useToast();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  // Follow state comes from the server. It was local useState seeded to
+  // false, so the button always read "Follow" no matter who you already
+  // followed, and clicking it flipped a label and raised a toast while
+  // telling the server nothing at all.
+  const [following, setFollowing] = useState(!!org.is_following);
+  useEffect(() => { setFollowing(!!org.is_following); }, [org.is_following]);
+
+  const followMutation = useMutation({
+    mutationFn: () => orgsApi.toggleFollow(org.id),
+    onMutate: () => {
+      const prev = following;
+      setFollowing(!prev);
+      return { prev };
+    },
+    onError: (e, _v, ctx) => {
+      setFollowing(ctx?.prev ?? false);
+      toast.error(apiError(e));
+    },
+    onSuccess: (data) => {
+      if (typeof data?.following === 'boolean') setFollowing(data.following);
+      qc.invalidateQueries({ queryKey: ['org-groups', org.id] });
+      qc.invalidateQueries({ queryKey: ['user'] });
+      onFollow?.(data?.following);
+    },
+  });
 
   const handleFollow = () => {
     if (!isAuthenticated) { navigate('/login'); return; }
-    setFollowing(f => !f);
-    toast[following ? 'info' : 'success'](following ? `Unfollowed ${org.name}` : `Following ${org.name}`);
+    followMutation.mutate();
   };
 
   const TIER_LABELS = { new: 'New', verified: 'Verified', trusted: 'Trusted' };
+  const tier = TIER_LABELS[org.trust_tier];
 
   return (
     <Card variant="sage" padding="md" className="org-card">
@@ -483,20 +521,32 @@ export function OrganizerCard({ org, onFollow }) {
         <Avatar name={org.name} src={org.avatar} size="md" />
         <div className="org-card__info">
           <h3 className="org-card__name">{org.name}</h3>
-          <p className="org-card__rank" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckIcon size={14} /> #{org.score_rank} Organizer · {TIER_LABELS[org.trust_tier]}
+          {/* The rank read org.score_rank, which the API does not return
+              and never has, so every organizer showed "#undefined
+              Organizer". The tier is the part that is real. */}
+          <p className="org-card__rank">
+            <CheckIcon size={14} /> Organizer{tier ? ` · ${tier}` : ''}
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleFollow}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFollow}
+          isLoading={followMutation.isPending}
+        >
           {following ? 'Following' : 'Follow'}
         </Button>
       </div>
       {org.description && (
         <p className="type-body-xs" style={{ color: 'rgba(22, 16, 31,0.7)', lineHeight: 'var(--lh-body-xs)' }}>{org.description}</p>
       )}
-      <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap' }}>
-        <span className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.6)' }}>{org.successful_events_count} events</span>
-        <span className="type-label-mono" style={{ color: 'rgba(22, 16, 31,0.6)' }}>{(org.followers || 0).toLocaleString()} followers</span>
+      <div className="org-card__stats">
+        <span className="type-label-mono">
+          {(org.successful_events_count ?? 0).toLocaleString()} events
+        </span>
+        <span className="type-label-mono">
+          {(org.followers ?? 0).toLocaleString()} followers
+        </span>
       </div>
     </Card>
   );

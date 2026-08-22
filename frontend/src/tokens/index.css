@@ -179,14 +179,14 @@ img, video {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Dark ink outline for hype-pink accent text (keeps it legible on light AND dark bands) ── */
+/* Accent text, plain. This used to draw a dark ink outline around every
+   letter -- a four-way text-shadow plus a 0.4px stroke -- to keep pink
+   legible on both light and dark bands. At label sizes (11-13px, mono,
+   uppercase) the outline is thicker than the strokes of the letters
+   themselves, so it read as a smudged black border rather than as
+   emphasis. Legibility is handled by picking the right accent rung for
+   the ground instead. */
 .text-accent-stroke,
 .org-card__rank {
   color: var(--color-accent);
-  text-shadow: 
-    -0.5px -0.5px 0 var(--color-ink),
-     0.5px -0.5px 0 var(--color-ink),
-    -0.5px  0.5px 0 var(--color-ink),
-     0.5px  0.5px 0 var(--color-ink);
-  -webkit-text-stroke: 0.4px var(--color-ink);
 }

@@ -1,110 +1,133 @@
 // components/domain/MediaGallery.jsx
-// The visitor-facing half: an event's photos and video as a scrollable
-// strip with a lightbox. Organisers could not upload more than one asset
-// before, so there was nothing for a gallery to show.
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDownIcon, XIcon, CameraIcon } from '@/components/icons/Icons';
+// The visitor-facing media strip: video first, then photos.
+//
+// A YouTube item plays INLINE with YouTube's own controls — play/pause,
+// the settings gear (quality, speed) and the captions button when the
+// video has them. Those come from the standard embed, so the one thing
+// this must not do is pass controls=0.
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { ChevronDownIcon, XIcon } from '@/components/icons/Icons';
 import './domain.css';
 
-export default function MediaGallery({ media = [], title = 'Gallery' }) {
-  const [open, setOpen] = useState(null);
+export default function MediaGallery({ media = [], title }) {
+  const [index, setIndex] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const stripRef = useRef(null);
-  const items = media.filter((m) => m?.url || m?.thumbnail);
 
-  const step = (dir) => {
-    const el = stripRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.max(280, el.clientWidth * 0.8), behavior: 'smooth' });
-  };
+  // Video first, photos after — the order the strip presents, not the
+  // order they were uploaded in.
+  const items = useMemo(() => {
+    const usable = (media ?? []).filter((m) => m && (m.url || m.thumbnail));
+    const rank = (m) => (m.kind === 'youtube' || m.kind === 'video' ? 0 : 1);
+    return [...usable].sort((a, b) => rank(a) - rank(b));
+  }, [media]);
 
-  // Arrow keys move through the lightbox, Escape closes it. A lightbox
-  // dismissable only by mouse traps keyboard users inside it.
+  const count = items.length;
+  const current = items[Math.min(index, Math.max(0, count - 1))];
+  const isVideo = current?.kind === 'youtube' || current?.kind === 'video';
+
+  const go = useCallback((next) => {
+    if (!count) return;
+    setIndex(((next % count) + count) % count);
+  }, [count]);
+
+  // Arrow keys move through the strip; Escape leaves the lightbox. A
+  // slider only reachable by mouse is not a slider for everyone.
   const onKey = useCallback((e) => {
-    if (open === null) return;
-    if (e.key === 'Escape') setOpen(null);
-    if (e.key === 'ArrowRight') setOpen((i) => (i + 1) % items.length);
-    if (e.key === 'ArrowLeft') setOpen((i) => (i - 1 + items.length) % items.length);
-  }, [open, items.length]);
+    if (e.key === 'Escape' && lightbox) { setLightbox(false); return; }
+    if (e.key === 'ArrowRight') go(index + 1);
+    if (e.key === 'ArrowLeft') go(index - 1);
+  }, [index, go, lightbox]);
 
   useEffect(() => {
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onKey]);
-
-  useEffect(() => {
-    document.body.style.overflow = open !== null ? 'hidden' : '';
+    document.body.style.overflow = lightbox ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [open]);
+  }, [lightbox]);
 
-  if (!items.length) return null;
+  // Keep the active thumbnail in view as the slide changes.
+  useEffect(() => {
+    const el = stripRef.current?.children?.[index];
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  }, [index]);
+
+  if (!count) return null;
 
   return (
-    <section className="gal" aria-label={title}>
-      <div className="gal__head">
-        <h2 className="type-label-mono">
-          <CameraIcon size={14} /> {title}
-          <span className="gal__count">{items.length}</span>
-        </h2>
-        {items.length > 2 && (
-          <div className="gal__nav">
-            <button type="button" onClick={() => step(-1)} aria-label="Scroll gallery left">
-              <ChevronDownIcon size={18} style={{ transform: 'rotate(90deg)' }} />
+    <section className="gal" aria-label={title || 'Event media'} onKeyDown={onKey}>
+      {/* No heading by default: a bare "Gallery" label above obvious
+          photographs is a caption for something nobody needed named. */}
+      {title && <h2 className="type-label-mono gal__title">{title}</h2>}
+
+      <div className="gal__stage">
+        {isVideo ? (
+          current.kind === 'youtube' ? (
+            <iframe
+              key={current.id}
+              className="gal__media"
+              src={current.watch_embed_url}
+              title={current.alt_text || 'Event video'}
+              // Everything YouTube's own chrome needs to be useful.
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              frameBorder="0"
+            />
+          ) : (
+            <video className="gal__media" src={current.url} controls playsInline preload="metadata" />
+          )
+        ) : (
+          <button
+            type="button"
+            className="gal__media gal__media--photo"
+            onClick={() => setLightbox(true)}
+            aria-label={current.alt_text ? `Enlarge: ${current.alt_text}` : 'Enlarge photo'}
+          >
+            <img src={current.url} alt={current.alt_text || ''} />
+          </button>
+        )}
+
+        {count > 1 && (
+          <>
+            <button type="button" className="gal__arrow gal__arrow--prev"
+              onClick={() => go(index - 1)} aria-label="Previous">
+              <ChevronDownIcon size={20} style={{ transform: 'rotate(90deg)' }} />
             </button>
-            <button type="button" onClick={() => step(1)} aria-label="Scroll gallery right">
-              <ChevronDownIcon size={18} style={{ transform: 'rotate(-90deg)' }} />
+            <button type="button" className="gal__arrow gal__arrow--next"
+              onClick={() => go(index + 1)} aria-label="Next">
+              <ChevronDownIcon size={20} style={{ transform: 'rotate(-90deg)' }} />
             </button>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Horizontal scroll with snap rather than a carousel with dots: it
-          works with a trackpad, a swipe and the keyboard without any of
-          them being special-cased. */}
-      <div className="gal__strip" ref={stripRef}>
-        {items.map((m, i) => (
-          <button
-            key={m.id}
-            className="gal__item"
-            onClick={() => setOpen(i)}
-            aria-label={m.alt_text || `Open ${m.kind}`}
-            type="button"
-          >
-            <img
-              src={m.kind === 'youtube' ? m.thumbnail : m.url}
-              alt={m.alt_text || ''}
-              loading="lazy"
-            />
-            {m.kind === 'youtube' && <span className="gal__play" aria-hidden="true">▶</span>}
-          </button>
-        ))}
-      </div>
+      {count > 1 && (
+        <div className="gal__thumbs" ref={stripRef} role="tablist" aria-label="Choose media">
+          {items.map((m, i) => (
+            <button
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              className={`gal__thumb ${i === index ? 'gal__thumb--on' : ''}`}
+              onClick={() => go(i)}
+              aria-label={m.alt_text || (m.kind === 'youtube' ? 'Video' : `Photo ${i + 1}`)}
+            >
+              <img src={m.kind === 'youtube' ? m.thumbnail : m.url} alt="" loading="lazy" />
+              {(m.kind === 'youtube' || m.kind === 'video') && (
+                <span className="gal__thumb-play" aria-hidden="true">▶</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {open !== null && (
-        <div
-          className="gal__lightbox"
-          onClick={() => setOpen(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label={items[open]?.alt_text || 'Media viewer'}
-        >
-          <button className="gal__close" onClick={() => setOpen(null)} aria-label="Close viewer">
+      {lightbox && !isVideo && (
+        <div className="gal__lightbox" onClick={() => setLightbox(false)} role="dialog" aria-modal="true"
+             aria-label={current.alt_text || 'Photo viewer'}>
+          <button className="gal__close" onClick={() => setLightbox(false)} aria-label="Close viewer">
             <XIcon size={20} />
           </button>
-          <div className="gal__stage" onClick={(e) => e.stopPropagation()}>
-            {items[open].kind === 'youtube' ? (
-              <iframe
-                className="gal__frame"
-                src={`${items[open].watch_embed_url}&autoplay=1`}
-                title={items[open].alt_text || 'Event video'}
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
-                frameBorder="0"
-              />
-            ) : (
-              <img src={items[open].url} alt={items[open].alt_text || ''} />
-            )}
-          </div>
-          <p className="gal__pos">{open + 1} of {items.length}</p>
+          <img src={current.url} alt={current.alt_text || ''} onClick={(e) => e.stopPropagation()} />
+          <p className="gal__pos">{index + 1} of {count}</p>
         </div>
       )}
     </section>

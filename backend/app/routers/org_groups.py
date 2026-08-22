@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.authz import require_org_manager
 from app.core.supabase_client import get_supabase
-from app.deps import get_current_user
+from app.deps import get_current_user, get_current_user_optional
 from app.routers.events import _enrich_events
 from app.schemas import OrgGroupCreate
 
@@ -39,12 +39,61 @@ def create_org_group(body: OrgGroupCreate, current_user: dict = Depends(get_curr
 
 
 @router.get("/{org_group_id}")
-def get_org_group(org_group_id: str):
+def get_org_group(org_group_id: str, viewer: dict | None = Depends(get_current_user_optional)):
+    """One organizer, with the counts and follow state the card shows.
+
+    This returned the raw row, so three fields the organizer card reads
+    did not exist on it: `followers` (never counted anywhere),
+    `successful_events_count` (the column is singular --
+    successful_event_count), and `score_rank` (no such concept). The
+    card rendered "0 followers", "0 events" and "#undefined Organizer"
+    for every organizer on the platform, permanently.
+    """
     supabase = get_supabase()
     result = supabase.table("org_groups").select("*").eq("id", org_group_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Org group not found")
-    return result.data[0]
+    org = result.data[0]
+
+    followers = (
+        supabase.table("org_follows")
+        .select("id", count="exact")
+        .eq("org_group_id", org_group_id)
+        .execute()
+        .count
+    ) or 0
+
+    # Counted from events rather than read from successful_event_count,
+    # which is only bumped by the scoring flow and sits at zero for any
+    # organizer whose events have not been through it.
+    events_run = (
+        supabase.table("events")
+        .select("id", count="exact")
+        .eq("org_group_id", org_group_id)
+        .in_("status", ["live", "early_access", "on_sale", "sold_out", "ongoing", "completed"])
+        .execute()
+        .count
+    ) or 0
+
+    is_following = False
+    if viewer:
+        is_following = bool(
+            supabase.table("org_follows")
+            .select("id")
+            .eq("org_group_id", org_group_id)
+            .eq("user_id", viewer["id"])
+            .execute()
+            .data
+        )
+
+    return {
+        **org,
+        "followers": followers,
+        # Published under the name the client already reads.
+        "successful_events_count": events_run,
+        "score_points": org.get("score") or 0,
+        "is_following": is_following,
+    }
 
 
 @router.get("/{org_group_id}/events")

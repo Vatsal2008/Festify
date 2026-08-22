@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, TealBand, CanvasBand } from '@/components/layout';
-import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner } from '@/components/domain';
+import { EventStateChip, TicketTierCard, OrganizerCard, ReviewCard, ReviewForm, EarlyAccessBanner, coverFor } from '@/components/domain';
+import MediaGallery from '@/components/domain/MediaGallery';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
 import Modal from '@/components/primitives/Modal';
 import { StarRating, Spinner } from '@/components/primitives/Primitives';
 import QueryBoundary from '@/components/primitives/QueryBoundary';
-import { eventsApi, ordersApi, waitlistApi } from '@/lib/api/endpoints';
+import { eventsApi, orgsApi, ordersApi, waitlistApi } from '@/lib/api/endpoints';
 import { apiError } from '@/lib/api/client';
 import { queryKeys } from '@/constants/queryKeys';
 import { openCheckout } from '@/lib/payments/razorpay';
@@ -46,6 +47,34 @@ export default function EventDetailPage() {
     queryFn: () => eventsApi.reviews(id),
     enabled: !!event,
   });
+
+  const mediaQuery = useQuery({
+    queryKey: ['events', id, 'media'],
+    queryFn: () => eventsApi.media(id),
+    enabled: !!event,
+  });
+
+  // The organizer embedded in the event payload is a thin summary --
+  // no follower count, and an event count read from a column only the
+  // scoring flow bumps, so it sits at 0 for most organizers. The card
+  // shows real numbers, so it needs the organizer's own record.
+  const orgId = event?.organizer?.id;
+  const orgQuery = useQuery({
+    queryKey: ['org-groups', orgId],
+    queryFn: () => orgsApi.get(orgId),
+    enabled: !!orgId,
+  });
+  const organizer = orgQuery.data
+    ? { ...event.organizer, ...orgQuery.data }
+    : event?.organizer;
+
+  // Only the two placements a visitor is meant to browse. The endpoint
+  // returns every placement, so passing it straight through would put
+  // the ticket background and the listing cover in the strip alongside
+  // the photos -- functional art, not gallery content.
+  const galleryMedia = (mediaQuery.data?.media ?? []).filter(
+    (m) => m.placement === 'gallery' || m.placement === 'hero_video'
+  );
 
   const invalidateEvent = () => {
     qc.invalidateQueries({ queryKey: queryKeys.events.detail(id) });
@@ -167,7 +196,11 @@ export default function EventDetailPage() {
             <TealBand
               variant="hero"
               style={{
-                backgroundImage: `linear-gradient(180deg, rgba(22,16,31,0.55) 0%, rgba(11,7,20,0.92) 100%)${ev.cover_image ? `, url(${ev.cover_image})` : ''}`,
+                // Lighter at the top than it was: the old 0.55 -> 0.92 scrim was
+                // tuned for a hero with no photo behind it, and it drowned the
+                // cover once one was there. Still opaque enough at the bottom
+                // that the title and meta line stay legible over any image.
+                backgroundImage: `linear-gradient(180deg, rgba(22,16,31,0.30) 0%, rgba(17,11,26,0.68) 55%, rgba(11,7,20,0.92) 100%), url(${coverFor(ev)})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 marginTop: 'calc(-1 * (var(--nav-height) + 32px))',
@@ -206,26 +239,6 @@ export default function EventDetailPage() {
                   )}
                 </div>
 
-                <div className="event-detail-hero__actions">
-                  <button
-                    onClick={() => requireAuth() && hypeMutation.mutate()}
-                    disabled={hypeMutation.isPending}
-                    className={`hype-btn hype-btn--canvas ${ev.is_hyped ? 'hype-btn--hyped' : ''}`}
-                    aria-pressed={ev.is_hyped}
-                  >
-                    <ZapIcon size={16} filled={ev.is_hyped} className="hype-btn__icon" />
-                    Hype · {(ev.hype_count ?? 0).toLocaleString()}
-                  </button>
-                  <button
-                    onClick={() => requireAuth() && wishlistMutation.mutate()}
-                    disabled={wishlistMutation.isPending}
-                    className={`wishlist-btn wishlist-btn--canvas ${ev.is_wishlisted ? 'wishlist-btn--active' : ''}`}
-                    aria-pressed={ev.is_wishlisted}
-                    aria-label={ev.is_wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-                  >
-                    <HeartIcon size={20} filled={ev.is_wishlisted} />
-                  </button>
-                </div>
               </div>
             </TealBand>
 
@@ -234,7 +247,14 @@ export default function EventDetailPage() {
             <CanvasBand>
               <div className="event-detail-layout">
                 <div>
-                  <section aria-labelledby="about-heading">
+                  {/* Media first: the video and photos say more about an
+                      event than its description does, and they are what a
+                      visitor came to look at. Deliberately unlabelled --
+                      "Gallery" over obvious photographs names something
+                      nobody needed named. */}
+                  <MediaGallery media={galleryMedia} />
+
+                  <section aria-labelledby="about-heading" style={{ marginTop: 'var(--space-3xl)' }}>
                     <h2 id="about-heading" className="type-label-mono" style={{ marginBottom: 'var(--space-lg)' }}>About this event</h2>
                     <div className="type-body-md" style={{ whiteSpace: 'pre-line', lineHeight: 'var(--lh-body-md)' }}>
                       {ev.description || 'No description provided.'}
@@ -333,7 +353,7 @@ export default function EventDetailPage() {
                   {ev.organizer && (
                     <div style={{ marginTop: 'var(--space-2xl)' }}>
                       <h2 className="type-label-mono" style={{ marginBottom: 'var(--space-lg)' }}>Organizer</h2>
-                      <OrganizerCard org={ev.organizer} />
+                      <OrganizerCard org={organizer ?? ev.organizer} />
                     </div>
                   )}
                 </aside>

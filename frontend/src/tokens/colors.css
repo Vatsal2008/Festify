@@ -60,6 +60,8 @@
   --level-bronze:         #CD7F32;
   --level-silver:         #A8A9AD;
   --level-gold:           #FFD700;
+  /* Rating stars, dark enough to read on the cream canvas. */
+  --star-gold:            #8A5E00;
   --level-platinum:       #B4C0CC;
   --level-prime:          #D4FF3D;   /* acid lime — highest earned tier, deliberately scarce */
 
