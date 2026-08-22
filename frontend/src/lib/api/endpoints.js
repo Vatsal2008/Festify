@@ -70,6 +70,16 @@ export const collegeAdminApi = {
     }).then(r => r.data),
 };
 
+// ── organizer-side event management ───────────────────────────────
+// Distinct from eventsApi: that is the public read path, this is the
+// owner's editor. Price is absent by design — the server refuses it.
+export const orgEventsApi = {
+  get: (id) => api.get(`/org-events/${id}`).then(r => r.data),
+  update: (id, patch) => api.patch(`/org-events/${id}`, patch).then(r => r.data),
+  updateTier: (id, tierId, patch) =>
+    api.patch(`/org-events/${id}/tiers/${tierId}`, patch).then(r => r.data),
+};
+
 // ── orders & tickets ──────────────────────────────────────────────
 export const ordersApi = {
   create: (body) => api.post('/orders', body).then(r => r.data),

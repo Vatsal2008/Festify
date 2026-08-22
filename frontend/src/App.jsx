@@ -19,6 +19,7 @@ import TicketWalletPage, { TicketDetailPage } from '@/pages/attendee/TicketPages
 import { WishlistPage, FollowingPage, MyReviewsPage } from '@/pages/attendee/OtherAttendeePages';
 import SuperAdminEventsPage from '@/pages/admin/SuperAdminEventsPage';
 import EventMediaPage from '@/pages/organizer/EventMediaPage';
+import EventManagePage from '@/pages/organizer/EventManagePage';
 import NotificationsPage from '@/pages/attendee/NotificationsPage';
 import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
@@ -114,6 +115,7 @@ export default function App() {
         <Route path="/org/:orgId/events/new"                   element={<RequireAuth><EventBuilderPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/scan"         element={<RequireAuth><GateScannerPage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/bulk-requests" element={<RequireAuth><BulkRequestsPage /></RequireAuth>} />
+        <Route path="/org/:orgId/events/:eventId/manage"        element={<RequireAuth><EventManagePage /></RequireAuth>} />
         <Route path="/org/:orgId/events/:eventId/media"         element={<RequireAuth><EventMediaPage /></RequireAuth>} />
         <Route path="/org/:orgId/members"                      element={<RequireAuth><OrgMembersPage /></RequireAuth>} />
         <Route path="/org/:orgId/chat"                         element={<RequireAuth><OrgChatPage /></RequireAuth>} />

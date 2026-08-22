@@ -625,3 +625,121 @@
   border-left: 3px solid var(--color-warning);
   color: rgba(22, 16, 31, 0.82);
 }
+
+/* ── Organizer event manager ──────────────────────────────────────
+   The Manage button used to open the event's public page. This is the
+   screen it should have opened all along. */
+.em__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin: var(--space-lg) 0 var(--space-xl);
+  flex-wrap: wrap;
+}
+.em__tabs { display: flex; gap: 6px; margin-bottom: var(--space-2xl); border-bottom: var(--border-hairline); }
+.em__tab {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: var(--ls-label-mono);
+  text-transform: uppercase;
+  color: rgba(22, 16, 31, 0.68);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.em__tab--on { color: var(--color-ink); border-bottom-color: var(--color-ink); }
+.em__tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.em__form { display: flex; flex-direction: column; gap: var(--space-lg); max-width: 680px; }
+.em__field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.em__field > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--ls-label-mono);
+  text-transform: uppercase;
+  color: rgba(22, 16, 31, 0.68);
+}
+.em__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+@media (max-width: 620px) { .em__pair { grid-template-columns: 1fr; } }
+
+.em__actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  padding-top: var(--space-lg);
+  border-top: var(--border-hairline);
+}
+
+.em__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: 1.55;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg);
+  border-left: 3px solid var(--color-warning);
+  color: rgba(22, 16, 31, 0.82);
+}
+.em__note {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: rgba(22, 16, 31, 0.68);
+  margin-bottom: var(--space-lg);
+  max-width: 62ch;
+}
+
+.em__tiers { display: flex; flex-direction: column; gap: var(--space-lg); max-width: 760px; }
+.em__tier {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  background: var(--color-canvas);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.em__tier-main { display: grid; grid-template-columns: 1fr 140px 140px; gap: var(--space-lg); align-items: end; }
+@media (max-width: 720px) { .em__tier-main { grid-template-columns: 1fr; } }
+.em__tier-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: var(--border-hairline);
+}
+.em__tier-sold {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(22, 16, 31, 0.68);
+  font-variant-numeric: tabular-nums;
+}
+/* Price is displayed, never editable — the field reads as a fact rather
+   than as an input someone failed to focus. */
+.em__locked {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sage);
+  border: var(--border-hairline);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.em__locked span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(22, 16, 31, 0.62);
+}

@@ -18,9 +18,10 @@ import './domain.css';
 const PLACEMENTS = [
   { id: 'gallery',    label: 'Gallery',           hint: 'A strip on the event page. Photos, or YouTube links.', youtube: true },
   { id: 'cover',      label: 'Cover',             hint: 'The card image in listings and search.' },
-  { id: 'detail_bg',  label: 'Event page banner', hint: 'Behind the title on the event page.' },
-  { id: 'hero_video', label: 'Hero video',        hint: 'Plays behind the event page title. Paste a YouTube link — videos are not uploaded, so they cost no bandwidth.', youtube: true },
-  { id: 'ticket_bg',  label: 'Ticket background', hint: 'Behind the QR code in the attendee wallet.' },
+  // Event page banner and Ticket background used to sit here. Nothing
+  // read either one -- the backend only ever fetches cover and gallery --
+  // so an upload to them was stored and then never appeared anywhere.
+  { id: 'hero_video', label: 'Hero video',        hint: 'Shown first in the event page strip. Paste a YouTube link — videos are not uploaded, so they cost no bandwidth.', youtube: true },
 ];
 
 export default function MediaManager({ eventId }) {

@@ -84,7 +84,15 @@ export function OrgDashboardPage() {
                       <td><EventStateChip state={e.state} /></td>
                       <td>{sold.toLocaleString()}</td>
                       <td>₹{rev.toLocaleString()}</td>
-                      <td><Button variant="secondary" size="sm" onClick={() => navigate(`/events/${e.id}`)}>Manage</Button></td>
+                      <td style={{ textAlign: 'right' }}>
+                        {/* Went to the event's public page, where an
+                            organizer can do nothing but look at their own
+                            listing. */}
+                        <Button variant="secondary" size="sm"
+                          onClick={() => navigate(`/org/${orgId}/events/${e.id}/manage`)}>
+                          Manage
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}

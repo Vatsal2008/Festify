@@ -12,6 +12,7 @@ from app.routers import (
     co_hosts,
     college_admins,
     college_admin_views,
+    org_event_manage,
     college_verification,
     event_lifecycle,
     events,
@@ -111,6 +112,7 @@ app.include_router(hype_reviews.me_router)
 app.include_router(organizer_admin.router)
 app.include_router(college_admins.router)
 app.include_router(college_admin_views.router)
+app.include_router(org_event_manage.router)
 app.include_router(support.router)
 app.include_router(bulk_purchase.router)
 app.include_router(co_hosts.router)
