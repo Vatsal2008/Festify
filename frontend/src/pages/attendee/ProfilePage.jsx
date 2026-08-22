@@ -30,6 +30,7 @@ export default function ProfilePage() {
     { icon: <UsersIcon size={22} />, label: 'Following',  path: '/me/following' },
     { icon: <StarIcon size={22} />, label: 'Reviews',    path: '/me/reviews' },
     { icon: <SparklesIcon size={22} />, label: 'Prime Pass', path: '/me/prime-pass' },
+    { icon: <UsersIcon size={22} />, label: 'Groups', path: '/me/groups' },
     { icon: <BellIcon size={22} />, label: 'Notifications', path: '/me/notifications' },
   ];
 

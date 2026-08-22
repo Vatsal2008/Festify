@@ -35,7 +35,7 @@
   /* Dark rungs, for status text on its own pale tint. The bright
      values above are fills and glows and fail as text. */
   --color-success-text:   #116635;
-  --color-warning-text:   #B45309;
+  --color-warning-text:   #92400E;
   --color-error-text:     #B91C1C;
   --color-info-text:      #4338CA;
 

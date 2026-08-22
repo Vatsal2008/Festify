@@ -21,6 +21,7 @@ import SuperAdminEventsPage from '@/pages/admin/SuperAdminEventsPage';
 import EventMediaPage from '@/pages/organizer/EventMediaPage';
 import EventManagePage from '@/pages/organizer/EventManagePage';
 import NotificationsPage from '@/pages/attendee/NotificationsPage';
+import JoinGroupPage from '@/pages/attendee/JoinGroupPage';
 import PrimePassPage from '@/pages/attendee/PrimePassPage';
 
 // ── Organizer ──────────────────────────────────────────────────────
@@ -104,6 +105,7 @@ export default function App() {
             them, so two of the six account tiles hit the 404 page. */}
         <Route path="/me/following"      element={<RequireAuth><FollowingPage /></RequireAuth>} />
         <Route path="/me/reviews"        element={<RequireAuth><MyReviewsPage /></RequireAuth>} />
+        <Route path="/me/groups"         element={<RequireAuth><JoinGroupPage /></RequireAuth>} />
         <Route path="/me/wishlist"       element={<RequireAuth><WishlistPage /></RequireAuth>} />
         <Route path="/me/prime-pass"     element={<RequireAuth><PrimePassPage /></RequireAuth>} />
         <Route path="/me/notifications"  element={<RequireAuth><NotificationsPage /></RequireAuth>} />

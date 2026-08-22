@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell, CanvasBand, TealBand } from '@/components/layout';
 import { QRDisplay } from '@/components/domain';
+import TicketGroupPanel from '@/components/domain/TicketGroupPanel';
 import TicketBundle, { groupTickets } from '@/components/domain/TicketBundle';
 import Button from '@/components/primitives/Button';
 import Badge from '@/components/primitives/Badge';
@@ -213,6 +214,17 @@ export function TicketDetailPage() {
                   <QRDisplay ticket={ticket} />
                 </div>
               </div>
+            </CanvasBand>
+
+            <CanvasBand variant="compact">
+              {/* Only meaningful when there is more than one ticket for
+                  this event -- the panel hides itself otherwise. */}
+              <TicketGroupPanel
+                event={ticket.event}
+                ticketCount={(ticketsQuery.data ?? []).filter(
+                  (t) => t.event?.id === ticket.event?.id && t.status === 'issued'
+                ).length}
+              />
             </CanvasBand>
 
             <Modal

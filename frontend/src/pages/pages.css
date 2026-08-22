@@ -743,3 +743,41 @@
   text-transform: uppercase;
   color: rgba(22, 16, 31, 0.62);
 }
+
+/* ── Join a group ── */
+.jg { max-width: 620px; margin-bottom: var(--space-3xl); }
+.jg__body { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.72); margin: var(--space-sm) 0 var(--space-lg); }
+.jg__form { display: flex; gap: var(--space-md); flex-wrap: wrap; }
+/* Wide letter-spacing: a key is read character by character. */
+.jg__input {
+  flex: 1 1 220px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.jg__list { display: flex; flex-direction: column; gap: var(--space-lg); }
+.jg__card {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  background: var(--color-canvas);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.jg__card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); }
+.jg__card-title { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--color-ink); }
+.jg__card-sub { font-family: var(--font-body); font-size: var(--text-body-sm); color: rgba(22, 16, 31, 0.65); margin-top: 2px; }
+.jg__card-members { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.jg__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface-sage);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--color-ink);
+}
+.jg__card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding-top: var(--space-md); border-top: var(--border-hairline); }
+.jg__card-count { font-family: var(--font-mono); font-size: 12px; color: rgba(22, 16, 31, 0.68); font-variant-numeric: tabular-nums; }

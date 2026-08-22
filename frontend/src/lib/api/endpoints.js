@@ -80,6 +80,21 @@ export const orgEventsApi = {
     api.patch(`/org-events/${id}/tiers/${tierId}`, patch).then(r => r.data),
 };
 
+// ── ticket groups ─────────────────────────────────────────────────
+// Joining is by key rather than by invitation: there is no user
+// directory to invite from, and creating one would make every account
+// searchable by strangers.
+export const groupsApi = {
+  mine: () => api.get('/ticket-groups/mine').then(r => r.data),
+  get: (id) => api.get(`/ticket-groups/${id}`).then(r => r.data),
+  create: (eventId) => api.post('/ticket-groups', { event_id: eventId }).then(r => r.data),
+  join: (key) => api.post('/ticket-groups/join', { key }).then(r => r.data),
+  assign: (id, userId) => api.post(`/ticket-groups/${id}/assign`, { user_id: userId }).then(r => r.data),
+  unassign: (id, userId) => api.post(`/ticket-groups/${id}/unassign`, { user_id: userId }).then(r => r.data),
+  removeMember: (id, userId) => api.delete(`/ticket-groups/${id}/members/${userId}`).then(r => r.data),
+  rotateKey: (id) => api.post(`/ticket-groups/${id}/rotate-key`).then(r => r.data),
+};
+
 // ── orders & tickets ──────────────────────────────────────────────
 export const ordersApi = {
   create: (body) => api.post('/orders', body).then(r => r.data),
